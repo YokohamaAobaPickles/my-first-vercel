@@ -12,7 +12,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import liff from '@line/liff'
-import { supabase } from '../../lib/supabase'
+import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 
 // membersテーブルの型定義（主要なもののみ抜粋）
