@@ -133,11 +133,11 @@ export default function ProfilePage() {
           <ul style={{ paddingLeft: '20px', marginBottom: 0 }}>
             <li>
               <Link href="/members/admin" style={{ color: '#0070f3' }}>
-                会員管理メニュー（準備中）
+                会員管理（準備中）
               </Link>
               <br></br>
-              <Link href="/announcements/admin" style={{ color: '#00f3ba' }}>
-                お知らせ一覧へ
+              <Link href="/announcements/admin" style={{ color: '#118e71' }}>
+                お知らせ管理
               </Link>
               {/*
               <Link href="/announcements/new" style={{ color: '#0070f3' }}>
