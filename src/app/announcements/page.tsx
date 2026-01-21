@@ -1,8 +1,10 @@
 /**
  * Filename: announcements/page.tsx
- * Version : V1.0.0
+ * Version : V1.1.0
  * Update  : 2026-01-21 
  * 修正内容：
+ * V1.1.0
+ * - canManageAnnouncements を使用して、管理者のみ「新規作成」ボタンを表示
  * V1.0.0
  * - お知らせ一覧表示用。
  * - status='published' かつ publish_date が今日以前のものを抽出。
@@ -13,6 +15,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import liff from '@line/liff'
+import { canManageAnnouncements } from '@/utils/auth' // 追加
 
 // お知らせの型定義
 type Announcement = {
@@ -26,36 +30,67 @@ type Announcement = {
 export default function AnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [loading, setLoading] = useState(true)
+  const [userRoles, setUserRoles] = useState<string | null>(null) // ロール保持用
 
   useEffect(() => {
-    const fetchAnnouncements = async () => {
-      const today = new Date().toISOString().split('T')[0]
+    const fetchInitialData = async () => {
+      try {
+        // 1. LIFF初期化とロール取得
+        await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID! })
+        if (liff.isLoggedIn()) {
+          const profile = await liff.getProfile()
+          const { data: member } = await supabase
+            .from('members')
+            .select('roles')
+            .eq('line_id', profile.userId)
+            .single()
+          setUserRoles(member?.roles || null)
+        }
 
-      const { data, error } = await supabase
-        .from('announcements')
-        .select('id, title, publish_date, is_pinned, status')
-        .eq('status', 'published')             // 公開中のみ
-        .lte('publish_date', today)           // 公開日を過ぎているもの
-        .order('is_pinned', { ascending: false }) // ピン留め優先
-        .order('publish_date', { ascending: false }) // 新しい順
+        // 2. お知らせ取得 (既存ロジック)
+        const today = new Date().toISOString().split('T')[0]
+        const { data, error } = await supabase
+          .from('announcements')
+          .select('id, title, publish_date, is_pinned, status')
+          .eq('status', 'published')
+          .lte('publish_date', today)
+          .order('is_pinned', { ascending: false })
+          .order('publish_date', { ascending: false })
 
-      if (error) {
-        console.error('Error fetching announcements:', error)
-      } else {
-        setAnnouncements(data || [])
+        if (!error) setAnnouncements(data || [])
+      } catch (err) {
+        console.error('Data fetching error:', err)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
 
-    fetchAnnouncements()
+    fetchInitialData()
   }, [])
 
   if (loading) return <div style={{ padding: '20px' }}>読み込み中...</div>
 
   return (
     <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-      <h1 style={{ fontSize: '1.5rem', marginBottom: '20px' }}>お知らせ一覧</h1>
-
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h1 style={{ fontSize: '1.5rem', margin: 0 }}>お知らせ一覧</h1>
+        
+        {/* 管理者のみ「新規作成」ボタンを表示 */}
+        {canManageAnnouncements(userRoles) && (
+          <Link href="/announcements/new" style={{
+            backgroundColor: '#0070f3',
+            color: 'white',
+            padding: '8px 16px',
+            borderRadius: '20px',
+            textDecoration: 'none',
+            fontSize: '0.9rem',
+            fontWeight: 'bold'
+          }}>
+            ＋ 新規作成
+          </Link>
+        )}
+      </div>
+      
       {announcements.length === 0 ? (
         <p>現在お知らせはありません。</p>
       ) : (
