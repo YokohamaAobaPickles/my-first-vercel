@@ -77,7 +77,7 @@ export default function AnnouncementsPage() {
         
         {/* 管理者のみ「新規作成」ボタンを表示 */}
         {canManageAnnouncements(userRoles) && (
-          <Link href="/announcements/new" style={{
+          <Link href="/announcements/admin" style={{
             backgroundColor: '#0070f3',
             color: 'white',
             padding: '8px 16px',
@@ -86,7 +86,7 @@ export default function AnnouncementsPage() {
             fontSize: '0.9rem',
             fontWeight: 'bold'
           }}>
-            ＋ 新規作成
+            ＋ 管理パネル
           </Link>
         )}
       </div>
