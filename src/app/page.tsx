@@ -1,8 +1,10 @@
 /**
  * Filename: profile/page.tsx
- * Version : V1.2.0
+ * Version : V1.2.1
  * Update  : 2026-01-21 
  * 修正内容：
+ * V1.2.1
+ * - JSXのタグ構造ミスを修正
  * V1.2.0
  * - isAdmin ユーティリティを使用して管理者メニューを表示
  * V1.1.0
@@ -18,7 +20,6 @@ import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { isAdmin } from '@/utils/auth'
 
-// membersテーブルの型定義（主要なもののみ抜粋）
 type Member = {
   name: string
   nickname: string
@@ -38,14 +39,12 @@ export default function ProfilePage() {
       try {
         await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID! })
         if (!liff.isLoggedIn()) {
-          // リダイレクト先をこのページに指定
           liff.login({ redirectUri: window.location.href })
           return
         }
 
         const liffProfile = await liff.getProfile()
 
-        // membersテーブルからLINE IDで検索
         const { data, error } = await supabase
           .from('members')
           .select('name, nickname, member_kind, roles, status, member_number')
@@ -86,14 +85,15 @@ export default function ProfilePage() {
         border: '1px solid #eee',
         padding: '20px',
         borderRadius: '12px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+        boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+        marginBottom: '20px'
       }}>
         <div style={{ marginBottom: '15px' }}>
           <label style={{ fontSize: '0.8rem', color: '#888' }}>氏名</label>
           <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{member?.name} ({member?.nickname})</div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
           <div>
             <label style={{ fontSize: '0.8rem', color: '#888' }}>会員番号</label>
             <div>{member?.member_number || '未発行'}</div>
@@ -108,37 +108,41 @@ export default function ProfilePage() {
           </div>
           <div>
             <label style={{ fontSize: '0.8rem', color: '#888' }}>ステータス</label>
-            <span style={{
-              color: member?.status === 'active' ? 'green' : 'orange',
-              fontWeight: 'bold'
-            }}>
-              {member?.status === 'active' ? '有効' : member?.status}
-            </span>
-          </div>
-
-          {/* 管理者用メニュー：isAdminがtrueの時だけ表示される */}
-          {isAdmin(member.roles) && (
-            <div style={{
-              padding: '15px',
-              backgroundColor: '#fffbe6',
-              border: '1px solid #ffe58f',
-              borderRadius: '8px',
-              marginBottom: '20px'
-            }}>
-              <p style={{ fontWeight: 'bold', color: '#856404', marginTop: 0 }}>管理者メニュー</p>
-              <ul style={{ paddingLeft: '20px', marginBottom: 0 }}>
-                <li>
-                  <Link href="/announcements/new" style={{ color: '#0070f3' }}>
-                    お知らせを新規作成する
-                  </Link>
-                </li>
-              </ul>
+            <div>
+              <span style={{
+                color: member?.status === 'active' ? 'green' : 'orange',
+                fontWeight: 'bold'
+              }}>
+                {member?.status === 'active' ? '有効' : member?.status}
+              </span>
             </div>
-          )}
-
-          <div>
-            <Link href="/announcements" style={{ color: '#666' }}>お知らせ一覧へ</Link>
           </div>
         </div>
-        )
+      </div>
+
+      {/* 管理者用メニュー：isAdminがtrueの時だけ表示される */}
+      {isAdmin(member?.roles || null) && (
+        <div style={{
+          padding: '15px',
+          backgroundColor: '#fffbe6',
+          border: '1px solid #ffe58f',
+          borderRadius: '8px',
+          marginBottom: '20px'
+        }}>
+          <p style={{ fontWeight: 'bold', color: '#856404', marginTop: 0 }}>管理者メニュー</p>
+          <ul style={{ paddingLeft: '20px', marginBottom: 0 }}>
+            <li>
+              <Link href="/announcements/new" style={{ color: '#0070f3' }}>
+                お知らせを新規作成する
+              </Link>
+            </li>
+          </ul>
+        </div>
+      )}
+
+      <div>
+        <Link href="/announcements" style={{ color: '#666' }}>お知らせ一覧へ</Link>
+      </div>
+    </div>
+  )
 }
