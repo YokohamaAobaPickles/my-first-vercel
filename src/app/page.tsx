@@ -1,8 +1,10 @@
 /**
  * Filename: profile/page.tsx
- * Version : V1.1.0
+ * Version : V1.2.0
  * Update  : 2026-01-21 
  * 修正内容：
+ * V1.2.0
+ * - isAdmin ユーティリティを使用して管理者メニューを表示
  * V1.1.0
  * - マイページ表示用（A-01）
  * - membersテーブルからLINE IDをキーに会員情報を取得
@@ -14,6 +16,7 @@ import { useEffect, useState } from 'react'
 import liff from '@line/liff'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import { isAdmin } from '@/utils/auth'
 
 // membersテーブルの型定義（主要なもののみ抜粋）
 type Member = {
@@ -112,13 +115,30 @@ export default function ProfilePage() {
               {member?.status === 'active' ? '有効' : member?.status}
             </span>
           </div>
-        </div>
-      </div>
 
-      <div style={{ marginTop: '30px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <Link href="/announcements" style={{ color: '#0070f3' }}>お知らせ一覧を見る</Link>
-        <Link href="/" style={{ color: '#666' }}>トップへ戻る</Link>
-      </div>
-    </div>
-  )
+          {/* 管理者用メニュー：isAdminがtrueの時だけ表示される */}
+          {isAdmin(member.roles) && (
+            <div style={{
+              padding: '15px',
+              backgroundColor: '#fffbe6',
+              border: '1px solid #ffe58f',
+              borderRadius: '8px',
+              marginBottom: '20px'
+            }}>
+              <p style={{ fontWeight: 'bold', color: '#856404', marginTop: 0 }}>管理者メニュー</p>
+              <ul style={{ paddingLeft: '20px', marginBottom: 0 }}>
+                <li>
+                  <Link href="/announcements/new" style={{ color: '#0070f3' }}>
+                    お知らせを新規作成する
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          )}
+
+          <div>
+            <Link href="/announcements" style={{ color: '#666' }}>お知らせ一覧へ</Link>
+          </div>
+        </div>
+        )
 }
