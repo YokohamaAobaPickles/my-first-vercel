@@ -148,7 +148,7 @@ export default function NewAnnouncementPage() {
         <div style={{ 
           marginBottom: '25px', 
           padding: '10px', 
-          backgroundColor: '#black', 
+          backgroundColor: '#333', 
           borderRadius: '8px',
           display: 'flex',
           alignItems: 'center'

@@ -75,7 +75,7 @@ export default function AnnouncementDetailPage() {
     <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
         <div style={{ fontSize: '0.9rem', color: '#666' }}>{announcement.publish_date}</div>
-        
+
         {/* 管理者の場合のみ「編集」ボタンを表示 */}
         {canManageAnnouncements(userRoles) && (
           <Link href={`/announcements/edit/${announcement.id}`} style={{
@@ -98,9 +98,9 @@ export default function AnnouncementDetailPage() {
         {announcement.title}
       </h1>
 
-      <div style={{ 
-        whiteSpace: 'pre-wrap', 
-        lineHeight: '1.8', 
+      <div style={{
+        whiteSpace: 'pre-wrap',
+        lineHeight: '1.8',
         fontSize: '1rem',
         borderTop: '1px solid #eee',
         paddingTop: '20px'
@@ -109,9 +109,9 @@ export default function AnnouncementDetailPage() {
       </div>
 
       <div style={{ marginTop: '40px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
-        <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: '#0070f3', cursor: 'pointer', fontSize: '1rem' }}>
-          ← 戻る
-        </button>
+        <Link href="/announcements" style={{ textDecoration: 'none', color: '#0070f3', fontSize: '1rem' }}>
+          ← お知らせ一覧へ
+        </Link>
       </div>
     </div>
   )

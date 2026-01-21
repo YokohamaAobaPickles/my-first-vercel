@@ -126,7 +126,7 @@ export default function EditAnnouncementPage() {
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '1rem', backgroundColor: '#fff', color: '#000' }}
+            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '1rem', backgroundColor: 'black', color: '#000' }}
             required
           />
         </div>
@@ -136,7 +136,7 @@ export default function EditAnnouncementPage() {
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            style={{ width: '100%', height: '200px', padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '1rem', lineHeight: '1.5', backgroundColor: '#fff', color: '#000' }}
+            style={{ width: '100%', height: '200px', padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '1rem', lineHeight: '1.5', backgroundColor: 'black', color: '#000' }}
             required
           />
         </div>
@@ -148,7 +148,7 @@ export default function EditAnnouncementPage() {
               type="date"
               value={publishDate}
               onChange={(e) => setPublishDate(e.target.value)}
-              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#fff', color: '#000' }}
+              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: 'black', color: '#000' }}
             />
           </div>
           <div>
@@ -156,7 +156,7 @@ export default function EditAnnouncementPage() {
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#fff', color: '#000' }}
+              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: 'black', color: '#000' }}
             >
               <option value="published">公開</option>
               <option value="draft">下書き（非公開）</option>
@@ -169,7 +169,7 @@ export default function EditAnnouncementPage() {
           <select
             value={targetRole}
             onChange={(e) => setTargetRole(e.target.value)}
-            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#fff', color: '#000' }}
+            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: 'black', color: '#000' }}
           >
             <option value="ALL">全員</option>
             <option value="PREMIUM">プレミア会員</option>
