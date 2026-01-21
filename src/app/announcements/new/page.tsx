@@ -137,7 +137,7 @@ export default function NewAnnouncementPage() {
             <select
               value={targetRole}
               onChange={(e) => setTargetRole(e.target.value)}
-              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: 'white' }}
+              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: 'black' }}
             >
               <option value="ALL">全員</option>
               <option value="PREMIUM">プレミア会員</option>
@@ -148,7 +148,7 @@ export default function NewAnnouncementPage() {
         <div style={{ 
           marginBottom: '25px', 
           padding: '10px', 
-          backgroundColor: '#f9f9f9', 
+          backgroundColor: '#black', 
           borderRadius: '8px',
           display: 'flex',
           alignItems: 'center'
