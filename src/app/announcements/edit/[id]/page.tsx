@@ -160,6 +160,7 @@ export default function EditAnnouncementPage() {
             >
               <option value="published">公開</option>
               <option value="draft">下書き（非公開）</option>
+              <option value="disable">無効（非公開）</option>
             </select>
           </div>
         </div>

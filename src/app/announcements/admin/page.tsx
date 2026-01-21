@@ -34,7 +34,7 @@ export default function AnnouncementAdminPage() {
           liff.login()
           return
         }
-        
+
         const profile = await liff.getProfile()
         const { data: member } = await supabase
           .from('members')
@@ -89,8 +89,8 @@ export default function AnnouncementAdminPage() {
 
       <div style={{ borderTop: '1px solid #eee' }}>
         {announcements.map((ann) => (
-          <div key={ann.id} style={{ 
-            padding: '15px 0', 
+          <div key={ann.id} style={{
+            padding: '15px 0',
             borderBottom: '1px solid #eee',
             display: 'flex',
             justifyContent: 'space-between',
@@ -98,28 +98,35 @@ export default function AnnouncementAdminPage() {
           }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                <span style={{ 
-                  fontSize: '0.7rem', 
-                  padding: '2px 6px', 
+                <span style={{
+                  fontSize: '0.7rem',
+                  padding: '2px 6px',
                   borderRadius: '4px',
-                  backgroundColor: ann.status === 'published' ? '#e6f7ff' : '#fff1f0',
-                  color: ann.status === 'published' ? '#1890ff' : '#f5222d',
-                  border: `1px solid ${ann.status === 'published' ? '#91d5ff' : '#ffa39e'}`
+                  backgroundColor:
+                    ann.status === 'published' ? '#e6f7ff' :
+                    ann.status === 'disable' ? '#f5f5f5' : '#fff1f0',
+                  color:
+                    ann.status === 'published' ? '#1890ff' :
+                    ann.status === 'disable' ? '#8c8c8c' : '#f5222d',
+                  border: `1px solid ${ann.status === 'published' ? '#91d5ff' :
+                    ann.status === 'disable' ? '#d9d9d9' : '#ffa39e'
+                    }`
                 }}>
-                  {ann.status === 'published' ? '公開' : '下書き'}
+                  {ann.status === 'published' ? '公開' :
+                    ann.status === 'disable' ? '無効' : '下書き'}
                 </span>
                 <span style={{ fontSize: '0.8rem', color: '#666' }}>{ann.publish_date}</span>
               </div>
-              <Link href={`/announcements/${ann.id}`} style={{ 
-                textDecoration: 'none', 
+              <Link href={`/announcements/${ann.id}`} style={{
+                textDecoration: 'none',
                 color: '#333',
                 fontWeight: ann.is_pinned ? 'bold' : 'normal'
               }}>
                 {ann.is_pinned && '📌 '}{ann.title}
               </Link>
             </div>
-            <Link href={`/announcements/edit/${ann.id}`} style={{ 
-              fontSize: '0.9rem', 
+            <Link href={`/announcements/edit/${ann.id}`} style={{
+              fontSize: '0.9rem',
               color: '#0070f3',
               textDecoration: 'none',
               marginLeft: '15px'

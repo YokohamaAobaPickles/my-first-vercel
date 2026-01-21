@@ -86,7 +86,7 @@ export default function AnnouncementsPage() {
             fontSize: '0.9rem',
             fontWeight: 'bold'
           }}>
-            ＋ 管理パネル
+            管理パネル
           </Link>
         )}
       </div>
