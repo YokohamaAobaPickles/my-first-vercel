@@ -124,7 +124,7 @@ export default function ProfilePage() {
       {canManageMembers(member?.roles || null) && (
         <div style={{
           padding: '15px',
-          backgroundColor: '#fffbe6',
+          backgroundColor: 'black',
           border: '1px solid #ffe58f',
           borderRadius: '8px',
           marginBottom: '20px'
