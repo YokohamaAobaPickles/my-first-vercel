@@ -135,7 +135,8 @@ export default function ProfilePage() {
               <Link href="/members/admin" style={{ color: '#0070f3' }}>
                 会員管理メニュー（準備中）
               </Link>
-              <Link href="/announcements/" style={{ color: '#00f3ba' }}>
+              <br></br>
+              <Link href="/announcements/admin" style={{ color: '#00f3ba' }}>
                 お知らせ一覧へ
               </Link>
               {/*
