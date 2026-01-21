@@ -6,7 +6,7 @@
  * V1.2.1
  * - JSXのタグ構造ミスを修正
  * V1.2.0
- * - isAdmin ユーティリティを使用して管理者メニューを表示
+ * - canManagementMembers ユーティリティを使用して管理者メニューを表示
  * V1.1.0
  * - マイページ表示用（A-01）
  * - membersテーブルからLINE IDをキーに会員情報を取得
@@ -18,7 +18,7 @@ import { useEffect, useState } from 'react'
 import liff from '@line/liff'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { isAdmin } from '@/utils/auth'
+import { canManageMembers } from '@/utils/auth'
 
 type Member = {
   name: string
@@ -120,8 +120,8 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* 管理者用メニュー：isAdminがtrueの時だけ表示される */}
-      {isAdmin(member?.roles || null) && (
+      {/* 管理者用メニュー：canManageMembersがtrueの時だけ表示される */}
+      {canManageMembers(member?.roles || null) && (
         <div style={{
           padding: '15px',
           backgroundColor: '#fffbe6',
@@ -132,9 +132,17 @@ export default function ProfilePage() {
           <p style={{ fontWeight: 'bold', color: '#856404', marginTop: 0 }}>管理者メニュー</p>
           <ul style={{ paddingLeft: '20px', marginBottom: 0 }}>
             <li>
+              <Link href="/members/admin" style={{ color: '#0070f3' }}>
+                会員管理メニュー（準備中）
+              </Link>
+              <Link href="/announcements/" style={{ color: '#00f3ba' }}>
+                お知らせ一覧へ
+              </Link>
+              {/*
               <Link href="/announcements/new" style={{ color: '#0070f3' }}>
                 お知らせを新規作成する
               </Link>
+              */}
             </li>
           </ul>
         </div>
