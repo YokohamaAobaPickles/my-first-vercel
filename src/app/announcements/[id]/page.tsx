@@ -1,8 +1,10 @@
 /**
  * Filename: announcements/[id]/page.tsx
- * Version : V1.2.0
+ * Version : V1.2.1
  * Update  : 2026-01-21 
  * 修正内容：
+ * V1.2.1
+ * - 既読記録の修正。デバッグ用コンソール文追加
  * V1.2.0
  * - 既読記録の追加
  * V1.1.0
@@ -31,25 +33,29 @@ type Announcement = {
 }
 
 export default function AnnouncementDetailPage() {
-  const { id } = useParams()
+  const params = useParams()
+  const id = params.id as string // 明示的に string として取得
   const router = useRouter()
   const [announcement, setAnnouncement] = useState<Announcement | null>(null)
   const [loading, setLoading] = useState(true)
   const [userRoles, setUserRoles] = useState<string | null>(null)
 
-useEffect(() => {
+  useEffect(() => {
     const fetchDetailAndRecordRead = async () => {
       try {
-        // 1. LIFF初期化とプロフィール取得
+        console.log('--- Start Read Recording Process ---');
+        
+        // 1. LIFF初期化
         await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID! })
         if (!liff.isLoggedIn()) {
-          // ログインしていない場合は詳細取得のみ（またはログインへ）
+          console.log('User not logged in');
           return 
         }
         const profile = await liff.getProfile()
         const currentLineId = profile.userId
+        console.log('Current User ID:', currentLineId);
 
-        // 2. 権限確認用のロール取得 (既存)
+        // 2. 権限確認用のロール取得
         const { data: member } = await supabase
           .from('members')
           .select('roles')
@@ -57,7 +63,7 @@ useEffect(() => {
           .single()
         setUserRoles(member?.roles || null)
 
-        // 3. お知らせ詳細取得 (既存)
+        // 3. お知らせ詳細取得
         const { data: ann, error: annError } = await supabase
           .from('announcements')
           .select('*')
@@ -66,33 +72,39 @@ useEffect(() => {
         if (annError) throw annError
         setAnnouncement(ann)
 
-        // ★ 4. 既読の記録 (追加)
-        // 一般ユーザー（管理者以外）の既読だけカウントしたい場合は条件を追加できますが、
-        // 今回は全ユーザーの既読を記録する前提で進めます。
+        // ★ 4. 既読の記録 (デバッグ強化 & 型変換)
         if (ann) {
-          await supabase
+          console.log(`Attempting to record read for ID: ${id}`);
+          
+          const { error: upsertError } = await supabase
             .from('announcements_reads')
             .upsert(
               { 
-                announcement_id: id, 
+                announcement_id: Number(id), // ★ 数値型に変換
                 user_id: currentLineId,
                 read_at: new Date().toISOString()
               }, 
-              { onConflict: 'announcement_id, user_id' } // この設定にはDB側でユニーク制約が必要
+              { onConflict: 'announcement_id, user_id' }
             )
-            // もしDBに制約がない場合は、insert前にselectで存在チェックするか、
-            // 単純に insert してエラーを無視する形でもOKです。
+
+          if (upsertError) {
+            console.error('Upsert Error details:', upsertError);
+          } else {
+            console.log('Successfully recorded read to DB');
+          }
         }
 
       } catch (err) {
-        console.error('Error:', err)
+        console.error('Fatal Error in fetchDetail:', err)
       } finally {
         setLoading(false)
+        console.log('--- End Read Recording Process ---');
       }
     }
     fetchDetailAndRecordRead()
   }, [id])
 
+  // --- 以下レンダリング部分は変更なし ---
   if (loading) return <div style={{ padding: '20px' }}>読み込み中...</div>
   if (!announcement) return <div style={{ padding: '20px' }}>記事が見つかりません。</div>
 
@@ -101,7 +113,6 @@ useEffect(() => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
         <div style={{ fontSize: '0.9rem', color: '#666' }}>{announcement.publish_date}</div>
 
-        {/* 管理者の場合のみ「編集」ボタンを表示 */}
         {canManageAnnouncements(userRoles) && (
           <Link href={`/announcements/edit/${announcement.id}`} style={{
             backgroundColor: '#f0f0f0',
