@@ -1,8 +1,10 @@
 /**
  * Filename: announcements/[id]/page.tsx
- * Version : V1.1.0
+ * Version : V1.2.0
  * Update  : 2026-01-21 
  * 修正内容：
+ * V1.2.0
+ * - 既読記録の追加
  * V1.1.0
  * - 管理者権限がある場合のみ、右上に「編集」ボタンを表示
  * V1.0.0
@@ -35,37 +37,60 @@ export default function AnnouncementDetailPage() {
   const [loading, setLoading] = useState(true)
   const [userRoles, setUserRoles] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchDetail = async () => {
+useEffect(() => {
+    const fetchDetailAndRecordRead = async () => {
       try {
-        // 1. LIFF初期化とロール取得
+        // 1. LIFF初期化とプロフィール取得
         await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID! })
-        if (liff.isLoggedIn()) {
-          const profile = await liff.getProfile()
-          const { data: member } = await supabase
-            .from('members')
-            .select('roles')
-            .eq('line_id', profile.userId)
-            .single()
-          setUserRoles(member?.roles || null)
+        if (!liff.isLoggedIn()) {
+          // ログインしていない場合は詳細取得のみ（またはログインへ）
+          return 
         }
+        const profile = await liff.getProfile()
+        const currentLineId = profile.userId
 
-        // 2. お知らせ詳細取得
-        const { data, error } = await supabase
+        // 2. 権限確認用のロール取得 (既存)
+        const { data: member } = await supabase
+          .from('members')
+          .select('roles')
+          .eq('line_id', currentLineId)
+          .single()
+        setUserRoles(member?.roles || null)
+
+        // 3. お知らせ詳細取得 (既存)
+        const { data: ann, error: annError } = await supabase
           .from('announcements')
           .select('*')
           .eq('id', id)
           .single()
+        if (annError) throw annError
+        setAnnouncement(ann)
 
-        if (error) throw error
-        setAnnouncement(data)
+        // ★ 4. 既読の記録 (追加)
+        // 一般ユーザー（管理者以外）の既読だけカウントしたい場合は条件を追加できますが、
+        // 今回は全ユーザーの既読を記録する前提で進めます。
+        if (ann) {
+          await supabase
+            .from('announcements_reads')
+            .upsert(
+              { 
+                announcement_id: id, 
+                user_id: currentLineId,
+                read_at: new Date().toISOString()
+              }, 
+              { onConflict: 'announcement_id, user_id' } // この設定にはDB側でユニーク制約が必要
+            )
+            // もしDBに制約がない場合は、insert前にselectで存在チェックするか、
+            // 単純に insert してエラーを無視する形でもOKです。
+        }
+
       } catch (err) {
         console.error('Error:', err)
       } finally {
         setLoading(false)
       }
     }
-    fetchDetail()
+    fetchDetailAndRecordRead()
   }, [id])
 
   if (loading) return <div style={{ padding: '20px' }}>読み込み中...</div>

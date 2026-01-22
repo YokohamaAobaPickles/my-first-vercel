@@ -1,7 +1,9 @@
 /**
  * Filename: announcements/edit/[id]/page.tsx
- * Version : V1.0.0
+ * Version : V1.1.0
  * Update  : 2026-01-21
+ * V1.1.0
+ * - 物理削除機能の追加
  */
 
 'use client'
