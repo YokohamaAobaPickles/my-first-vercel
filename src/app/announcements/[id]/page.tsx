@@ -81,10 +81,10 @@ export default function AnnouncementDetailPage() {
             .upsert(
               { 
                 announcement_id: Number(id), // ★ 数値型に変換
-                user_id: currentLineId,
+                line_id: currentLineId,
                 read_at: new Date().toISOString()
               }, 
-              { onConflict: 'announcement_id, user_id' }
+              { onConflict: 'announcement_id, line_id' }
             )
 
           if (upsertError) {
