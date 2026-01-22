@@ -52,12 +52,12 @@ export default function AnnouncementReadDetailPage() {
           .select(`
             user_id,
             read_at,
-            members (
-              name
+            members!announcement_reads_user_id_fkey (
+            name
             )
           `)
           .eq('announcement_id', id)
-          .order('read_at', { ascending: false })
+          .order('read_at', { ascending: false });
 
         if (!error) setReaders(readData as any)
       } catch (err) {
@@ -104,13 +104,13 @@ export default function AnnouncementReadDetailPage() {
       </div>
 
       <div style={{ marginTop: '30px' }}>
-        <Link href="/announcements/admin" style={{ 
-          display: 'inline-block', 
-          padding: '10px 20px', 
-          backgroundColor: '#f0f0f0', 
-          borderRadius: '5px', 
-          textDecoration: 'none', 
-          color: '#333' 
+        <Link href="/announcements/admin" style={{
+          display: 'inline-block',
+          padding: '10px 20px',
+          backgroundColor: '#f0f0f0',
+          borderRadius: '5px',
+          textDecoration: 'none',
+          color: '#333'
         }}>
           ← 管理一覧へ戻る
         </Link>
