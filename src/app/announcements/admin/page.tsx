@@ -129,10 +129,17 @@ export default function AnnouncementAdminPage() {
                 <span style={{ fontSize: '0.8rem', color: '#666' }}>{ann.publish_date}</span>
 
                 {/* ★ 既読数の表示を追加 */}
-                <span style={{ fontSize: '0.8rem', color: '#666', display: 'flex', alignItems: 'center', gap: '3px', marginLeft: '8px' }}>
+                <Link href={`/announcements/admin/${ann.id}`} style={{
+                  fontSize: '0.8rem',
+                  color: '#0070f3', // 青色にしてリンクであることを強調
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '3px',
+                  marginLeft: '8px',
+                  textDecoration: 'underline' // アンダーラインを追加
+                }}>
                   👀 {readCounts[ann.id] || 0}
-                </span>
-              </div>
+                </Link>              </div>
               <Link href={`/announcements/${ann.id}`} style={{
                 textDecoration: 'none',
                 color: '#333',
