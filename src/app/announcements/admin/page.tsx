@@ -1,7 +1,9 @@
 /**
  * Filename: announcements/admin/page.tsx
- * Version : V1.0.0
+ * Version : V1.1.0
  * Update  : 2026-01-22
+ * 修正内容：
+ * - 各記事の既読者数（👀）を表示する機能を追加
  */
 
 'use client'
@@ -23,6 +25,7 @@ type Announcement = {
 export default function AnnouncementAdminPage() {
   const router = useRouter()
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
+  const [readCounts, setReadCounts] = useState<{ [key: number]: number }>({}) // ★ 既読数保持用
   const [loading, setLoading] = useState(true)
   const [hasPermission, setHasPermission] = useState(false)
 
@@ -49,15 +52,30 @@ export default function AnnouncementAdminPage() {
         }
         setHasPermission(true)
 
-        // 管理者なので、フィルタなしで全件取得（新しい順）
-        const { data, error } = await supabase
+        // 1. お知らせ一覧取得
+        const { data: annData, error: annError } = await supabase
           .from('announcements')
           .select('id, title, publish_date, status, is_pinned')
           .order('publish_date', { ascending: false })
           .order('created_at', { ascending: false })
 
-        if (error) throw error
-        setAnnouncements(data || [])
+        if (annError) throw annError
+        setAnnouncements(annData || [])
+
+        // ★ 2. 既読数の集計取得
+        const { data: reads, error: readsError } = await supabase
+          .from('announcement_reads') // 正しいテーブル名
+          .select('announcement_id')
+
+        if (!readsError && reads) {
+          const counts: { [key: number]: number } = {}
+          reads.forEach(r => {
+            const aid = Number(r.announcement_id)
+            counts[aid] = (counts[aid] || 0) + 1
+          })
+          setReadCounts(counts)
+        }
+
       } catch (err) {
         console.error(err)
       } finally {
@@ -96,26 +114,24 @@ export default function AnnouncementAdminPage() {
             justifyContent: 'space-between',
             alignItems: 'center'
           }}>
-            <div>
+            <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                 <span style={{
                   fontSize: '0.7rem',
                   padding: '2px 6px',
                   borderRadius: '4px',
-                  backgroundColor:
-                    ann.status === 'published' ? '#e6f7ff' :
-                    ann.status === 'disable' ? '#f5f5f5' : '#fff1f0',
-                  color:
-                    ann.status === 'published' ? '#1890ff' :
-                    ann.status === 'disable' ? '#8c8c8c' : '#f5222d',
-                  border: `1px solid ${ann.status === 'published' ? '#91d5ff' :
-                    ann.status === 'disable' ? '#d9d9d9' : '#ffa39e'
-                    }`
+                  backgroundColor: ann.status === 'published' ? '#e6f7ff' : ann.status === 'disable' ? '#f5f5f5' : '#fff1f0',
+                  color: ann.status === 'published' ? '#1890ff' : ann.status === 'disable' ? '#8c8c8c' : '#f5222d',
+                  border: `1px solid ${ann.status === 'published' ? '#91d5ff' : ann.status === 'disable' ? '#d9d9d9' : '#ffa39e'}`
                 }}>
-                  {ann.status === 'published' ? '公開' :
-                    ann.status === 'disable' ? '無効' : '下書き'}
+                  {ann.status === 'published' ? '公開' : ann.status === 'disable' ? '無効' : '下書き'}
                 </span>
                 <span style={{ fontSize: '0.8rem', color: '#666' }}>{ann.publish_date}</span>
+
+                {/* ★ 既読数の表示を追加 */}
+                <span style={{ fontSize: '0.8rem', color: '#666', display: 'flex', alignItems: 'center', gap: '3px', marginLeft: '8px' }}>
+                  👀 {readCounts[ann.id] || 0}
+                </span>
               </div>
               <Link href={`/announcements/${ann.id}`} style={{
                 textDecoration: 'none',
@@ -129,13 +145,15 @@ export default function AnnouncementAdminPage() {
               fontSize: '0.9rem',
               color: '#0070f3',
               textDecoration: 'none',
-              marginLeft: '15px'
+              marginLeft: '15px',
+              padding: '8px',
+              border: '1px solid #0070f3',
+              borderRadius: '6px'
             }}>
               編集
             </Link>
           </div>
         ))}
-        {announcements.length === 0 && <div style={{ padding: '20px', textAlign: 'center' }}>記事がありません</div>}
       </div>
 
       <div style={{ marginTop: '30px' }}>
