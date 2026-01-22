@@ -1,8 +1,12 @@
 /**
  * Filename: announcements/admin/[id]/page.tsx
- * Version : V1.0.0
+ * Version : V1.0.1
  * Update  : 2026-01-22
- * 内容：特定のお知らせの既読ユーザー一覧を表示（管理者用）
+ * 修正内容：
+ * V1.0.1
+ * - テーブル内カラム修正 user_id → line_id
+ * V1.0.0
+ * - 特定のお知らせの既読ユーザー一覧を表示（管理者用）
  */
 
 'use client'
