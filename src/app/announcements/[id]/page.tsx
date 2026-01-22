@@ -77,7 +77,7 @@ export default function AnnouncementDetailPage() {
           console.log(`Attempting to record read for ID: ${id}`);
           
           const { error: upsertError } = await supabase
-            .from('announcements_reads')
+            .from('announcement_reads')
             .upsert(
               { 
                 announcement_id: Number(id), // ★ 数値型に変換

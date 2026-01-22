@@ -4,7 +4,7 @@
  * Update  : 2026-01-22 
  * 修正内容：
  * V1.2.0
- * - 既読管理機能（announcements_reads）との連携を追加
+ * - 既読管理機能（announcement_reads）との連携を追加
  * - 未読記事はタイトルを太字(bold)、既読記事は通常(normal)で表示
  * V1.1.0
  * - canManageAnnouncements を使用して、管理者のみ「管理パネル」ボタンを表示
@@ -56,7 +56,7 @@ export default function AnnouncementsPage() {
 
           // ★ 3. 自分の既読リストを取得
           const { data: readData } = await supabase
-            .from('announcements_reads')
+            .from('announcement_reads')
             .select('announcement_id')
             .eq('user_id', currentLineId)
           
