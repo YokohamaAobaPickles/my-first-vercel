@@ -16,34 +16,43 @@ export type RegistrationData = {
   password?: string
   emg_tel: string
   emg_rel: string
-  req_date?: string; // ★ これを追加
+  req_date?: string;
+  status?: 'member' | 'guest';
+  introducer?: string;
 }
 
 export const validateRegistration = (data: RegistrationData) => {
   const errors: string[] = []
 
-  // 1. 共通必須チェック
-  if (!data.name?.trim()) errors.push('氏名は必須です')
-  if (!data.name_roma?.trim()) errors.push('氏名（ローマ字）は必須です')
-  if (!data.email?.trim()) errors.push('メールアドレスは必須です')
-  if (!data.password || data.password.length < 6) errors.push('パスワードは6文字以上必要です')
-  if (!data.emg_tel?.trim() || !data.emg_rel?.trim()) errors.push('緊急連絡先は必須です')
+  // 1. 共通必須チェック (文言をテストに合わせる)
+  if (!data.name?.trim()) errors.push('氏名を入力してください')
+  if (!data.name_roma?.trim()) errors.push('氏名（ローマ字）を入力してください')
+  if (!data.email?.trim()) errors.push('メールアドレスを入力してください')
+  if (!data.password || data.password.length < 6) {
+    errors.push('パスワードは6文字以上で入力してください')
+  }
+  
+  if (!data.emg_tel?.trim()) errors.push('緊急連絡先電話番号を入力してください')
+  if (!data.emg_rel?.trim()) errors.push('緊急連絡先との続柄を入力してください')
 
-  // 緊急連絡先チェック
-  if (!data.emg_tel?.trim() || !data.emg_rel?.trim()) {
-    errors.push('緊急連絡先は必須です')
+  // 2. Case C: ゲスト特有のチェック
+  if (data.status === 'guest') {
+    if (!data.introducer || !data.introducer.trim()) {
+      errors.push('紹介者のニックネームを入力してください')
+    }
   }
 
-  // 2. PC版固有チェック（line_idがない場合はPC版とみなす）
-  const isPcMode = !data.line_id
-  if (isPcMode && !data.nickname?.trim()) {
+  // 3. Case B: ブラウザ(PC/スマホ)版特有のチェック
+  // LINE IDがない場合は、ゲストであってもニックネームが必要です
+  if (!data.line_id && !data.nickname?.trim()) {
     errors.push('PC版からの登録にはニックネームが必要です')
   }
+
   return {
     isValid: errors.length === 0,
     errors
   }
-};
+}
 
 /**
  * ニックネームが既に使用されているかチェックする
@@ -66,7 +75,7 @@ export const checkNicknameInSupabase = async (nickname: string): Promise<boolean
     .select('id')
     .eq('nickname', nickname)
     .maybeSingle();
-  
+
   return !!data; // データがあれば重複(true)
 };
 
@@ -92,3 +101,33 @@ export const fetchMembers = async () => {
 export const formatMemberName = (name: string | null) => {
   return name ? name.trim() : '未登録';
 };
+
+/**
+ * 指定されたメールアドレスのユーザー情報を取得する
+ * (パスワード照合や既存チェックに使用)
+ */
+export const getMemberByEmail = async (email: string) => {
+  const { data, error } = await supabase
+    .from('members')
+    .select('*')
+    .eq('email', email)
+    .single()
+  
+  if (error && error.code !== 'PGRST116') { // PGRST116は「0件」のエラーコード
+    console.error('Error fetching member by email:', error)
+    return null
+  }
+  return data || null
+}
+
+/**
+ * LINE IDを既存レコードに紐付ける (Case Aでのアカウント統合用)
+ */
+export const linkLineIdToMember = async (email: string, lineId: string) => {
+  const { error } = await supabase
+    .from('members')
+    .update({ line_id: lineId })
+    .eq('email', email)
+  
+  return { success: !error, error }
+}

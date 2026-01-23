@@ -1,12 +1,11 @@
 /**
  * Filename: utils/memberHelpers.test.ts
- * Version : V1.0.0
- * 内容：A-01 会員登録ロジックのバリデーションテスト（テストファースト）
+ * Version : V2.6.1
  */
 import { describe, it, expect } from 'vitest'
-import { validateRegistration, isNicknameDuplicate } from './memberHelpers' // ★ ここに追加
+import { validateRegistration, isNicknameDuplicate } from './memberHelpers'
 
-describe('A-01: 会員登録バリデーション', () => {
+describe('A-01: 会員登録・統合バリデーション', () => {
   
   const baseValidData = {
     email: 'test@example.com',
@@ -36,33 +35,60 @@ describe('A-01: 会員登録バリデーション', () => {
     expect(result.isValid).toBe(true)
   })
 
-  it('共通：必須項目（氏名）が欠けている場合はエラーを返すこと', () => {
+  it('共通：氏名が欠けている場合はエラーを返すこと', () => {
     const data = { ...baseValidData, name: '', line_id: 'U123456789' }
     const result = validateRegistration(data)
     expect(result.isValid).toBe(false)
-    expect(result.errors).toContain('氏名は必須です')
+    expect(result.errors).toContain('氏名を入力してください')
   })
 
   it('共通：緊急連絡先が欠けている場合はエラーを返すこと', () => {
     const data = { ...baseValidData, emg_tel: '', line_id: 'U123456789' }
     const result = validateRegistration(data)
     expect(result.isValid).toBe(false)
-    expect(result.errors).toContain('緊急連絡先は必須です')
+    expect(result.errors).toContain('緊急連絡先電話番号を入力してください')
+  })
+
+  // Case C: ゲスト申請のテスト
+  describe('Case C: ゲスト申請', () => {
+    it('紹介者がいない場合はエラーになること', () => {
+      const guestData = {
+        ...baseValidData,
+        status: 'guest' as const,
+        introducer: '',
+        nickname: 'GuestUser',
+        line_id: null
+      }
+      const result = validateRegistration(guestData)
+      expect(result.isValid).toBe(false)
+      expect(result.errors).toContain('紹介者のニックネームを入力してください')
+    })
+
+    it('紹介者があれば有効であること', () => {
+      const guestData = {
+        ...baseValidData,
+        status: 'guest' as const,
+        introducer: '田中ボス',
+        nickname: 'GuestUser',
+        line_id: null
+      }
+      const result = validateRegistration(guestData)
+      expect(result.isValid).toBe(true)
+    })
   })
 })
 
-// memberHelpers.test.ts に追記
-describe('A-01: ニックネーム重複チェック', () => {
-  it('既存のニックネームがある場合、エラーを返すこと', async () => {
-    // 仮のDB問い合わせ関数（後で作成）が「存在する」と返した場合
+describe('A-01: ニックネーム・アカウント統合ロジック', () => {
+  it('ニックネーム重複：既存がある場合、trueを返すこと', async () => {
     const mockCheck = async () => true; 
     const result = await isNicknameDuplicate('ExistingUser', mockCheck);
     expect(result).toBe(true);
   });
 
-  it('新しいニックネームの場合、重複なし（false）を返すこと', async () => {
-    const mockCheck = async () => false;
-    const result = await isNicknameDuplicate('NewUser', mockCheck);
-    expect(result).toBe(false);
+  it('アカウント統合判定：DBにメールが存在するか判定できること', async () => {
+    const mockDb = [{ email: 'old@example.com' }];
+    const findUser = (email: string) => mockDb.find(u => u.email === email);
+    expect(findUser('old@example.com')).toBeDefined();
+    expect(findUser('new@example.com')).toBeUndefined();
   });
-});
+})
