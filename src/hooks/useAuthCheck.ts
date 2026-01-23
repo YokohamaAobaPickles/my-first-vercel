@@ -1,12 +1,14 @@
 /**
  * Filename: hooks/useAuthCheck.ts
- * Version : V1.1.0
- * Update: 2026-01-22
+ * Version : V1.2.0
+ * Update: 2026-01-23
  * 内容：
+ * V1.2.0
+ * - LINEアプリ内から起動かブラウザから起動かを判定
  * V1.1.0
- * 内容：認証状態と登録状況をチェックし、ページで使いやすい値を返す
-  * V1.0.0
- * LINEログイン状態と会員登録の有無をチェックし、未登録なら登録画面へ誘導する
+ * - 認証状態と登録状況をチェックし、ページで使いやすい値を返す
+ * V1.0.0
+ * - LINEログイン状態と会員登録の有無をチェックし、未登録なら登録画面へ誘導する
  */
 
 import { useEffect, useState } from 'react'
@@ -25,29 +27,39 @@ export const useAuthCheck = () => {
     const initAuth = async () => {
       try {
         await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID! })
-        if (!liff.isLoggedIn()) {
-          liff.login()
-          return
+
+        // A. LINEアプリ内の場合
+        if (liff.isInClient()) {
+          if (!liff.isLoggedIn()) {
+            liff.login() // トーク内からなら即ログイン
+            return
+          }
+        }
+        // B. 外部ブラウザの場合
+        else {
+          if (!liff.isLoggedIn() && pathname !== '/members/login') {
+            // ログイン画面以外なら飛ばすが、ログイン画面なら留まる
+            router.push('/members/login')
+            return
+          }
         }
 
-        const profile = await liff.getProfile()
-        setCurrentLineId(profile.userId)
-        
-        const { data: member, error } = await supabase
-          .from('members')
-          .select('line_id, roles, status')
-          .eq('line_id', profile.userId)
-          .single()
+        // --- ログイン済み（またはログイン不要画面）の処理 ---
+        if (liff.isLoggedIn()) {
+          const profile = await liff.getProfile()
+          setCurrentLineId(profile.userId)
 
-        // 1. 未登録なら登録画面へ強制移動（登録画面自体にいる時は除く）
-        if ((error || !member) && pathname !== '/members/register') {
-          router.push('/members/register')
-          return
-        }
+          const { data: member } = await supabase
+            .from('members')
+            .select('line_id, roles, status')
+            .eq('line_id', profile.userId)
+            .single()
 
-        // 2. 登録がある場合はロールを保持
-        if (member) {
-          setUserRoles(member.roles)
+          if (member) {
+            setUserRoles(member.roles)
+          } else if (pathname !== '/members/login') {
+            router.push('/members/login')
+          }
         }
       } catch (err) {
         console.error('Auth Check Error:', err)
@@ -55,7 +67,6 @@ export const useAuthCheck = () => {
         setIsLoading(false)
       }
     }
-
     initAuth()
   }, [router, pathname])
 
