@@ -1,6 +1,6 @@
 /**
  * Filename: hooks/useAuthCheck.ts
- * Version : V1.2.0
+ * Version : V1.2.1
  * Update: 2026-01-23
  * 内容：
  * V1.2.0
@@ -28,20 +28,18 @@ export const useAuthCheck = () => {
       try {
         await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID! })
 
-        // A. LINEアプリ内の場合
-        if (liff.isInClient()) {
-          if (!liff.isLoggedIn()) {
-            liff.login() // トーク内からなら即ログイン
-            return
+        if (!liff.isLoggedIn()) {
+          if (liff.isInClient()) {
+            // LINEアプリ内なら、そのまま自動ログイン
+            liff.login();
+          } else {
+            // 外部ブラウザ（PC）なら、自前のログイン・登録画面へ誘導
+            // ※ すでにそのページにいる場合は何もしない（無限ループ防止）
+            if (pathname !== '/members/login') {
+              router.push('/members/login');
+            }
           }
-        }
-        // B. 外部ブラウザの場合
-        else {
-          if (!liff.isLoggedIn() && pathname !== '/members/login') {
-            // ログイン画面以外なら飛ばすが、ログイン画面なら留まる
-            router.push('/members/login')
-            return
-          }
+          return;
         }
 
         // --- ログイン済み（またはログイン不要画面）の処理 ---
