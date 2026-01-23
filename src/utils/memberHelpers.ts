@@ -7,6 +7,8 @@
  * 会員管理に関する純粋なロジック関数群
  */
 
+import { supabase } from '@/lib/supabase'
+
 export type RegistrationData = {
   line_id?: string | null
   nickname?: string
