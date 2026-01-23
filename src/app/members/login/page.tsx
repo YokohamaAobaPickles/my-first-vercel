@@ -459,3 +459,11 @@ const ratingPlaceholderStyle: React.CSSProperties = {
   fontSize: '0.8rem',
   color: '#888'
 }
+
+const annotationStyle: React.CSSProperties = {
+  fontSize: '0.7rem',
+  color: '#ffcc00', // 注意を引くために少し黄色がかった色
+  marginTop: '-8px',
+  marginBottom: '12px',
+  lineHeight: '1.4'
+}
