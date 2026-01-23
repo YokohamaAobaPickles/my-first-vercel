@@ -13,8 +13,7 @@
  * - 氏名、会員種別、役割、ステータスの表示に対応
  */
 
-import { fetchMembers } from '../../../lib/supabase'
-import { formatMemberName } from '../../../lib/memberLogic'
+import { fetchMembers } from '@/utils/memberHelpers'
 import Link from 'next/link'
 
 export default async function MemberListPage() {
