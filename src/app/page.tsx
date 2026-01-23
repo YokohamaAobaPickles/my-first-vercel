@@ -1,5 +1,5 @@
 /**
- * Filename: profile/page.tsx
+ * Filename: members/page.tsx
  * Version : V1.2.1
  * Update  : 2026-01-21 
  * 修正内容：
@@ -8,7 +8,7 @@
  * V1.2.0
  * - canManagementMembers ユーティリティを使用して管理者メニューを表示
  * V1.1.0
- * - マイページ表示用（A-01）
+ * - プロファイルの表示
  * - membersテーブルからLINE IDをキーに会員情報を取得
  * - 氏名、会員種別、役割、ステータスの表示に対応
  */

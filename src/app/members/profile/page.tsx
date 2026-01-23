@@ -1,5 +1,5 @@
 /**
- * Filename: profile/page.tsx
+ * Filename: members/profile/page.tsx
  * Version : V1.1.2
  * Update  : 2026-01-21 
  * 修正内容：
@@ -8,7 +8,7 @@
  * V1.1.1
  * - liff.login に redirectUri を追加し、ローカル開発中に本番へ飛ばされる問題を修正
  * V1.1.0
- * - マイページ表示用（A-01）
+ * - ログイン後のマイページ(プロファイル)表示
  * - membersテーブルからLINE IDをキーに会員情報を取得
  * - 氏名、会員種別、役割、ステータスの表示に対応
  */
@@ -16,7 +16,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import liff from '@line/liff'
-import { supabase } from '../../lib/supabase'
+import { supabase } from '../../../lib/supabase'
 import Link from 'next/link'
 
 // membersテーブルの型定義（主要なもののみ抜粋）
