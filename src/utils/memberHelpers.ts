@@ -16,7 +16,8 @@ export type RegistrationData = {
   password?: string
   emg_tel: string
   emg_rel: string
-};
+  req_date?: string; // ★ これを追加
+}
 
 export const validateRegistration = (data: RegistrationData) => {
   const errors: string[] = []

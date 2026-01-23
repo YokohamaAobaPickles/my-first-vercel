@@ -21,17 +21,17 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import liff from '@line/liff'
-import { 
-  validateRegistration, 
-  isNicknameDuplicate, 
-  checkNicknameInSupabase 
+import {
+  validateRegistration,
+  isNicknameDuplicate,
+  checkNicknameInSupabase
 } from '@/utils/memberHelpers'
 
 export default function LoginPage() {
   const router = useRouter()
   // 既存の認証チェックフックを利用（デグレ防止の要）
   const { isLoading, currentLineId } = useAuthCheck()
-  
+
   const [lineDisplayName, setLineDisplayName] = useState('')
   const [isCheckingNick, setIsCheckingNick] = useState(false)
   const [nickError, setNickError] = useState('')
@@ -77,12 +77,13 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // 1. テスト済みロジックでバリデーション
+
+    // 1. バリデーション用のデータ（req_dateは含めない）
+    const submitNickname = currentLineId ? lineDisplayName : formData.nickname
     const validation = validateRegistration({
       ...formData,
       line_id: currentLineId,
-      nickname: currentLineId ? lineDisplayName : formData.nickname
+      nickname: submitNickname
     })
 
     if (!validation.isValid || nickError) {
@@ -91,13 +92,13 @@ export default function LoginPage() {
     }
 
     setSaving(true)
-    
-    // 2. DB保存（member_number, status, rolesはDBのデフォルト値に任せる）
+
+    // 2. DB保存用のデータ
     const { error } = await supabase.from('members').insert({
+      ...formData,
       line_id: currentLineId,
-      nickname: currentLineId ? lineDisplayName : formData.nickname,
-      req_date: new Date().toISOString(),
-      ...formData
+      nickname: submitNickname,
+      req_date: new Date().toISOString() // 保存直前に付与
     })
 
     if (!error) {
@@ -121,30 +122,30 @@ export default function LoginPage() {
         {!currentLineId && (
           <section style={sectionStyle}>
             <label style={labelStyle}>ニックネーム (ユニーク) *</label>
-            <input 
-              type="text" 
-              required 
-              value={formData.nickname} 
-              onChange={e => handleNickChange(e.target.value)} 
-              style={inputStyle} 
+            <input
+              type="text"
+              required
+              value={formData.nickname}
+              onChange={e => handleNickChange(e.target.value)}
+              style={inputStyle}
             />
-            {isCheckingNick && <span style={{fontSize: '0.7rem'}}>確認中...</span>}
-            {nickError && <div style={{color: 'red', fontSize: '0.8rem'}}>{nickError}</div>}
+            {isCheckingNick && <span style={{ fontSize: '0.7rem' }}>確認中...</span>}
+            {nickError && <div style={{ color: 'red', fontSize: '0.8rem' }}>{nickError}</div>}
           </section>
         )}
 
         <section style={sectionStyle}>
           <h3 style={headerStyle}>基本情報</h3>
-          <input type="email" placeholder="メールアドレス" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} style={inputStyle} />
-          <input type="text" placeholder="氏名 (漢字)" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} style={inputStyle} />
-          <input type="text" placeholder="氏名 (ローマ字)" required value={formData.name_roma} onChange={e => setFormData({...formData, name_roma: e.target.value})} style={inputStyle} />
-          <input type="password" placeholder="パスワード (6文字以上)" required value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} style={inputStyle} />
+          <input type="email" placeholder="メールアドレス" required value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} style={inputStyle} />
+          <input type="text" placeholder="氏名 (漢字)" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} style={inputStyle} />
+          <input type="text" placeholder="氏名 (ローマ字)" required value={formData.name_roma} onChange={e => setFormData({ ...formData, name_roma: e.target.value })} style={inputStyle} />
+          <input type="password" placeholder="パスワード (6文字以上)" required value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} style={inputStyle} />
         </section>
 
         <section style={sectionStyle}>
           <h3 style={headerStyle}>緊急連絡先</h3>
-          <input type="tel" placeholder="緊急連絡先電話番号" required value={formData.emg_tel} onChange={e => setFormData({...formData, emg_tel: e.target.value})} style={inputStyle} />
-          <input type="text" placeholder="続柄" required value={formData.emg_rel} onChange={e => setFormData({...formData, emg_rel: e.target.value})} style={inputStyle} />
+          <input type="tel" placeholder="緊急連絡先電話番号" required value={formData.emg_tel} onChange={e => setFormData({ ...formData, emg_tel: e.target.value })} style={inputStyle} />
+          <input type="text" placeholder="続柄" required value={formData.emg_rel} onChange={e => setFormData({ ...formData, emg_rel: e.target.value })} style={inputStyle} />
         </section>
 
         {/* 他の項目（住所、DUPR、メモ等）は必要に応じて追加 */}
