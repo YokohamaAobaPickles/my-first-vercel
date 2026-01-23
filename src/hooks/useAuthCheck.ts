@@ -1,14 +1,14 @@
 /**
  * Filename: hooks/useAuthCheck.ts
- * Version : V1.2.1
+ * Version : V1.4.0
  * Update: 2026-01-23
  * 内容：
- * V1.2.0
- * - LINEアプリ内から起動かブラウザから起動かを判定
- * V1.1.0
+ * V1.4.0
+ * - PCブラウザ時のリダイレクトガードを強化 (returnの追加とreplaceへの変更)
+ * V1.3.0
+ * - LINEアプリ内(isInClient)判定による自動ログインの切り分け
+ * V1.1.0 ~ V1.2.1
  * - 認証状態と登録状況をチェックし、ページで使いやすい値を返す
- * V1.0.0
- * - LINEログイン状態と会員登録の有無をチェックし、未登録なら登録画面へ誘導する
  */
 
 import { useEffect, useState } from 'react'
@@ -28,45 +28,55 @@ export const useAuthCheck = () => {
       try {
         await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID! })
 
+        // 1. 未ログイン時の振り分け
         if (!liff.isLoggedIn()) {
           if (liff.isInClient()) {
-            // LINEアプリ内なら、そのまま自動ログイン
-            liff.login();
+            // LINEアプリ内なら、自動的にLINEログイン画面へ
+            liff.login()
           } else {
-            // 外部ブラウザ（PC）なら、自前のログイン・登録画面へ誘導
-            // ※ すでにそのページにいる場合は何もしない（無限ループ防止）
+            // PCブラウザ等の場合、自前のログイン・登録画面へ誘導
             if (pathname !== '/members/login') {
-              router.push('/members/login');
+              router.replace('/members/login')
             }
           }
-          return;
+          // 未ログイン時はここで確実に終了させる
+          setIsLoading(false)
+          return 
         }
 
-        // --- ログイン済み（またはログイン不要画面）の処理 ---
-        if (liff.isLoggedIn()) {
-          const profile = await liff.getProfile()
-          setCurrentLineId(profile.userId)
+        // 2. ログイン済みの処理 (ここに来る = liff.isLoggedIn() は true)
+        const profile = await liff.getProfile()
+        setCurrentLineId(profile.userId)
 
-          const { data: member } = await supabase
-            .from('members')
-            .select('line_id, roles, status')
-            .eq('line_id', profile.userId)
-            .single()
+        const { data: member, error } = await supabase
+          .from('members')
+          .select('line_id, roles, status')
+          .eq('line_id', profile.userId)
+          .single()
 
-          if (member) {
-            setUserRoles(member.roles)
-          } else if (pathname !== '/members/login') {
-            router.push('/members/login')
+        if (member) {
+          // 登録済み：ロールをセット
+          setUserRoles(member.roles)
+        } else {
+          // 未登録（LINEログインはしてるがDBにない）：登録画面へ
+          if (pathname !== '/members/login') {
+            router.replace('/members/login')
           }
         }
+
       } catch (err) {
         console.error('Auth Check Error:', err)
+        // 重大なエラー（LIFF初期化失敗等）でも、PCなら自前画面へ逃がす
+        if (pathname !== '/members/login') {
+          router.replace('/members/login')
+        }
       } finally {
         setIsLoading(false)
       }
     }
+
     initAuth()
-  }, [router, pathname])
+  }, [router, pathname]) // 依存配列に router と pathname を含め、パス変更時に再チェック
 
   return { isLoading, userRoles, currentLineId }
 }
