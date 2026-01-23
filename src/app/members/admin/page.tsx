@@ -14,6 +14,7 @@
  */
 
 import { fetchMembers } from '@/utils/memberHelpers'
+import { formatMemberName } from '@/utils/memberHelpers'
 import Link from 'next/link'
 
 export default async function MemberListPage() {

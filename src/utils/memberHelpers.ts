@@ -83,3 +83,11 @@ export const fetchMembers = async () => {
   if (error) throw error;
   return data;
 };
+
+/**
+ * 名前を表示用に整形するロジック（新定義）
+ * 氏名がない場合のフォールバックなどを共通化
+ */
+export const formatMemberName = (name: string | null) => {
+  return name ? name.trim() : '未登録';
+};
