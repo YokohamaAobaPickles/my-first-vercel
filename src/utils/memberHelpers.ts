@@ -68,3 +68,18 @@ export const checkNicknameInSupabase = async (nickname: string): Promise<boolean
   
   return !!data; // データがあれば重複(true)
 };
+
+/**
+ * 会員一覧を取得する (管理者用)
+ * A-31 仕様に基づき、会員番号順に取得
+ */
+export const fetchMembers = async () => {
+  const { supabase } = await import('@/lib/supabase');
+  const { data, error } = await supabase
+    .from('members')
+    .select('*')
+    .order('member_number', { ascending: true });
+
+  if (error) throw error;
+  return data;
+};

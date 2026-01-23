@@ -15,19 +15,3 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 // Supabaseクライアントを作成してエクスポートします
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
-/*
-// 共通で使う「データ取得関数」サンプル作成時に作成した。
-// 会員管理画面作成時に使うかもしれないのでコメントアウトとして残す
-export async function fetchMembers() {
-  const { data, error } = await supabase
-    .from('members') // 実際にSupabaseに作ったテーブル名
-    .select('*')
-  
-  if (error) {
-    console.error('Supabaseエラー:', error)
-    throw error
-  }
-  return data
-}
-*/
