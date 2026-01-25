@@ -26,7 +26,7 @@ function MemberNewContent() {
   const [mode, setMode] = useState<'member' | 'guest'>('member')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  
+
   const [formData, setFormData] = useState({
     name: '',
     name_roma: '',
@@ -42,9 +42,9 @@ function MemberNewContent() {
   useEffect(() => {
     // 観測用デバッグログ
     console.log(
-      '[DEBUG-NEW]', 
-      'isLoading:', isLoading, 
-      'email:', searchParams.get('email'), 
+      '[DEBUG-NEW]',
+      'isLoading:', isLoading,
+      'email:', searchParams.get('email'),
       'lineNickname:', lineNickname
     )
 
@@ -64,18 +64,33 @@ function MemberNewContent() {
 
   return (
     <div style={containerStyle}>
+
+      {/* ★実機の画面最上部にデバッグ情報を出す */}
+      <div style={{
+        padding: '10px',
+        backgroundColor: '#333',
+        fontSize: '12px',
+        border: '1px solid #f00',
+        marginBottom: '10px'
+      }}>
+        [DEBUG] <br />
+        URL Email: {searchParams.get('email') || 'NULL'} <br />
+        LINE Nick: {lineNickname || 'NULL'} <br />
+        Loading: {isLoading ? 'TRUE' : 'FALSE'}
+      </div>
+
       <h1 style={titleStyle}>
         {currentLineId ? 'LINE会員登録' : '新規登録'}
       </h1>
 
       <div style={tabContainerStyle}>
-        <button 
+        <button
           onClick={() => setMode('member')}
           style={mode === 'member' ? activeTabStyle : inactiveTabStyle}
         >
           新規会員登録
         </button>
-        <button 
+        <button
           onClick={() => setMode('guest')}
           style={mode === 'guest' ? activeTabStyle : inactiveTabStyle}
         >
@@ -84,68 +99,68 @@ function MemberNewContent() {
       </div>
 
       <div style={sectionTitleStyle}>認証情報</div>
-      <input 
-        style={inputStyle} 
-        placeholder="メールアドレス" 
+      <input
+        style={inputStyle}
+        placeholder="メールアドレス"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        readOnly={!!searchParams.get('email')} 
+        readOnly={!!searchParams.get('email')}
       />
-      <input 
-        type="password" 
-        style={inputStyle} 
-        placeholder="パスワード" 
+      <input
+        type="password"
+        style={inputStyle}
+        placeholder="パスワード"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
 
       <div style={sectionTitleStyle}>基本情報</div>
-      <input 
-        style={inputStyle} 
-        placeholder="氏名（漢字）" 
+      <input
+        style={inputStyle}
+        placeholder="氏名（漢字）"
         value={formData.name}
-        onChange={(e) => setFormData({...formData, name: e.target.value})}
+        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
       />
-      <input 
-        style={inputStyle} 
-        placeholder="氏名（ローマ字）" 
+      <input
+        style={inputStyle}
+        placeholder="氏名（ローマ字）"
         value={formData.name_roma}
-        onChange={(e) => setFormData({...formData, name_roma: e.target.value})}
+        onChange={(e) => setFormData({ ...formData, name_roma: e.target.value })}
       />
-      <input 
-        style={inputStyle} 
-        placeholder="ニックネーム" 
+      <input
+        style={inputStyle}
+        placeholder="ニックネーム"
         value={formData.nickname}
-        onChange={(e) => setFormData({...formData, nickname: e.target.value})}
+        onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
       />
 
       <div style={sectionTitleStyle}>プロフィール情報</div>
-      <input 
-        style={inputStyle} 
-        placeholder="DUPR ID" 
+      <input
+        style={inputStyle}
+        placeholder="DUPR ID"
         value={formData.dupr_id}
-        onChange={(e) => setFormData({...formData, dupr_id: e.target.value})}
+        onChange={(e) => setFormData({ ...formData, dupr_id: e.target.value })}
       />
-      <textarea 
-        style={{ ...inputStyle, height: '80px' }} 
-        placeholder="自己紹介・メモ" 
+      <textarea
+        style={{ ...inputStyle, height: '80px' }}
+        placeholder="自己紹介・メモ"
         value={formData.profile_memo}
-        onChange={(e) => setFormData({...formData, profile_memo: e.target.value})}
+        onChange={(e) => setFormData({ ...formData, profile_memo: e.target.value })}
       />
 
       <div style={sectionTitleStyle}>緊急連絡先・住所</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-        <input 
-          style={inputStyle} 
-          placeholder="電話番号" 
+        <input
+          style={inputStyle}
+          placeholder="電話番号"
           value={formData.emg_tel}
-          onChange={(e) => setFormData({...formData, emg_tel: e.target.value})}
+          onChange={(e) => setFormData({ ...formData, emg_tel: e.target.value })}
         />
-        <input 
-          style={inputStyle} 
-          placeholder="続柄" 
+        <input
+          style={inputStyle}
+          placeholder="続柄"
           value={formData.emg_rel}
-          onChange={(e) => setFormData({...formData, emg_rel: e.target.value})}
+          onChange={(e) => setFormData({ ...formData, emg_rel: e.target.value })}
         />
       </div>
 
