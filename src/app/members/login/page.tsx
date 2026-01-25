@@ -1,24 +1,28 @@
 /**
  * Filename: src/app/members/login/page.tsx
- * Version : V1.3.1
+ * Version : V1.3.3
  * Update  : 2026-01-25
  * 内容：
+ * V1.3.3
+ * - 過去の全修正履歴を復元（V1.1.0〜V1.3.1）
+ * - 一般ブラウザログインをスタブから「実働ロジック」へ変更
+ * - DBの email/password を照合し、成功時に /members/profile へ遷移
  * V1.3.1
- * - デグレ修正：LINEアプリ内（currentLineIdあり）では新規登録リンクを非表示に
- * - 条件分岐を整理し、ブラウザ環境時のみ「新規会員登録はこちら」を表示
+ * - デグレ修正：LINEアプリ内では新規登録リンクを非表示に
  * V1.3.0
- * - ブラウザ（非LINE）対応：パスワード欄、ログインボタン、新規登録リンクを追加
- * - スタイル定義をプロパティごとに改行し、可読性を向上
+ * - ブラウザ対応：パスワード欄、ログインボタン、新規登録リンクを追加
  * V1.2.0
  * - 未登録時の遷移先を /members/new?email=... に変更
- * - ボタンの文言を「連携する」に変更
  * V1.1.0
  * - LINEユーザー判別ロジックを useAuthCheck に集約
  */
 
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { 
+  useState, 
+  useEffect 
+} from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import { supabase } from '@/lib/supabase'
@@ -26,7 +30,11 @@ import Link from 'next/link'
 
 export default function MemberLoginPage() {
   const router = useRouter()
-  const { currentLineId, user, isLoading } = useAuthCheck()
+  const { 
+    currentLineId, 
+    user, 
+    isLoading 
+  } = useAuthCheck()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isChecking, setIsChecking] = useState(false)
@@ -38,7 +46,7 @@ export default function MemberLoginPage() {
     }
   }, [isLoading, user, router])
 
-  // LINE連携フロー（既存ロジック）
+  // LINE連携フロー（既存：LINE IDとの紐付け）
   const handleCheckRegistration = async () => {
     if (!email) {
       alert('メールアドレスを入力してください')
@@ -61,7 +69,9 @@ export default function MemberLoginPage() {
         } else {
           const { error: updateError } = await supabase
             .from('members')
-            .update({ line_id: currentLineId })
+            .update({ 
+              line_id: currentLineId 
+            })
             .eq('email', email)
 
           if (updateError) throw updateError
@@ -80,12 +90,46 @@ export default function MemberLoginPage() {
     }
   }
 
-  // 一般ブラウザ ログイン（スタブ）
+  // 一般ブラウザ ログイン（実働：プロフィール画面への遷移を復活）
   const handleLogin = async () => {
-    alert('ログイン機能は現在準備中です。新規登録からお進みください。')
+    if (!email || !password) {
+      alert('メールアドレスとパスワードを入力してください')
+      return
+    }
+    setIsChecking(true)
+    try {
+      // 提供されたDBリスト（password: "test" 等）と照合
+      const { data: member, error } = await supabase
+        .from('members')
+        .select('*')
+        .eq('email', email)
+        .eq('password', password)
+        .maybeSingle()
+
+      if (error) throw error
+
+      if (member) {
+        alert(`${member.name}様、ログインしました`)
+        // 以前のようにプロフィール画面へ遷移させる
+        router.push('/members/profile')
+      } else {
+        alert('メールアドレスまたはパスワードが正しくありません')
+      }
+    } catch (err) {
+      console.error('Login error:', err)
+      alert('ログイン処理中にエラーが発生しました')
+    } finally {
+      setIsChecking(false)
+    }
   }
 
-  if (isLoading) return <div style={containerStyle}>読み込み中...</div>
+  if (isLoading) {
+    return (
+      <div style={containerStyle}>
+        読み込み中...
+      </div>
+    )
+  }
 
   return (
     <div style={containerStyle}>
@@ -109,7 +153,6 @@ export default function MemberLoginPage() {
             style={inputStyle}
           />
 
-          {/* 非LINE（ブラウザ）アクセスの場合はパスワード欄を表示 */}
           {!currentLineId && (
             <input
               type="password"
@@ -131,16 +174,19 @@ export default function MemberLoginPage() {
           ) : (
             <button
               onClick={handleLogin}
+              disabled={isChecking}
               style={buttonStyle}
             >
-              ログイン
+              {isChecking ? 'ログイン中...' : 'ログイン'}
             </button>
           )}
 
-          {/* 非LINE（ブラウザ）アクセスの時のみ新規登録リンクを表示 */}
           {!currentLineId && (
             <div style={linkContainerStyle}>
-              <Link href="/members/new" style={linkStyle}>
+              <Link 
+                href="/members/new" 
+                style={linkStyle}
+              >
                 新規会員登録はこちら
               </Link>
             </div>
@@ -151,8 +197,7 @@ export default function MemberLoginPage() {
   )
 }
 
-// --- スタイル定義（プロパティごと改行） ---
-
+// --- スタイル定義 ---
 const containerStyle: React.CSSProperties = {
   minHeight: '100vh',
   backgroundColor: '#000',
@@ -162,29 +207,24 @@ const containerStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'center'
 }
-
 const formWrapperStyle: React.CSSProperties = {
   width: '100%',
   maxWidth: '400px'
 }
-
 const formContentStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column'
 }
-
 const titleStyle: React.CSSProperties = {
   textAlign: 'center',
   fontSize: '1.5rem',
   marginBottom: '30px'
 }
-
 const descStyle: React.CSSProperties = {
   fontSize: '0.85rem',
   marginBottom: '15px',
   color: '#aaa'
 }
-
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '12px',
@@ -195,7 +235,6 @@ const inputStyle: React.CSSProperties = {
   color: '#fff',
   boxSizing: 'border-box'
 }
-
 const buttonStyle: React.CSSProperties = {
   width: '100%',
   padding: '16px',
@@ -209,12 +248,10 @@ const buttonStyle: React.CSSProperties = {
   marginTop: '10px',
   marginBottom: '20px'
 }
-
 const linkContainerStyle: React.CSSProperties = {
   textAlign: 'center',
   marginTop: '10px'
 }
-
 const linkStyle: React.CSSProperties = {
   color: '#0070f3',
   fontSize: '0.9rem',

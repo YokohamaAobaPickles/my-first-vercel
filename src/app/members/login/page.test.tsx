@@ -1,8 +1,12 @@
 /**
  * Filename: src/app/members/login/page.test.tsx
- * Version : V1.3.3
+ * Version : V1.3.9
  * Update  : 2026-01-25
  * 内容：
+ * V1.3.9
+ * - ログイン照合ロジックの検証を追加（実働化したログイン機能に対応）
+ * - 既存の全テストケース（LINE環境制限、自動遷移、紐付けフロー）を完全維持
+ * - 1行1プロパティのルールを徹底
  * V1.3.3
  * - 項目漏れを修正：全4件のテストケースを完全に網羅
  * - LINE連携済みユーザーの自動遷移検証を復旧
@@ -12,35 +16,55 @@
  * - toHaveAttribute エラー回避のため、getAttribute('href') 参照に変更
  */
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { 
+  render, 
+  screen, 
+  fireEvent, 
+  waitFor 
+} from '@testing-library/react'
+import { 
+  describe, 
+  it, 
+  expect, 
+  vi, 
+  beforeEach 
+} from 'vitest'
 import MemberLoginPage from './page'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
+// --- モック設定 ---
 vi.mock('@/hooks/useAuthCheck')
+
 vi.mock('next/navigation', () => ({
   useRouter: vi.fn(),
 }))
+
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     from: vi.fn(() => ({
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
+      update: vi.fn().mockReturnThis(),
       maybeSingle: vi.fn(),
     })),
   },
 }))
 
-describe('MemberLoginPage (全ケース網羅・環境別検証)', () => {
+// window.alertのモック
+const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => {})
+
+describe('MemberLoginPage (全ケース網羅・ログイン実働検証 V1.3.9)', () => {
   const mockPush = vi.fn()
   const TEST_LINE_ID = 'U_LOGIN_TEST_123'
   const TEST_EMAIL = 'new-user@example.com'
 
   beforeEach(() => {
     vi.clearAllMocks()
-    ;(useRouter as any).mockReturnValue({ push: mockPush })
+    ;(useRouter as any).mockReturnValue({ 
+      push: mockPush 
+    })
   })
 
   // 1. LINE環境での表示制限（デグレ防止）
@@ -50,7 +74,9 @@ describe('MemberLoginPage (全ケース網羅・環境別検証)', () => {
       currentLineId: TEST_LINE_ID,
       user: null,
     })
+    
     render(<MemberLoginPage />)
+    
     const link = screen.queryByText(/新規会員登録はこちら/i)
     expect(link).toBeNull()
   })
@@ -62,9 +88,12 @@ describe('MemberLoginPage (全ケース網羅・環境別検証)', () => {
       currentLineId: null,
       user: null,
     })
+    
     render(<MemberLoginPage />)
+    
     expect(screen.getByPlaceholderText(/パスワード/i)).toBeTruthy()
     expect(screen.getByRole('button', { name: /ログイン/i })).toBeTruthy()
+    
     const regLink = screen.getByText(/新規会員登録はこちら/i)
     expect(regLink.closest('a')?.getAttribute('href')).toBe('/members/new')
   })
@@ -76,7 +105,9 @@ describe('MemberLoginPage (全ケース網羅・環境別検証)', () => {
       currentLineId: TEST_LINE_ID,
       user: { id: 'existing_user' },
     })
+    
     render(<MemberLoginPage />)
+    
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith('/members/profile')
     })
@@ -93,13 +124,21 @@ describe('MemberLoginPage (全ケース網羅・環境別検証)', () => {
       ;(supabase.from as any).mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        maybeSingle: vi.fn().mockResolvedValue({ 
+          data: null, 
+          error: null 
+        }),
       })
 
       render(<MemberLoginPage />)
+      
       const emailInput = screen.getByPlaceholderText(/メールアドレス/i)
-      fireEvent.change(emailInput, { target: { value: TEST_EMAIL } })
-      fireEvent.click(screen.getByRole('button', { name: /連携する/i }))
+      fireEvent.change(emailInput, { 
+        target: { value: TEST_EMAIL } 
+      })
+      fireEvent.click(screen.getByRole('button', { 
+        name: /連携する/i 
+      }))
 
       await waitFor(() => {
         expect(mockPush).toHaveBeenCalledWith(
@@ -108,4 +147,83 @@ describe('MemberLoginPage (全ケース網羅・環境別検証)', () => {
       })
     }
   )
+
+  // 5. 【新規追加】ブラウザログイン成功時の挙動 (V1.3.9)
+  it('【ブラウザ】正しい情報でログインするとプロフィールへ遷移すること', async () => {
+    ;(useAuthCheck as any).mockReturnValue({
+      isLoading: false,
+      currentLineId: null,
+      user: null,
+    })
+    
+    const mockMember = { 
+      id: 'test-id', 
+      name: 'テストCCC', 
+      email: 'test@ccc' 
+    }
+    ;(supabase.from as any).mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({ 
+        data: mockMember, 
+        error: null 
+      }),
+    })
+
+    render(<MemberLoginPage />)
+
+    fireEvent.change(screen.getByPlaceholderText(/メールアドレスを入力/), {
+      target: { value: 'test@ccc' }
+    })
+    fireEvent.change(screen.getByPlaceholderText(/パスワードを入力/), {
+      target: { value: 'test' }
+    })
+    fireEvent.click(screen.getByRole('button', { 
+      name: 'ログイン' 
+    }))
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/members/profile')
+    })
+  })
+
+// 6. 【修正】ブラウザログイン失敗時の挙動 (V1.4.0)
+  it('【ブラウザ】認証失敗時に適切なエラーアラートが出ること', async () => {
+    ;(useAuthCheck as any).mockReturnValue({
+      isLoading: false,
+      currentLineId: null,
+      user: null,
+    })
+    
+    ;(supabase.from as any).mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({ 
+        data: null, 
+        error: null 
+      }),
+    })
+
+    render(<MemberLoginPage />)
+
+    // メールアドレスの入力を追加（これがないとバリデーションで止まる）
+    fireEvent.change(screen.getByPlaceholderText(/メールアドレスを入力/), {
+      target: { value: 'test@ccc' }
+    })
+    
+    fireEvent.change(screen.getByPlaceholderText(/パスワードを入力/), {
+      target: { value: 'wrong-pass' }
+    })
+    
+    fireEvent.click(screen.getByRole('button', { 
+      name: 'ログイン' 
+    }))
+
+    await waitFor(() => {
+      // これで本来の「認証失敗」のアラートを検証できます
+      expect(alertMock).toHaveBeenCalledWith('メールアドレスまたはパスワードが正しくありません')
+    })
+  })
+
+  
 })
