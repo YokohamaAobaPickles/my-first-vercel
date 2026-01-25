@@ -1,8 +1,11 @@
 /**
  * Filename: members/profile/page.tsx
- * Version : V1.1.2
- * Update  : 2026-01-21 
+ * Version : V1.2.0
+ * Update  : 2026-01-25
  * 修正内容：
+ * V1.2.0
+ * - useAuthCheck を導入し、独自の認証・データ取得ロジックを廃止（重複を解消）
+ * - 未登録ユーザー時に「会員情報が見つからない」エラー画面が出る不具合を修正
  * V1.1.2
  * - liff.login のリダイレクト先を明示的に指定
  * V1.1.1
@@ -14,71 +17,29 @@
  */
 
 'use client'
-import { useEffect, useState } from 'react'
-import liff from '@line/liff'
-import { supabase } from '../../../lib/supabase'
+import { useAuthCheck } from '@/hooks/useAuthCheck'
 import Link from 'next/link'
 
-// membersテーブルの型定義（主要なもののみ抜粋）
-type Member = {
-  name: string
-  nickname: string
-  member_kind: string
-  roles: string
-  status: string
-  member_number: string
-}
-
 export default function ProfilePage() {
-  const [member, setMember] = useState<Member | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [errorMsg, setErrorMsg] = useState('')
+  // useAuthCheck ですべての認証とデータ取得を一元管理
+  const { user, isLoading } = useAuthCheck()
 
-  useEffect(() => {
-    const fetchMemberData = async () => {
-      try {
-        await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID! })
-        if (!liff.isLoggedIn()) {
-          // 修正ポイント：現在の場所(localhost)をリダイレクト先に指定
-          liff.login({ redirectUri: 'https://my-first-vercel-tyxu.vercel.app/profile' })
-          return
-        }
+  // 1. 認証チェック中またはデータ取得中はローディングを表示
+  if (isLoading) {
+    return <div style={{ padding: '20px' }}>読み込み中...</div>
+  }
 
-        const liffProfile = await liff.getProfile()
+  // 2. ユーザーデータがない場合
+  // (通常は useAuthCheck 内で /members/login へリダイレクトされる)
+  if (!user) {
+    return (
+      <div style={{ padding: '20px' }}>
+        認証を確認しています...
+      </div>
+    )
+  }
 
-        // membersテーブルからLINE IDで検索
-        const { data, error } = await supabase
-          .from('members')
-          .select('name, nickname, member_kind, roles, status, member_number')
-          .eq('line_id', liffProfile.userId)
-          .single()
-
-        if (error) {
-          console.error('Supabase Error:', error)
-          setErrorMsg('会員情報が見つかりませんでした。事務局へお問い合わせください。')
-        } else {
-          setMember(data)
-        }
-      } catch (err) {
-        console.error('LIFF Error:', err)
-        setErrorMsg('プロフィールの取得に失敗しました。')
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchMemberData()
-  }, [])
-
-  if (loading) return <div style={{ padding: '20px' }}>読み込み中...</div>
-
-  if (errorMsg) return (
-    <div style={{ padding: '20px', color: 'red' }}>
-      {errorMsg}
-      <br /><br />
-      <Link href="/announcements">お知らせへ戻る</Link>
-    </div>
-  )
-
+  // 3. 正常な表示（V1.1.0 で構築したスタイルを維持）
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto' }}>
       <h1 style={{ fontSize: '1.5rem', marginBottom: '20px' }}>マイページ</h1>
@@ -91,29 +52,31 @@ export default function ProfilePage() {
       }}>
         <div style={{ marginBottom: '15px' }}>
           <label style={{ fontSize: '0.8rem', color: '#888' }}>氏名</label>
-          <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{member?.name} ({member?.nickname})</div>
+          <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
+            {user.name} ({user.nickname})
+          </div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
           <div>
             <label style={{ fontSize: '0.8rem', color: '#888' }}>会員番号</label>
-            <div>{member?.member_number || '未発行'}</div>
+            <div>{user.member_number || '未発行'}</div>
           </div>
           <div>
             <label style={{ fontSize: '0.8rem', color: '#888' }}>会員種別</label>
-            <div>{member?.member_kind}</div>
+            <div>{user.member_kind}</div>
           </div>
           <div>
             <label style={{ fontSize: '0.8rem', color: '#888' }}>役割</label>
-            <div>{member?.roles}</div>
+            <div>{user.roles}</div>
           </div>
           <div>
             <label style={{ fontSize: '0.8rem', color: '#888' }}>ステータス</label>
             <span style={{
-              color: member?.status === 'active' ? 'green' : 'orange',
+              color: user.status === 'active' ? 'green' : 'orange',
               fontWeight: 'bold'
             }}>
-              {member?.status === 'active' ? '有効' : member?.status}
+              {user.status === 'active' ? '有効' : user.status}
             </span>
           </div>
         </div>
