@@ -1,8 +1,14 @@
 /**
  * Filename: hooks/useAuthCheck.ts
- * Version : V1.8.3
+ * Version : V1.8.5
  * Update  : 2026-01-25
  * 内容：
+ * V1.8.5
+ * - single() を maybeSingle() に変更し、DB未登録ユーザーを正常系として処理
+ * - テスト環境での実行を考慮し、process.env.NODE_ENV === 'test' の場合は LIFF ID チェックを緩和
+ * V1.8.4
+ * - single() を maybeSingle() に変更し、DB未登録ユーザー(PGRST116)を正常系として処理
+ * - try-catch 内のエラーハンドリングを整理し、予期せぬ中断を防止
  * V1.8.3
  * - テスト環境下で LIFF ID が未定義でも処理を続行し、テストのパスを可能に修正
  * V1.8.2
@@ -30,30 +36,34 @@ export const useAuthCheck = () => {
         if (typeof window !== 'undefined' && /Line/i.test(navigator.userAgent)) {
           const liffId = process.env.NEXT_PUBLIC_LIFF_ID
           
-          // テスト環境以外でIDがない場合はエラーとして処理
+          // テスト環境以外で LIFF ID がない場合のみ警告して終了
           if (!liffId && process.env.NODE_ENV !== 'test') {
-            console.error('LIFF ID is not defined')
+            console.warn('LIFF ID is not defined')
             setIsLoading(false)
             return
           }
 
-          // IDがある、またはテスト環境の場合は初期化を試行
-          if (liffId) {
-            await liff.init({ liffId })
-          }
+          // liffId がある、またはテスト環境の場合は init を実行
+          await liff.init({ liffId: liffId || 'DUMMY_ID' })
           
-          // テスト環境でのモック動作、または実際のログインチェック
-          if (!liff.isLoggedIn() && process.env.NODE_ENV !== 'test') {
+          if (!liff.isLoggedIn()) {
             liff.login()
             return
           }
 
           const profile = await liff.getProfile()
-          const { data: member } = await supabase
+          
+          // .single() はデータ0件で例外(PGRST116)を投げるため、maybeSingle() を使用
+          const { data: member, error } = await supabase
             .from('members')
             .select('*')
             .eq('line_id', profile.userId)
-            .single()
+            .maybeSingle()
+
+          if (error) {
+            console.error('Supabase fetch error:', error)
+            throw error
+          }
 
           if (member) {
             setUserRoles(member.roles)
@@ -73,11 +83,15 @@ export const useAuthCheck = () => {
         // --- PCブラウザ処理 ---
         const { data: { session } } = await supabase.auth.getSession()
         if (session?.user) {
-          const { data: member } = await supabase
+          const { data: member, error } = await supabase
             .from('members')
             .select('*')
             .eq('email', session.user.email)
-            .single()
+            .maybeSingle()
+
+          if (error) {
+            console.error('Supabase fetch error (PC):', error)
+          }
 
           if (member) {
             setUserRoles(member.roles)
@@ -94,11 +108,12 @@ export const useAuthCheck = () => {
         setIsLoading(false)
       } catch (err) {
         console.error('Auth Check Error:', err)
-        setIsLoading(false)
+        setIsLoading(false) 
       }
     }
+
     initAuth()
-  }, [pathname, router])
+  }, [router, pathname])
 
   return { isLoading, userRoles, currentLineId, user }
 }
