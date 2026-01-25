@@ -1,8 +1,11 @@
 /**
  * Filename: announcements/[id]/page.tsx
- * Version : V1.3.0
- * Update  : 2026-01-23 
- * 修正内容：
+ * Version : V1.4.0
+ * Update  : 2026-01-25
+ * 内容：
+ * V1.4.0
+ * - PCユーザー(LINE IDなし)でもemailをキーに既読記録を可能に修正
+ * - ダークモードレイアウトへの適合
  * V1.3.0
  * - hookAuthCheck対応
  * V1.2.1
@@ -27,47 +30,137 @@ import { useAuthCheck } from '@/hooks/useAuthCheck'
 
 export default function AnnouncementDetailPage() {
   const { id } = useParams()
-  const { isLoading: isAuthLoading, userRoles, currentLineId } = useAuthCheck()
+  const { 
+    isLoading: isAuthLoading, 
+    userRoles, 
+    currentLineId, 
+    user 
+  } = useAuthCheck()
+  
   const [announcement, setAnnouncement] = useState<any>(null)
 
   useEffect(() => {
-    if (isAuthLoading || !currentLineId || !id) return
+    // 認証待ち、または記事IDがない場合は何もしない
+    if (isAuthLoading || !id) return
 
     const fetchAndRecord = async () => {
-      // 1. 詳細取得
-      const { data } = await supabase.from('announcements').select('*').eq('id', id).single()
+      // 1. 記事本体の取得
+      const { data } = await supabase
+        .from('announcements')
+        .select('*')
+        .eq('id', id)
+        .single()
+      
       if (data) setAnnouncement(data)
 
-      // 2. 既読記録 (upsertで重複防止)
-      await supabase.from('announcement_reads').upsert({
-        announcement_id: Number(id),
-        user_id: currentLineId,
-        read_at: new Date().toISOString()
-      }, { onConflict: 'announcement_id, user_id' })
+      // 2. 既読の記録 (PC/LINE両対応のキー)
+      const userKey = currentLineId || user?.email
+      if (userKey) {
+        await supabase.from('announcement_reads').upsert({
+          announcement_id: Number(id),
+          line_id: userKey,
+          read_at: new Date().toISOString()
+        }, { 
+          onConflict: 'announcement_id, line_id' 
+        })
+      }
     }
-
     fetchAndRecord()
-  }, [isAuthLoading, currentLineId, id])
+  }, [isAuthLoading, currentLineId, user, id])
 
-  if (isAuthLoading || !announcement) return <div style={{ padding: '20px' }}>読み込み中...</div>
+  if (isAuthLoading || !announcement) {
+    return <div style={containerStyle}>読み込み中...</div>
+  }
 
   return (
-    <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-        <div style={{ fontSize: '0.9rem', color: '#666' }}>{announcement.publish_date}</div>
+    <div style={containerStyle}>
+      <div style={navWrapperStyle}>
+        <Link href="/announcements" style={backLinkStyle}>
+          ← 記事一覧に戻る
+        </Link>
         {canManageAnnouncements(userRoles) && (
-          <Link href={`/announcements/edit/${announcement.id}`} style={{
-            backgroundColor: '#f0f0f0', padding: '6px 14px', borderRadius: '15px', fontSize: '0.8rem', border: '1px solid #ccc', textDecoration: 'none'
-          }}>編集</Link>
+          <Link 
+            href={`/announcements/edit/${announcement.id}`} 
+            style={editBtnStyle}
+          >
+            編集する
+          </Link>
         )}
       </div>
-      <h1 style={{ fontSize: '1.4rem', lineHeight: '1.4' }}>
-        {announcement.is_pinned && '📌 '}{announcement.title}
-      </h1>
-      <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.8', borderTop: '1px solid #eee', paddingTop: '20px', marginTop: '20px' }}>
-        {announcement.content}
+
+      <div style={contentCardStyle}>
+        <div style={dateLabelStyle}>{announcement.publish_date}</div>
+        <h1 style={detailTitleStyle}>{announcement.title}</h1>
+        <hr style={dividerStyle} />
+        <div style={bodyTextStyle}>
+          {announcement.content}
+        </div>
       </div>
-      <Link href="/announcements" style={{ display: 'block', marginTop: '40px' }}>一覧に戻る</Link>
     </div>
   )
+}
+
+// スタイル定義
+const containerStyle: React.CSSProperties = {
+  backgroundColor: '#000',
+  color: '#fff',
+  minHeight: '100vh',
+  padding: '20px',
+  maxWidth: '800px',
+  margin: '0 auto'
+}
+
+const navWrapperStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: '25px'
+}
+
+const backLinkStyle: React.CSSProperties = {
+  color: '#aaa',
+  textDecoration: 'none',
+  fontSize: '0.9rem'
+}
+
+const editBtnStyle: React.CSSProperties = {
+  backgroundColor: '#222',
+  color: '#fff',
+  padding: '8px 18px',
+  borderRadius: '20px',
+  fontSize: '0.85rem',
+  border: '1px solid #444',
+  textDecoration: 'none'
+}
+
+const contentCardStyle: React.CSSProperties = {
+  backgroundColor: '#111',
+  padding: '25px',
+  borderRadius: '12px',
+  border: '1px solid #222'
+}
+
+const dateLabelStyle: React.CSSProperties = {
+  fontSize: '0.85rem',
+  color: '#666',
+  marginBottom: '10px'
+}
+
+const detailTitleStyle: React.CSSProperties = {
+  fontSize: '1.6rem',
+  lineHeight: '1.4',
+  marginBottom: '20px'
+}
+
+const dividerStyle: React.CSSProperties = {
+  border: 'none',
+  borderTop: '1px solid #333',
+  margin: '20px 0'
+}
+
+const bodyTextStyle: React.CSSProperties = {
+  lineHeight: '1.8',
+  whiteSpace: 'pre-wrap',
+  fontSize: '1.1rem',
+  color: '#ddd'
 }
