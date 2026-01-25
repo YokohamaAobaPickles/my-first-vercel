@@ -1,15 +1,16 @@
 /**
  * Filename: src/app/members/login/page.tsx
- * Version : V1.2.0
+ * Version : V1.3.0
  * Update  : 2026-01-25
  * 内容：
+ * V1.3.0
+ * - ブラウザ（非LINE）対応：パスワード欄、ログインボタン、新規登録リンクを追加
+ * - スタイル定義をプロパティごとに改行し、可読性を向上
  * V1.2.0
- * - 未登録時の遷移先を /members/new?email=... に変更し、情報引き継ぎを可能にする
- * - ボタンの文言を「次へ進む」から「連携する」に変更（テストと整合）
- * - 既に会員登録済みの場合は useEffect で自動遷移するロジックを強化
+ * - 未登録時の遷移先を /members/new?email=... に変更
+ * - ボタンの文言を「連携する」に変更
  * V1.1.0
  * - LINEユーザー判別ロジックを useAuthCheck に集約
- * - 80文字ワードラップ適用
  */
 
 'use client'
@@ -18,11 +19,13 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import { supabase } from '@/lib/supabase'
+import Link from 'next/link'
 
 export default function MemberLoginPage() {
   const router = useRouter()
   const { currentLineId, user, isLoading } = useAuthCheck()
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [isChecking, setIsChecking] = useState(false)
 
   // 既に連携済み（userが存在する）場合はプロフィールへ
@@ -32,12 +35,12 @@ export default function MemberLoginPage() {
     }
   }, [isLoading, user, router])
 
+  // LINE連携フロー（既存ロジック）
   const handleCheckRegistration = async () => {
     if (!email) {
       alert('メールアドレスを入力してください')
       return
     }
-
     setIsChecking(true)
     try {
       const { data: member, error } = await supabase
@@ -49,12 +52,10 @@ export default function MemberLoginPage() {
       if (error) throw error
 
       if (member) {
-        // 既存ユーザー：既にLINE IDがあるか確認
         if (member.line_id) {
           alert('このメールアドレスは既にLINEと連携されています。')
           router.push('/members/profile')
         } else {
-          // LINE IDを紐付けて更新
           const { error: updateError } = await supabase
             .from('members')
             .update({ line_id: currentLineId })
@@ -65,7 +66,6 @@ export default function MemberLoginPage() {
           router.push('/members/profile')
         }
       } else {
-        // 新規ユーザー：メールアドレスをパラメータに付けて登録画面へ
         const query = new URLSearchParams({ email }).toString()
         router.push(`/members/new?${query}`)
       }
@@ -77,16 +77,27 @@ export default function MemberLoginPage() {
     }
   }
 
+  // 一般ブラウザ ログイン（新規追加予定のスタブ）
+  const handleLogin = async () => {
+    alert('ログイン機能は現在準備中です。新規登録からお進みください。')
+  }
+
   if (isLoading) return <div style={containerStyle}>読み込み中...</div>
 
   return (
     <div style={containerStyle}>
       <div style={formWrapperStyle}>
-        <h1 style={titleStyle}>LINE会員確認</h1>
-        <div>
+        <h1 style={titleStyle}>
+          {currentLineId ? 'LINE会員確認' : 'ログイン'}
+        </h1>
+        
+        <div style={formContentStyle}>
           <p style={descStyle}>
-            登録状況を確認します。メールアドレスを入力してください。
+            {currentLineId 
+              ? '登録状況を確認します。メールアドレスを入力してください。'
+              : 'メールアドレスとパスワードを入力してください。'}
           </p>
+
           <input
             type="email"
             placeholder="メールアドレスを入力"
@@ -94,20 +105,48 @@ export default function MemberLoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             style={inputStyle}
           />
-          <button
-            onClick={handleCheckRegistration}
-            disabled={isChecking}
-            style={buttonStyle}
-          >
-            {isChecking ? '確認中...' : '連携する'}
-          </button>
+
+          {/* ブラウザアクセスの場合はパスワード欄を表示 */}
+          {!currentLineId && (
+            <input
+              type="password"
+              placeholder="パスワードを入力"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={inputStyle}
+            />
+          )}
+
+          {currentLineId ? (
+            <button
+              onClick={handleCheckRegistration}
+              disabled={isChecking}
+              style={buttonStyle}
+            >
+              {isChecking ? '確認中...' : '連携する'}
+            </button>
+          ) : (
+            <button
+              onClick={handleLogin}
+              style={buttonStyle}
+            >
+              ログイン
+            </button>
+          )}
+
+          <div style={linkContainerStyle}>
+            <Link href="/members/new" style={linkStyle}>
+              新規会員登録はこちら
+            </Link>
+          </div>
         </div>
       </div>
     </div>
   )
 }
 
-// スタイル定義（V1.1.0を継承）
+// --- スタイル定義 ---
+
 const containerStyle: React.CSSProperties = {
   minHeight: '100vh',
   backgroundColor: '#000',
@@ -121,6 +160,11 @@ const containerStyle: React.CSSProperties = {
 const formWrapperStyle: React.CSSProperties = {
   width: '100%',
   maxWidth: '400px'
+}
+
+const formContentStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column'
 }
 
 const titleStyle: React.CSSProperties = {
@@ -156,5 +200,17 @@ const buttonStyle: React.CSSProperties = {
   fontWeight: 'bold',
   cursor: 'pointer',
   fontSize: '1rem',
+  marginTop: '10px',
   marginBottom: '20px'
+}
+
+const linkContainerStyle: React.CSSProperties = {
+  textAlign: 'center',
+  marginTop: '10px'
+}
+
+const linkStyle: React.CSSProperties = {
+  color: '#0070f3',
+  fontSize: '0.9rem',
+  textDecoration: 'none'
 }
