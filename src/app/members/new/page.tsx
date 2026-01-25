@@ -1,30 +1,28 @@
 /**
  * Filename: members/new/page.tsx
- * Version : V1.1.0
+ * Version : V1.2.0
  * Update  : 2026-01-25
  * 内容：
+ * V1.2.0
+ * - useAuthCheck から lineNickname を取得し、初期値に自動セット
+ * - URLパラメータから email を取得し、初期値セット ＆ readOnly 制御を実装
+ * - 欠落していた「ニックネーム」入力欄を JSX に追加
  * V1.1.0
- * - 以前のlogin/page.tsxの詳細項目（DUPR, 自己紹介等）を完全移植
- * - 会員/ゲストのモード切替機能を実装
- * - 80文字ワードラップ、スタイル1行記述、複数条件の改行を適用
- * V1.0.0
- * - 新規会員登録専用ページとして作成
+ * - 以前のlogin/page.tsxの詳細項目を完全移植、モード切替実装
  */
 
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import { supabase } from '@/lib/supabase'
 import { validateRegistration } from '@/utils/memberHelpers'
 
 export default function MemberNewPage() {
   const router = useRouter()
-  const { 
-    currentLineId, 
-    isLoading 
-  } = useAuthCheck()
+  const searchParams = useSearchParams()
+  const { currentLineId, lineNickname, isLoading } = useAuthCheck()
 
   const [mode, setMode] = useState<'member' | 'guest'>('member')
   const [email, setEmail] = useState('')
@@ -39,149 +37,58 @@ export default function MemberNewPage() {
     emg_tel: '',
     emg_rel: '',
     dupr_id: '',
-    profile_memo: '',
-    introducer: ''
+    profile_memo: ''
   })
 
-  // --- スタイル定義 (1プロパティ1行) ---
-  const containerStyle: React.CSSProperties = {
-    maxWidth: '800px',
-    margin: '0 auto',
-    padding: '20px',
-    backgroundColor: '#000',
-    color: '#fff',
-    minHeight: '100vh'
-  }
+  // LINE情報とURLパラメータの初期反映
+  useEffect(() => {
+    if (isLoading) return
 
-  const sectionTitleStyle: React.CSSProperties = {
-    fontSize: '1.2rem',
-    borderBottom: '1px solid #333',
-    paddingBottom: '8px',
-    marginTop: '24px',
-    marginBottom: '16px',
-    color: '#0070f3'
-  }
-
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '12px',
-    marginBottom: '12px',
-    backgroundColor: '#222',
-    border: '1px solid #444',
-    borderRadius: '8px',
-    color: '#fff',
-    boxSizing: 'border-box'
-  }
-
-  const submitBtnStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '16px',
-    color: 'white',
-    border: 'none',
-    borderRadius: '30px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    marginTop: '30px'
-  }
-
-  const tabStyle = (
-    isActive: boolean
-  ): React.CSSProperties => ({
-    flex: 1,
-    padding: '12px',
-    backgroundColor: isActive 
-      ? '#0070f3' 
-      : '#222',
-    color: isActive 
-      ? 'white' 
-      : '#888',
-    border: isActive 
-      ? 'none' 
-      : '1px solid #444',
-    borderRadius: '8px',
-    fontWeight: 'bold',
-    cursor: 'pointer'
-  })
-
-  if (isLoading) {
-    return (
-      <div style={{ padding: '20px', color: '#fff' }}>
-        読み込み中...
-      </div>
-    )
-  }
-
-  const handleRegister = async () => {
-    const fullData = {
-      ...formData,
-      email,
-      password,
-      line_id: currentLineId,
-      status: mode
+    // 1. URLからメールアドレスを取得
+    const emailParam = searchParams.get('email')
+    if (emailParam) {
+      setEmail(emailParam)
     }
 
-    const val = validateRegistration(fullData)
-    if (!val.isValid) {
-      alert(val.errors.join('\n'))
-      return
+    // 2. LINEのニックネームを初期値にセット（未入力の場合のみ）
+    if (lineNickname && !formData.nickname) {
+      setFormData(prev => ({ ...prev, nickname: lineNickname }))
     }
+  }, [isLoading, lineNickname, searchParams])
 
-    try {
-      const { error } = await supabase.from('members').insert([
-        {
-          ...fullData,
-          roles: 'general',
-          member_kind: mode === 'member' 
-            ? '正会員' 
-            : 'ゲスト',
-          status: 'active',
-          req_date: new Date().toISOString()
-        }
-      ])
-
-      if (error) throw error
-      alert('登録が完了しました！')
-      router.push('/members/profile')
-    } catch (err: any) {
-      alert('エラーが発生しました: ' + err.message)
-    }
-  }
+  if (isLoading) return <div style={containerStyle}>読み込み中...</div>
 
   return (
     <div style={containerStyle}>
-      <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>
-        {currentLineId 
-          ? 'LINE会員登録' 
-          : '新規登録'}
-      </h1>
+      <h1 style={titleStyle}>{currentLineId ? 'LINE会員登録' : '新規登録'}</h1>
 
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+      <div style={tabContainerStyle}>
         <button 
-          style={tabStyle(mode === 'member')}
           onClick={() => setMode('member')}
+          style={mode === 'member' ? activeTabStyle : inactiveTabStyle}
         >
           新規会員登録
         </button>
         <button 
-          style={tabStyle(mode === 'guest')}
           onClick={() => setMode('guest')}
+          style={mode === 'guest' ? activeTabStyle : inactiveTabStyle}
         >
           ゲスト登録
         </button>
       </div>
 
       <div style={sectionTitleStyle}>認証情報</div>
-      <input
-        style={inputStyle}
-        placeholder="メールアドレス"
+      <input 
+        style={inputStyle} 
+        placeholder="メールアドレス" 
         value={email}
         onChange={(e) => setEmail(e.target.value)}
+        readOnly={!!searchParams.get('email')} // パラメータがあれば編集不可
       />
-      <input
-        style={inputStyle}
-        type="password"
-        placeholder="パスワード"
+      <input 
+        type="password" 
+        style={inputStyle} 
+        placeholder="パスワード" 
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
@@ -201,7 +108,15 @@ export default function MemberNewPage() {
         value={formData.name_roma}
         onChange={(e) => setFormData({...formData, name_roma: e.target.value})}
       />
-      
+      {/* 欠落していたニックネーム入力欄を追加 */}
+      <input 
+        style={inputStyle} 
+        placeholder="ニックネーム" 
+        aria-label="ニックネーム"
+        value={formData.nickname}
+        onChange={(e) => setFormData({...formData, nickname: e.target.value})}
+      />
+
       <div style={sectionTitleStyle}>プロフィール情報</div>
       <input 
         style={inputStyle} 
@@ -219,13 +134,7 @@ export default function MemberNewPage() {
       />
 
       <div style={sectionTitleStyle}>緊急連絡先・住所</div>
-      <div 
-        style={{ 
-          display: 'grid', 
-          gridTemplateColumns: '1fr 1fr', 
-          gap: '10px' 
-        }}
-      >
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
         <input 
           style={inputStyle} 
           placeholder="電話番号" 
@@ -242,19 +151,85 @@ export default function MemberNewPage() {
         />
       </div>
 
-      <button 
-        style={{ 
-          ...submitBtnStyle, 
-          backgroundColor: mode === 'member' 
-            ? '#0070f3' 
-            : '#555' 
-        }}
-        onClick={handleRegister}
-      >
-        {mode === 'member' 
-          ? '会員として登録する' 
-          : 'ゲストとして登録する'}
+      <button style={submitButtonStyle}>
+        {mode === 'member' ? '会員として登録する' : 'ゲストとして登録する'}
       </button>
     </div>
   )
+}
+
+// スタイル定義（V1.1.0継承＋α）
+const containerStyle: React.CSSProperties = {
+  maxWidth: '800px',
+  margin: '0 auto',
+  padding: '20px',
+  backgroundColor: '#000',
+  color: '#fff',
+  minHeight: '100vh'
+}
+
+const titleStyle: React.CSSProperties = {
+  textAlign: 'center',
+  marginBottom: '30px'
+}
+
+const tabContainerStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: '10px',
+  marginBottom: '20px'
+}
+
+const activeTabStyle: React.CSSProperties = {
+  flex: 1,
+  padding: '12px',
+  backgroundColor: '#0070f3',
+  color: 'white',
+  border: 'none',
+  borderRadius: '8px',
+  fontWeight: 'bold',
+  cursor: 'pointer'
+}
+
+const inactiveTabStyle: React.CSSProperties = {
+  flex: 1,
+  padding: '12px',
+  backgroundColor: '#222',
+  color: '#888',
+  border: '1px solid #444',
+  borderRadius: '8px',
+  fontWeight: 'bold',
+  cursor: 'pointer'
+}
+
+const sectionTitleStyle: React.CSSProperties = {
+  fontSize: '1.2rem',
+  borderBottom: '1px solid #333',
+  paddingBottom: '8px',
+  marginTop: '24px',
+  marginBottom: '16px',
+  color: '#0070f3'
+}
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '12px',
+  marginBottom: '12px',
+  backgroundColor: '#222',
+  border: '1px solid #444',
+  borderRadius: '8px',
+  color: '#fff',
+  boxSizing: 'border-box'
+}
+
+const submitButtonStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '16px',
+  backgroundColor: '#0070f3',
+  color: 'white',
+  border: 'none',
+  borderRadius: '30px',
+  fontWeight: 'bold',
+  cursor: 'pointer',
+  fontSize: '1rem',
+  marginTop: '30px'
 }

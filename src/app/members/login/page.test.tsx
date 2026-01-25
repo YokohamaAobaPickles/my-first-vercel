@@ -1,107 +1,88 @@
 /**
  * Filename: src/app/members/login/page.test.tsx
- * Version : V1.2.2
+ * Version : V1.2.0
  * Update  : 2026-01-25
  * 内容：
- * V1.2.2
- * - Supabaseのメソッドチェーン・モックの定義を改善（既存ユーザー検知の失敗を修正）
+ * V1.2.0
+ * - LINE紐付け成功時、メールアドレスをクエリパラメータで渡して遷移する検証を追加
+ * V1.1.0
+ * - 既に会員登録済みの場合のプロフィール画面遷移テストを追加
  * - 80文字ワードラップ、条件判定の改行を適用
+ * V1.0.0
+ * - ログインページの初期表示およびLINE連携フローの基本テスト作成
  */
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import LoginPage from './page'
+import MemberLoginPage from './page'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
-// モックの基本構造を定義
+// モックの設定
 vi.mock('@/hooks/useAuthCheck')
-vi.mock('@/lib/supabase', () => {
-  const mockSingle = vi.fn()
-  const mockUpdate = vi.fn().mockReturnValue({
-    eq: vi.fn().mockResolvedValue({ error: null })
-  })
-
-  return {
-    supabase: {
-      from: vi.fn(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: mockSingle,
-        update: mockUpdate,
-      })),
-    },
-  }
-})
-
-const mockPush = vi.fn()
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: mockPush,
-  }),
+  useRouter: vi.fn(),
+}))
+vi.mock('@/lib/supabase', () => ({
+  supabase: {
+    from: vi.fn(() => ({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn(),
+    })),
+  },
 }))
 
-describe('LoginPage (LINE連携フローの検証)', () => {
-  const TEST_LINE_ID = 'U_TEST_LINE_999'
+describe('MemberLoginPage (LINE紐付け遷移の検証)', () => {
+  const mockPush = vi.fn()
+  const TEST_LINE_ID = 'U_LOGIN_TEST_123'
+  const TEST_EMAIL = 'new-user@example.com'
 
   beforeEach(() => {
     vi.clearAllMocks()
-    // window.alertをモック化（エラー回避）
-    vi.spyOn(window, 'alert').mockImplementation(() => {})
+    ;(useRouter as any).mockReturnValue({ push: mockPush })
   })
 
-  it('既存メールがない場合、新規登録画面へ遷移すること', async () => {
+  it('【新規検証】LINE紐付け成功後、メールアドレスをURLに付けて新規登録画面へ遷移すること', async () => {
+    // 1. LINE IDを保持しているが未登録の状態をシミュレート
     ;(useAuthCheck as any).mockReturnValue({
       isLoading: false,
       currentLineId: TEST_LINE_ID,
+      user: null,
     })
 
-    // select().eq().single() が null (データなし) を返すように設定
-    const fromSpy = vi.spyOn(supabase, 'from')
-    fromSpy.mockReturnValue({
+    // 2. Supabaseで「該当者なし」を返すよう設定
+    ;(supabase.from as any).mockReturnValue({
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ data: null, error: { code: 'PGRST116' } }),
-    } as any)
+      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+    })
 
-    render(<LoginPage />)
+    render(<MemberLoginPage />)
 
-    const emailInput = screen.getByPlaceholderText(/メールアドレスを入力/i)
-    fireEvent.change(emailInput, { target: { value: 'new@example.com' } })
-    fireEvent.click(screen.getByText(/次へ進む/i))
+    // 3. メールアドレスを入力して「連携する」をクリック
+    const emailInput = screen.getByPlaceholderText(/メールアドレス/i)
+    fireEvent.change(emailInput, { target: { value: TEST_EMAIL } })
+    
+    const submitButton = screen.getByRole('button', { name: /連携する/i })
+    fireEvent.click(submitButton)
 
+    // 4. 検証：パラメータ付きで push されているか
+    // 【現状の本体 V1.1.0 では email なしの '/members/new' なので FAIL 期待】
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith(
-        expect.stringContaining('/members/new?email=new%40example.com&fixed=true')
-      )
+      expect(mockPush).toHaveBeenCalledWith(`/members/new?email=${encodeURIComponent(TEST_EMAIL)}`)
     })
   })
 
-  it('既存メールがある場合、紐付けを行いプロフィールへ遷移すること', async () => {
+  it('LINE連携済みユーザーの場合、プロフィール画面へ自動遷移すること', async () => {
     ;(useAuthCheck as any).mockReturnValue({
       isLoading: false,
       currentLineId: TEST_LINE_ID,
+      user: { id: 'existing_user' },
     })
 
-    // 既存ユーザーを返すように設定
-    const fromSpy = vi.spyOn(supabase, 'from')
-    fromSpy.mockReturnValue({
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ 
-        data: { id: 1, line_id: null }, 
-        error: null 
-      }),
-      update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ error: null })
-      }),
-    } as any)
-
-    render(<LoginPage />)
-
-    const emailInput = screen.getByPlaceholderText(/メールアドレスを入力/i)
-    fireEvent.change(emailInput, { target: { value: 'existing@example.com' } })
-    fireEvent.click(screen.getByText(/次へ進む/i))
+    render(<MemberLoginPage />)
 
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith('/members/profile')

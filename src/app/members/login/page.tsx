@@ -1,204 +1,160 @@
 /**
- * Filename: members/login/page.tsx
- * Version : V2.9.2
+ * Filename: src/app/members/login/page.tsx
+ * Version : V1.2.0
  * Update  : 2026-01-25
  * 内容：
- * V2.9.2
- * - LINEユーザーの初回アクセス時、既存登録確認のためのメール入力フローを実装
- * - DBにメールが存在するかで「既存紐付け」か「新規登録」かを分岐
- * - 80文字ワードラップ、スタイル1行記述、複数条件の改行を適用
+ * V1.2.0
+ * - 未登録時の遷移先を /members/new?email=... に変更し、情報引き継ぎを可能にする
+ * - ボタンの文言を「次へ進む」から「連携する」に変更（テストと整合）
+ * - 既に会員登録済みの場合は useEffect で自動遷移するロジックを強化
+ * V1.1.0
+ * - LINEユーザー判別ロジックを useAuthCheck に集約
+ * - 80文字ワードラップ適用
  */
 
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import { supabase } from '@/lib/supabase'
 
-export default function LoginPage() {
+export default function MemberLoginPage() {
   const router = useRouter()
-  const { 
-    currentLineId, 
-    isLoading 
-  } = useAuthCheck()
-
+  const { currentLineId, user, isLoading } = useAuthCheck()
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [checking, setChecking] = useState(false)
+  const [isChecking, setIsChecking] = useState(false)
 
-  if (isLoading) {
-    return (
-      <div 
-        style={{ 
-          padding: '20px', 
-          color: '#fff', 
-          backgroundColor: '#000', 
-          minHeight: '100vh' 
-        }}
-      >
-        読み込み中...
-      </div>
-    )
-  }
+  // 既に連携済み（userが存在する）場合はプロフィールへ
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.push('/members/profile')
+    }
+  }, [isLoading, user, router])
 
-  // LINEユーザーの既存チェック・紐付けロジック
-  const handleCheckEmail = async () => {
-    if (!email) return
-    setChecking(true)
+  const handleCheckRegistration = async () => {
+    if (!email) {
+      alert('メールアドレスを入力してください')
+      return
+    }
 
+    setIsChecking(true)
     try {
-      const { data, error } = await supabase
+      const { data: member, error } = await supabase
         .from('members')
-        .select('id, line_id')
+        .select('*')
         .eq('email', email)
-        .single()
+        .maybeSingle()
 
-      if (data) {
-        // 既存ユーザーあり
-        if (!data.line_id) {
-          // 未連携なら紐付け
-          await supabase
-            .from('members')
-            .update({ line_id: currentLineId })
-            .eq('id', data.id)
-          
-          alert('LINEとの紐付けが完了しました。')
-          router.push('/members/profile')
-        } else if (data.line_id === currentLineId) {
-          // 既に自分と連携済み
+      if (error) throw error
+
+      if (member) {
+        // 既存ユーザー：既にLINE IDがあるか確認
+        if (member.line_id) {
+          alert('このメールアドレスは既にLINEと連携されています。')
           router.push('/members/profile')
         } else {
-          alert('このメールは既に別のLINEアカウントと紐付いています。')
+          // LINE IDを紐付けて更新
+          const { error: updateError } = await supabase
+            .from('members')
+            .update({ line_id: currentLineId })
+            .eq('email', email)
+
+          if (updateError) throw updateError
+          alert('LINEとの紐付けが完了しました！')
+          router.push('/members/profile')
         }
       } else {
-        // 既存ユーザーなし -> 新規登録画面へ（メール固定フラグ付き）
-        router.push(
-          `/members/new?email=${encodeURIComponent(email)}&fixed=true`
-        )
+        // 新規ユーザー：メールアドレスをパラメータに付けて登録画面へ
+        const query = new URLSearchParams({ email }).toString()
+        router.push(`/members/new?${query}`)
       }
     } catch (err) {
-      // PGRST116 (データなし) 等のエラー時も新規登録へ
-      router.push(
-        `/members/new?email=${encodeURIComponent(email)}&fixed=true`
-      )
+      console.error('Check error:', err)
+      alert('エラーが発生しました。')
     } finally {
-      setChecking(false)
+      setIsChecking(false)
     }
   }
 
-  // --- スタイル定義 (1プロパティ1行) ---
-  const containerStyle: React.CSSProperties = {
-    minHeight: '100vh',
-    backgroundColor: '#000',
-    color: '#fff',
-    padding: '20px',
-    boxSizing: 'border-box',
-    display: 'flex',
-    justifyContent: 'center',
-  }
-
-  const innerStyle: React.CSSProperties = {
-    width: '100%',
-    maxWidth: '400px',
-  }
-
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '12px',
-    marginBottom: '12px',
-    backgroundColor: '#222',
-    border: '1px solid #444',
-    borderRadius: '8px',
-    color: '#fff',
-    boxSizing: 'border-box',
-  }
-
-  const primaryBtnStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '16px',
-    backgroundColor: '#0070f3',
-    color: 'white',
-    border: 'none',
-    borderRadius: '30px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    marginBottom: '20px',
-  }
+  if (isLoading) return <div style={containerStyle}>読み込み中...</div>
 
   return (
     <div style={containerStyle}>
-      <div style={innerStyle}>
-        <h1 
-          style={{ 
-            textAlign: 'center', 
-            fontSize: '1.5rem', 
-            marginBottom: '30px' 
-          }}
-        >
-          {currentLineId ? 'LINE会員確認' : 'ログイン / 新規登録'}
-        </h1>
-
-        {currentLineId ? (
-          <div>
-            <p 
-              style={{ 
-                fontSize: '0.85rem', 
-                marginBottom: '15px', 
-                color: '#aaa' 
-              }}
-            >
-              登録状況を確認します。メールアドレスを入力してください。
-            </p>
-            <input
-              type="email"
-              placeholder="メールアドレスを入力"
-              style={inputStyle}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <button 
-              onClick={handleCheckEmail} 
-              disabled={checking}
-              style={primaryBtnStyle}
-            >
-              {checking ? '確認中...' : '次へ進む'}
-            </button>
-          </div>
-        ) : (
-          <form onSubmit={(e) => e.preventDefault()}>
-            <input
-              type="email"
-              placeholder="メールアドレス"
-              style={inputStyle}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <input
-              type="password"
-              placeholder="パスワード"
-              style={inputStyle}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            <button type="submit" style={primaryBtnStyle}>
-              ログイン
-            </button>
-            <div style={{ textAlign: 'center', marginTop: '20px' }}>
-              <Link 
-                href="/members/new" 
-                style={{ color: '#aaa', fontSize: '0.9rem' }}
-              >
-                新規登録はこちら
-              </Link>
-            </div>
-          </form>
-        )}
+      <div style={formWrapperStyle}>
+        <h1 style={titleStyle}>LINE会員確認</h1>
+        <div>
+          <p style={descStyle}>
+            登録状況を確認します。メールアドレスを入力してください。
+          </p>
+          <input
+            type="email"
+            placeholder="メールアドレスを入力"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={inputStyle}
+          />
+          <button
+            onClick={handleCheckRegistration}
+            disabled={isChecking}
+            style={buttonStyle}
+          >
+            {isChecking ? '確認中...' : '連携する'}
+          </button>
+        </div>
       </div>
     </div>
   )
+}
+
+// スタイル定義（V1.1.0を継承）
+const containerStyle: React.CSSProperties = {
+  minHeight: '100vh',
+  backgroundColor: '#000',
+  color: '#fff',
+  padding: '20px',
+  boxSizing: 'border-box',
+  display: 'flex',
+  justifyContent: 'center'
+}
+
+const formWrapperStyle: React.CSSProperties = {
+  width: '100%',
+  maxWidth: '400px'
+}
+
+const titleStyle: React.CSSProperties = {
+  textAlign: 'center',
+  fontSize: '1.5rem',
+  marginBottom: '30px'
+}
+
+const descStyle: React.CSSProperties = {
+  fontSize: '0.85rem',
+  marginBottom: '15px',
+  color: '#aaa'
+}
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '12px',
+  marginBottom: '12px',
+  backgroundColor: '#222',
+  border: '1px solid #444',
+  borderRadius: '8px',
+  color: '#fff',
+  boxSizing: 'border-box'
+}
+
+const buttonStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '16px',
+  backgroundColor: '#0070f3',
+  color: 'white',
+  border: 'none',
+  borderRadius: '30px',
+  fontWeight: 'bold',
+  cursor: 'pointer',
+  fontSize: '1rem',
+  marginBottom: '20px'
 }
