@@ -12,12 +12,6 @@
  * - 既読記録の修正。デバッグ用コンソール文追加
  * V1.2.0
  * - 既読記録の追加
- * V1.1.0
- * - 管理者権限がある場合のみ、右上に「編集」ボタンを表示
- * V1.0.0
- * - お知らせ詳細表示用（B-02）
- * - ページ閲覧時の自動既読記録機能（B-03）
- * - LIFF連携による閲覧ユーザー特定
  */
 
 'use client'
@@ -40,7 +34,6 @@ export default function AnnouncementDetailPage() {
   const [announcement, setAnnouncement] = useState<any>(null)
 
   useEffect(() => {
-    // 認証待ち、または記事IDがない場合は何もしない
     if (isAuthLoading || !id) return
 
     const fetchAndRecord = async () => {
@@ -53,7 +46,7 @@ export default function AnnouncementDetailPage() {
       
       if (data) setAnnouncement(data)
 
-      // 2. 既読の記録 (PC/LINE両対応のキー)
+      // 2. 既読の記録
       const userKey = currentLineId || user?.email
       if (userKey) {
         await supabase.from('announcement_reads').upsert({
@@ -83,7 +76,7 @@ export default function AnnouncementDetailPage() {
             href={`/announcements/edit/${announcement.id}`} 
             style={editBtnStyle}
           >
-            編集する
+            編集
           </Link>
         )}
       </div>
@@ -100,7 +93,6 @@ export default function AnnouncementDetailPage() {
   )
 }
 
-// スタイル定義
 const containerStyle: React.CSSProperties = {
   backgroundColor: '#000',
   color: '#fff',

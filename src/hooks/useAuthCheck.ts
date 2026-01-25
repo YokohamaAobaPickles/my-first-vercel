@@ -1,8 +1,10 @@
 /**
  * Filename: hooks/useAuthCheck.ts
- * Version : V1.4.0
- * Update: 2026-01-23
+ * Version : V1.5.0
+ * Update  : 2026-01-25
  * 内容：
+ * V1.5.0
+ * - 戻り値に user (DBレコード全体) を追加。PCユーザーの既読判定用。
  * V1.4.0
  * - PCブラウザ時のリダイレクトガードを強化 (returnの追加とreplaceへの変更)
  * V1.3.0
@@ -22,6 +24,7 @@ export const useAuthCheck = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [userRoles, setUserRoles] = useState<string | null>(null)
   const [currentLineId, setCurrentLineId] = useState<string | null>(null)
+  const [user, setUser] = useState<any>(null) // V1.5.0 追加
 
   useEffect(() => {
     const initAuth = async () => {
@@ -31,34 +34,31 @@ export const useAuthCheck = () => {
         // 1. 未ログイン時の振り分け
         if (!liff.isLoggedIn()) {
           if (liff.isInClient()) {
-            // LINEアプリ内なら、自動的にLINEログイン画面へ
             liff.login()
           } else {
-            // PCブラウザ等の場合、自前のログイン・登録画面へ誘導
             if (pathname !== '/members/login') {
               router.replace('/members/login')
             }
           }
-          // 未ログイン時はここで確実に終了させる
           setIsLoading(false)
           return 
         }
 
-        // 2. ログイン済みの処理 (ここに来る = liff.isLoggedIn() は true)
+        // 2. ログイン済みの処理
         const profile = await liff.getProfile()
         setCurrentLineId(profile.userId)
 
+        // roles だけでなく全てのカラム (*) を取得するように変更
         const { data: member, error } = await supabase
           .from('members')
-          .select('line_id, roles, status')
+          .select('*')
           .eq('line_id', profile.userId)
           .single()
 
         if (member) {
-          // 登録済み：ロールをセット
           setUserRoles(member.roles)
+          setUser(member) // V1.5.0 追加
         } else {
-          // 未登録（LINEログインはしてるがDBにない）：登録画面へ
           if (pathname !== '/members/login') {
             router.replace('/members/login')
           }
@@ -66,7 +66,6 @@ export const useAuthCheck = () => {
 
       } catch (err) {
         console.error('Auth Check Error:', err)
-        // 重大なエラー（LIFF初期化失敗等）でも、PCなら自前画面へ逃がす
         if (pathname !== '/members/login') {
           router.replace('/members/login')
         }
@@ -76,7 +75,7 @@ export const useAuthCheck = () => {
     }
 
     initAuth()
-  }, [router, pathname]) // 依存配列に router と pathname を含め、パス変更時に再チェック
+  }, [router, pathname])
 
-  return { isLoading, userRoles, currentLineId }
+  return { isLoading, userRoles, currentLineId, user }
 }

@@ -69,7 +69,7 @@ export default function NewAnnouncementPage() {
     <div style={containerStyle}>
       <div style={{ marginBottom: '20px' }}>
         <Link href="/announcements/admin" style={cancelLinkStyle}>
-          ← キャンセルして戻る
+          ← キャンセル
         </Link>
       </div>
 
@@ -81,7 +81,7 @@ export default function NewAnnouncementPage() {
           <input 
             type="text" 
             required 
-            placeholder="記事のタイトルを入力" 
+            placeholder="記事のタイトル" 
             value={form.title} 
             onChange={e => setForm({...form, title: e.target.value})} 
             style={inputStyle} 
@@ -92,7 +92,7 @@ export default function NewAnnouncementPage() {
           <label style={labelStyle}>本文 *</label>
           <textarea 
             required 
-            placeholder="本文を入力してください" 
+            placeholder="本文を入力" 
             value={form.content} 
             onChange={e => setForm({...form, content: e.target.value})} 
             style={{ ...inputStyle, height: '250px', resize: 'vertical' }} 
@@ -110,7 +110,7 @@ export default function NewAnnouncementPage() {
             />
           </div>
           <div style={{ flex: 1 }}>
-            <label style={labelStyle}>公開ステータス</label>
+            <label style={labelStyle}>公開状況</label>
             <select 
               value={form.status} 
               onChange={e => setForm({...form, status: e.target.value})} 
@@ -118,7 +118,7 @@ export default function NewAnnouncementPage() {
             >
               <option value="published">公開</option>
               <option value="draft">下書き</option>
-              <option value="disabled">無効化</option>
+              <option value="disabled">無効</option>
             </select>
           </div>
         </div>
@@ -129,21 +129,19 @@ export default function NewAnnouncementPage() {
               type="checkbox" 
               checked={form.isPinned} 
               onChange={e => setForm({...form, isPinned: e.target.checked})} 
-              style={{ width: '18px', height: '18px' }}
             />
-            <span>重要記事として一覧の最上部に固定する</span>
+            <span>重要記事としてトップに固定する</span>
           </label>
         </div>
 
         <button disabled={saving} style={submitBtnStyle}>
-          {saving ? '保存処理中...' : 'この記事を登録する'}
+          {saving ? '保存中...' : '登録する'}
         </button>
       </form>
     </div>
   )
 }
 
-// スタイル定義
 const containerStyle: React.CSSProperties = {
   backgroundColor: '#000',
   color: '#fff',
@@ -226,6 +224,5 @@ const submitBtnStyle: React.CSSProperties = {
   borderRadius: '30px',
   fontWeight: 'bold',
   cursor: 'pointer',
-  fontSize: '1rem',
-  transition: 'background-color 0.2s'
+  fontSize: '1rem'
 }
