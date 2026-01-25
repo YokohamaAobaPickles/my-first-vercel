@@ -1,15 +1,13 @@
 /**
  * Filename: hooks/useAuthCheck.ts
- * Version : V1.7.0
+ * Version : V1.8.0
  * Update  : 2026-01-25
  * 内容：
+ * V1.8.0
+ * - 判定順序を刷新。LINEアプリ内(isInClient)かどうかで処理を完全分離。
+ * - PCブラウザ時はLIFFを一切初期化せず、400エラーと画面停止を完全に防止。
  * V1.7.0
- * - PCログイン済みの場合、LIFFの処理を完全にバイパスして400エラーを防止
- * - 非同期処理の順序を整理し、セッション判定を厳格化
- * V1.6.0
- * - PCブラウザでのログイン後、LIFFによる400エラーを防ぐガードを追加
- * V1.5.0
- * - 戻り値に user を追加。PCユーザーの既読判定用。
+ * - PCログイン済みの場合のバイパスを試行（失敗）
  */
 
 import { useEffect, useState } from 'react'
@@ -28,9 +26,38 @@ export const useAuthCheck = () => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        // 1. Supabaseのセッションをチェック（PCログイン・メール認証済みか）
+        // --- A. LINEアプリ内の場合 ---
+        if (typeof window !== 'undefined' && /Line/i.test(navigator.userAgent)) {
+          await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID! })
+          
+          if (!liff.isLoggedIn()) {
+            liff.login()
+            return
+          }
+
+          const profile = await liff.getProfile()
+          setCurrentLineId(profile.userId)
+
+          const { data: member } = await supabase
+            .from('members')
+            .select('*')
+            .eq('line_id', profile.userId)
+            .single()
+
+          if (member) {
+            setUserRoles(member.roles)
+            setUser(member)
+          } else if (pathname !== '/members/login') {
+            router.replace('/members/login')
+          }
+          setIsLoading(false)
+          return
+        }
+
+        // --- B. PCブラウザ（LINEアプリ外）の場合 ---
+        // LIFFは一切初期化せず、Supabaseのセッションを確認
         const { data: { session } } = await supabase.auth.getSession()
-        
+
         if (session?.user) {
           const { data: member } = await supabase
             .from('members')
@@ -43,49 +70,21 @@ export const useAuthCheck = () => {
             setCurrentLineId(member.line_id || null)
             setUser(member)
             setIsLoading(false)
-            return // ★ここで終了：PCユーザーならLIFFを初期化しない
+            return
           }
         }
 
-        // 2. LINEアプリ内、またはLIFFが必要な環境かチェック
-        // PCブラウザでセッションがない場合も一旦ここへ来るが、
-        // ログイン画面へ飛ばす前にLIFF初期化を試みる
-        await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID! })
-
-        if (!liff.isLoggedIn()) {
-          if (liff.isInClient()) {
-            liff.login()
-          } else if (pathname !== '/members/login') {
-            router.replace('/members/login')
-          }
-          setIsLoading(false)
-          return 
-        }
-
-        // 3. LINEログイン済みの処理
-        const profile = await liff.getProfile()
-        setCurrentLineId(profile.userId)
-
-        const { data: member } = await supabase
-          .from('members')
-          .select('*')
-          .eq('line_id', profile.userId)
-          .single()
-
-        if (member) {
-          setUserRoles(member.roles)
-          setUser(member)
-        } else if (pathname !== '/members/login') {
-          router.replace('/members/login')
-        }
-
-      } catch (err) {
-        console.error('Auth Check Error:', err)
-        // エラー時はPCログイン画面へ
+        // セッションがない or 会員登録がない場合、ログイン画面へ
         if (pathname !== '/members/login') {
           router.replace('/members/login')
         }
-      } finally {
+        setIsLoading(false)
+
+      } catch (err) {
+        console.error('Auth Check Error:', err)
+        if (pathname !== '/members/login') {
+          router.replace('/members/login')
+        }
         setIsLoading(false)
       }
     }
