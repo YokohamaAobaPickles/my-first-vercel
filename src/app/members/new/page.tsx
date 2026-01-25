@@ -1,21 +1,13 @@
 /**
  * Filename: members/new/page.tsx
- * Version : V1.2.4
+ * Version : V1.2.7
  * Update  : 2026-01-25
  * 内容：
- * V1.2.4
- * - 郵便番号欄を50%幅に変更。将来の住所検索ボタン用スペースを確保
- * - スタイル定義をプロパティごとに改行し可読性を向上
- * V1.2.3
- * - レイアウトを全面的に刷新（基本情報、プロフィール、緊急連絡、管理者向け）
- * - 必須マーク(*)の追加、修正不可項目の設定、注記の追加
- * V1.2.2
- * - 実機検証完了。デバッグ表示を削除した完成版
- * V1.2.1
- * - useSearchParams利用に伴うビルドエラー回避のため Suspense Boundary を追加
- * V1.2.0
- * - useAuthCheck から lineNickname を取得し、初期値に自動セット
- * - URLパラメータから email を取得し、初期値セット ＆ readOnly 制御を実装
+ * V1.2.7
+ * - ソースコードルールを再適用：JSXプロパティを1項目ずつ改行
+ * - ラベルと入力欄を id/htmlFor で紐付け（テスト落ち解消）
+ * V1.2.6
+ * - ブラウザ環境時にニックネーム・メールを入力可能に変更
  */
 
 'use client'
@@ -27,7 +19,11 @@ import { useAuthCheck } from '@/hooks/useAuthCheck'
 function MemberNewContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { lineNickname, isLoading } = useAuthCheck()
+  const { 
+    lineNickname, 
+    currentLineId, 
+    isLoading 
+  } = useAuthCheck()
 
   const [mode, setMode] = useState<'member' | 'guest'>('member')
   const [email, setEmail] = useState('')
@@ -51,16 +47,24 @@ function MemberNewContent() {
     if (isLoading) return
     const emailParam = searchParams.get('email')
     if (emailParam) setEmail(emailParam)
-    if (lineNickname && !formData.nickname) {
+    if (currentLineId && lineNickname && !formData.nickname) {
       setFormData(prev => ({ ...prev, nickname: lineNickname }))
     }
-  }, [isLoading, lineNickname, searchParams])
+  }, [isLoading, lineNickname, currentLineId, searchParams])
 
-  if (isLoading) return <div style={containerStyle}>読み込み中...</div>
+  if (isLoading) {
+    return (
+      <div style={containerStyle}>
+        読み込み中...
+      </div>
+    )
+  }
 
   return (
     <div style={containerStyle}>
-      <h1 style={titleStyle}>LINE会員登録</h1>
+      <h1 style={titleStyle}>
+        {currentLineId ? 'LINE会員登録' : '新規会員登録'}
+      </h1>
 
       <div style={tabContainerStyle}>
         <button 
@@ -77,39 +81,89 @@ function MemberNewContent() {
         </button>
       </div>
 
-      {/* 1. 基本情報 */}
-      <div style={sectionTitleStyle}>基本情報</div>
-      <label style={labelStyle}>
-        氏名（漢字） <span style={reqStyle}>*</span>
+      <div style={sectionTitleStyle}>
+        基本情報
+      </div>
+      
+      <label 
+        htmlFor="name" 
+        style={labelStyle}
+      >
+        氏名（漢字） 
+        <span style={reqStyle}>*</span>
       </label>
       <input 
+        id="name"
         style={inputStyle} 
         placeholder="山田 太郎" 
         value={formData.name}
-        onChange={(e) => setFormData({...formData, name: e.target.value})} 
+        onChange={(e) => setFormData({
+          ...formData, 
+          name: e.target.value
+        })} 
       />
       
-      <label style={labelStyle}>
-        氏名（ローマ字） <span style={reqStyle}>*</span>
+      <label 
+        htmlFor="name_roma" 
+        style={labelStyle}
+      >
+        氏名（ローマ字） 
+        <span style={reqStyle}>*</span>
       </label>
       <input 
+        id="name_roma"
         style={inputStyle} 
         placeholder="Taro Yamada" 
         value={formData.name_roma}
-        onChange={(e) => setFormData({...formData, name_roma: e.target.value})} 
+        onChange={(e) => setFormData({
+          ...formData, 
+          name_roma: e.target.value
+        })} 
       />
 
-      <label style={labelStyle}>ニックネーム（修正不可）</label>
-      <input style={readOnlyInputStyle} value={formData.nickname} readOnly />
-
-      <label style={labelStyle}>メールアドレス（修正不可）</label>
-      <input style={readOnlyInputStyle} value={email} readOnly />
-
-      <label style={labelStyle}>
-        パスワード <span style={reqStyle}>*</span>
+      <label 
+        htmlFor="nickname" 
+        style={labelStyle}
+      >
+        ニックネーム {currentLineId && '（修正不可）'}
       </label>
-      <p style={noteStyle}>※PCログイン等で使用します</p>
       <input 
+        id="nickname"
+        style={currentLineId ? readOnlyInputStyle : inputStyle} 
+        value={formData.nickname}
+        readOnly={!!currentLineId}
+        onChange={(e) => setFormData({
+          ...formData, 
+          nickname: e.target.value
+        })}
+      />
+
+      <label 
+        htmlFor="email" 
+        style={labelStyle}
+      >
+        メールアドレス {currentLineId && '（修正不可）'}
+      </label>
+      <input 
+        id="email"
+        style={currentLineId ? readOnlyInputStyle : inputStyle} 
+        value={email}
+        readOnly={!!currentLineId}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+
+      <label 
+        htmlFor="password" 
+        style={labelStyle}
+      >
+        パスワード 
+        <span style={reqStyle}>*</span>
+      </label>
+      <p style={noteStyle}>
+        ※PCログイン等で使用します
+      </p>
+      <input 
+        id="password"
         type="password" 
         style={inputStyle} 
         placeholder="8文字以上" 
@@ -117,73 +171,176 @@ function MemberNewContent() {
         onChange={(e) => setPassword(e.target.value)} 
       />
 
-      {/* 2. プロフィール情報 */}
-      <div style={sectionTitleStyle}>プロフィール情報</div>
+      <div style={sectionTitleStyle}>
+        プロフィール情報
+      </div>
       
-      <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+      <label 
+        htmlFor="zip_code" 
+        style={labelStyle}
+      >
+        郵便番号
+      </label>
+      <div style={{ 
+        display: 'flex', 
+        gap: '10px', 
+        width: '100%' 
+      }}>
         <input 
-          style={{ ...inputStyle, width: '50%' }} 
-          placeholder="郵便番号" 
+          id="zip_code"
+          style={{ 
+            ...inputStyle, 
+            width: '50%' 
+          }} 
+          placeholder="000-0000" 
           value={formData.zip_code}
-          onChange={(e) => setFormData({...formData, zip_code: e.target.value})} 
+          onChange={(e) => setFormData({
+            ...formData, 
+            zip_code: e.target.value
+          })} 
         />
         <div style={{ width: '50%' }}></div>
       </div>
 
+      <label 
+        htmlFor="address" 
+        style={labelStyle}
+      >
+        住所
+      </label>
       <input 
+        id="address"
         style={inputStyle} 
-        placeholder="住所" 
+        placeholder="住所を入力してください" 
         value={formData.address}
-        onChange={(e) => setFormData({...formData, address: e.target.value})} 
-      />
-      <input 
-        style={inputStyle} 
-        placeholder="電話番号" 
-        value={formData.tel}
-        onChange={(e) => setFormData({...formData, tel: e.target.value})} 
-      />
-      <input 
-        style={inputStyle} 
-        placeholder="DUPR ID" 
-        value={formData.dupr_id}
-        onChange={(e) => setFormData({...formData, dupr_id: e.target.value})} 
-      />
-      <textarea 
-        style={{ ...inputStyle, height: '80px' }} 
-        placeholder="自己紹介" 
-        value={formData.profile_memo} 
-        onChange={(e) => 
-          setFormData({...formData, profile_memo: e.target.value})} 
+        onChange={(e) => setFormData({
+          ...formData, 
+          address: e.target.value
+        })} 
       />
 
-      {/* 3. 緊急連絡情報 */}
-      <div style={sectionTitleStyle}>緊急連絡情報</div>
+      <label 
+        htmlFor="tel" 
+        style={labelStyle}
+      >
+        電話番号
+      </label>
+      <input 
+        id="tel"
+        style={inputStyle} 
+        placeholder="090-0000-0000" 
+        value={formData.tel}
+        onChange={(e) => setFormData({
+          ...formData, 
+          tel: e.target.value
+        })} 
+      />
+
+      <label 
+        htmlFor="dupr_id" 
+        style={labelStyle}
+      >
+        DUPR ID
+      </label>
+      <input 
+        id="dupr_id"
+        style={inputStyle} 
+        placeholder="DUPR IDを入力" 
+        value={formData.dupr_id}
+        onChange={(e) => setFormData({
+          ...formData, 
+          dupr_id: e.target.value
+        })} 
+      />
+
+      <label 
+        htmlFor="profile_memo" 
+        style={labelStyle}
+      >
+        自己紹介
+      </label>
+      <textarea 
+        id="profile_memo"
+        style={{ 
+          ...inputStyle, 
+          height: '80px' 
+        }} 
+        placeholder="自己紹介を入力してください" 
+        value={formData.profile_memo} 
+        onChange={(e) => setFormData({
+          ...formData, 
+          profile_memo: e.target.value
+        })} 
+      />
+
+      <div style={sectionTitleStyle}>
+        緊急連絡情報
+      </div>
+      
       <div style={{ 
         display: 'grid', 
         gridTemplateColumns: '1fr 1fr', 
         gap: '10px' 
       }}>
-        <input 
-          style={inputStyle} 
-          placeholder="緊急電話番号" 
-          value={formData.emg_tel}
-          onChange={(e) => setFormData({...formData, emg_tel: e.target.value})} 
-        />
-        <input 
-          style={inputStyle} 
-          placeholder="続柄" 
-          value={formData.emg_rel}
-          onChange={(e) => setFormData({...formData, emg_rel: e.target.value})} 
-        />
+        <div>
+          <label 
+            htmlFor="emg_tel" 
+            style={labelStyle}
+          >
+            緊急電話番号
+          </label>
+          <input 
+            id="emg_tel"
+            style={inputStyle} 
+            placeholder="090-0000-0000" 
+            value={formData.emg_tel}
+            onChange={(e) => setFormData({
+              ...formData, 
+              emg_tel: e.target.value
+            })} 
+          />
+        </div>
+        <div>
+          <label 
+            htmlFor="emg_rel" 
+            style={labelStyle}
+          >
+            続柄
+          </label>
+          <input 
+            id="emg_rel"
+            style={inputStyle} 
+            placeholder="例：夫、妻、父" 
+            value={formData.emg_rel}
+            onChange={(e) => setFormData({
+              ...formData, 
+              emg_rel: e.target.value
+            })} 
+          />
+        </div>
       </div>
 
-      <label style={labelStyle}>管理者向け連絡事項</label>
-      <p style={noteStyle}>※他の会員には公開されません</p>
+      <label 
+        htmlFor="admin_memo" 
+        style={labelStyle}
+      >
+        管理者向け連絡事項
+      </label>
+      <p style={noteStyle}>
+        ※他の会員には公開されません
+      </p>
       <textarea 
-        style={{ ...inputStyle, height: '60px' }} 
+        id="admin_memo"
+        style={{ 
+          ...inputStyle, 
+          height: '60px' 
+        }} 
         placeholder="事務局への伝達事項" 
         value={formData.admin_memo}
-        onChange={(e) => setFormData({...formData, admin_memo: e.target.value})} 
+        onChange={(e) => setFormData({
+          ...formData, 
+          admin_memo: e.target.value
+        })} 
       />
 
       <button style={submitButtonStyle}>
@@ -195,14 +352,15 @@ function MemberNewContent() {
 
 export default function MemberNewPage() {
   return (
-    <Suspense fallback={<div style={containerStyle}>読み込み中...</div>}>
+    <Suspense fallback={
+      <div style={containerStyle}>読み込み中...</div>
+    }>
       <MemberNewContent />
     </Suspense>
   )
 }
 
-// --- スタイル定義（定義ごとに改行） ---
-
+// --- スタイル定義 ---
 const containerStyle: React.CSSProperties = {
   maxWidth: '800px',
   margin: '0 auto',

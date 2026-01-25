@@ -1,8 +1,11 @@
 /**
  * Filename: src/app/members/login/page.tsx
- * Version : V1.3.0
+ * Version : V1.3.1
  * Update  : 2026-01-25
  * 内容：
+ * V1.3.1
+ * - デグレ修正：LINEアプリ内（currentLineIdあり）では新規登録リンクを非表示に
+ * - 条件分岐を整理し、ブラウザ環境時のみ「新規会員登録はこちら」を表示
  * V1.3.0
  * - ブラウザ（非LINE）対応：パスワード欄、ログインボタン、新規登録リンクを追加
  * - スタイル定義をプロパティごとに改行し、可読性を向上
@@ -77,7 +80,7 @@ export default function MemberLoginPage() {
     }
   }
 
-  // 一般ブラウザ ログイン（新規追加予定のスタブ）
+  // 一般ブラウザ ログイン（スタブ）
   const handleLogin = async () => {
     alert('ログイン機能は現在準備中です。新規登録からお進みください。')
   }
@@ -106,7 +109,7 @@ export default function MemberLoginPage() {
             style={inputStyle}
           />
 
-          {/* ブラウザアクセスの場合はパスワード欄を表示 */}
+          {/* 非LINE（ブラウザ）アクセスの場合はパスワード欄を表示 */}
           {!currentLineId && (
             <input
               type="password"
@@ -134,18 +137,21 @@ export default function MemberLoginPage() {
             </button>
           )}
 
-          <div style={linkContainerStyle}>
-            <Link href="/members/new" style={linkStyle}>
-              新規会員登録はこちら
-            </Link>
-          </div>
+          {/* 非LINE（ブラウザ）アクセスの時のみ新規登録リンクを表示 */}
+          {!currentLineId && (
+            <div style={linkContainerStyle}>
+              <Link href="/members/new" style={linkStyle}>
+                新規会員登録はこちら
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </div>
   )
 }
 
-// --- スタイル定義 ---
+// --- スタイル定義（プロパティごと改行） ---
 
 const containerStyle: React.CSSProperties = {
   minHeight: '100vh',
