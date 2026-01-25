@@ -1,8 +1,10 @@
 /**
  * Filename: announcements/admin/page.tsx
- * Version : V1.3.0
+ * Version : V1.3.1
  * Update  : 2026-01-25
  * 内容：
+ * V1.3.1
+ * - 管理者一覧にも「重要」ラベルを表示するように修正
  * V1.3.0
  * - 一般向け「記事一覧に戻る」リンクを追加
  * - レイアウトをダークモード(800px)へ調整
@@ -20,7 +22,11 @@ import { canManageAnnouncements } from '@/utils/auth'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 
 export default function AnnouncementAdminPage() {
-  const { isLoading: isAuthLoading, userRoles } = useAuthCheck()
+  const { 
+    isLoading: isAuthLoading, 
+    userRoles 
+  } = useAuthCheck()
+  
   const [announcements, setAnnouncements] = useState<any[]>([])
   const [readCounts, setReadCounts] = useState<{[key: number]: number}>({})
 
@@ -31,7 +37,9 @@ export default function AnnouncementAdminPage() {
       const { data } = await supabase
         .from('announcements')
         .select('*')
+        .order('is_pinned', { ascending: false }) // ピン留めを優先
         .order('publish_date', { ascending: false })
+      
       setAnnouncements(data || [])
 
       const { data: reads } = await supabase
@@ -58,7 +66,7 @@ export default function AnnouncementAdminPage() {
     <div style={containerStyle}>
       <div style={navWrapperStyle}>
         <Link href="/announcements" style={backLinkStyle}>
-          ← 記事一覧に戻る
+          ← 一般向け記事一覧に戻る
         </Link>
         <Link href="/announcements/new" style={newBtnStyle}>
           + 新規作成
@@ -69,9 +77,12 @@ export default function AnnouncementAdminPage() {
 
       {announcements.map(ann => (
         <div key={ann.id} style={adminCardStyle}>
-          <div style={{ flex: 1 }}>
-            <div style={statusBadgeStyle(ann.status)}>
-              {ann.status === 'published' ? '公開中' : '下書き/無効'}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={statusBadgeStyle(ann.status)}>
+                {ann.status === 'published' ? '公開中' : '下書き/無効'}
+              </div>
+              {ann.is_pinned && <span style={pinBadgeStyle}>重要</span>}
             </div>
             <div style={cardTitleStyle}>{ann.title}</div>
             <div style={cardMetaStyle}>{ann.publish_date}</div>
@@ -152,6 +163,15 @@ const statusBadgeStyle = (status: string): React.CSSProperties => ({
   marginBottom: '4px'
 })
 
+const pinBadgeStyle: React.CSSProperties = {
+  backgroundColor: '#ff4d4f',
+  color: 'white',
+  padding: '1px 5px',
+  borderRadius: '3px',
+  fontSize: '0.65rem',
+  marginBottom: '4px'
+}
+
 const cardTitleStyle: React.CSSProperties = {
   fontSize: '1rem',
   fontWeight: 'bold',
@@ -179,7 +199,7 @@ const readCountLinkStyle: React.CSSProperties = {
 }
 
 const editLinkStyle: React.CSSProperties = {
-  color: '#0070f3',
+  color: '#4dabf7',
   textDecoration: 'none',
   fontSize: '0.9rem',
   fontWeight: 'bold'
