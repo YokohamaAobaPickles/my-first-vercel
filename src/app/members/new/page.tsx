@@ -1,8 +1,11 @@
 /**
  * Filename: members/new/page.tsx
- * Version : V1.2.3
+ * Version : V1.2.4
  * Update  : 2026-01-25
  * 内容：
+ * V1.2.4
+ * - 郵便番号欄を50%幅に変更。将来の住所検索ボタン用スペースを確保
+ * - スタイル定義をプロパティごとに改行し可読性を向上
  * V1.2.3
  * - レイアウトを全面的に刷新（基本情報、プロフィール、緊急連絡、管理者向け）
  * - 必須マーク(*)の追加、修正不可項目の設定、注記の追加
@@ -10,7 +13,6 @@
  * - 実機検証完了。デバッグ表示を削除した完成版
  * V1.2.1
  * - useSearchParams利用に伴うビルドエラー回避のため Suspense Boundary を追加
- * - スタイル定義を含め、全体に80文字ワードラップを適用
  * V1.2.0
  * - useAuthCheck から lineNickname を取得し、初期値に自動セット
  * - URLパラメータから email を取得し、初期値セット ＆ readOnly 制御を実装
@@ -25,7 +27,7 @@ import { useAuthCheck } from '@/hooks/useAuthCheck'
 function MemberNewContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { lineNickname, isLoading } = useAuthCheck() //
+  const { lineNickname, isLoading } = useAuthCheck()
 
   const [mode, setMode] = useState<'member' | 'guest'>('member')
   const [email, setEmail] = useState('')
@@ -47,7 +49,7 @@ function MemberNewContent() {
 
   useEffect(() => {
     if (isLoading) return
-    const emailParam = searchParams.get('email') //
+    const emailParam = searchParams.get('email')
     if (emailParam) setEmail(emailParam)
     if (lineNickname && !formData.nickname) {
       setFormData(prev => ({ ...prev, nickname: lineNickname }))
@@ -81,7 +83,9 @@ function MemberNewContent() {
         氏名（漢字） <span style={reqStyle}>*</span>
       </label>
       <input 
-        style={inputStyle} placeholder="山田 太郎" value={formData.name}
+        style={inputStyle} 
+        placeholder="山田 太郎" 
+        value={formData.name}
         onChange={(e) => setFormData({...formData, name: e.target.value})} 
       />
       
@@ -89,7 +93,9 @@ function MemberNewContent() {
         氏名（ローマ字） <span style={reqStyle}>*</span>
       </label>
       <input 
-        style={inputStyle} placeholder="Taro Yamada" value={formData.name_roma}
+        style={inputStyle} 
+        placeholder="Taro Yamada" 
+        value={formData.name_roma}
         onChange={(e) => setFormData({...formData, name_roma: e.target.value})} 
       />
 
@@ -104,30 +110,47 @@ function MemberNewContent() {
       </label>
       <p style={noteStyle}>※PCログイン等で使用します</p>
       <input 
-        type="password" style={inputStyle} placeholder="8文字以上" 
-        value={password} onChange={(e) => setPassword(e.target.value)} 
+        type="password" 
+        style={inputStyle} 
+        placeholder="8文字以上" 
+        value={password} 
+        onChange={(e) => setPassword(e.target.value)} 
       />
 
       {/* 2. プロフィール情報 */}
       <div style={sectionTitleStyle}>プロフィール情報</div>
+      
+      <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+        <input 
+          style={{ ...inputStyle, width: '50%' }} 
+          placeholder="郵便番号" 
+          value={formData.zip_code}
+          onChange={(e) => setFormData({...formData, zip_code: e.target.value})} 
+        />
+        <div style={{ width: '50%' }}></div>
+      </div>
+
       <input 
-        style={inputStyle} placeholder="郵便番号" value={formData.zip_code}
-        onChange={(e) => setFormData({...formData, zip_code: e.target.value})} 
-      />
-      <input 
-        style={inputStyle} placeholder="住所" value={formData.address}
+        style={inputStyle} 
+        placeholder="住所" 
+        value={formData.address}
         onChange={(e) => setFormData({...formData, address: e.target.value})} 
       />
       <input 
-        style={inputStyle} placeholder="電話番号" value={formData.tel}
+        style={inputStyle} 
+        placeholder="電話番号" 
+        value={formData.tel}
         onChange={(e) => setFormData({...formData, tel: e.target.value})} 
       />
       <input 
-        style={inputStyle} placeholder="DUPR ID" value={formData.dupr_id}
+        style={inputStyle} 
+        placeholder="DUPR ID" 
+        value={formData.dupr_id}
         onChange={(e) => setFormData({...formData, dupr_id: e.target.value})} 
       />
       <textarea 
-        style={{ ...inputStyle, height: '80px' }} placeholder="自己紹介" 
+        style={{ ...inputStyle, height: '80px' }} 
+        placeholder="自己紹介" 
         value={formData.profile_memo} 
         onChange={(e) => 
           setFormData({...formData, profile_memo: e.target.value})} 
@@ -141,14 +164,19 @@ function MemberNewContent() {
         gap: '10px' 
       }}>
         <input 
-          style={inputStyle} placeholder="緊急電話番号" value={formData.emg_tel}
+          style={inputStyle} 
+          placeholder="緊急電話番号" 
+          value={formData.emg_tel}
           onChange={(e) => setFormData({...formData, emg_tel: e.target.value})} 
         />
         <input 
-          style={inputStyle} placeholder="続柄" value={formData.emg_rel}
+          style={inputStyle} 
+          placeholder="続柄" 
+          value={formData.emg_rel}
           onChange={(e) => setFormData({...formData, emg_rel: e.target.value})} 
         />
       </div>
+
       <label style={labelStyle}>管理者向け連絡事項</label>
       <p style={noteStyle}>※他の会員には公開されません</p>
       <textarea 
@@ -173,7 +201,7 @@ export default function MemberNewPage() {
   )
 }
 
-// --- スタイル定義（80文字ワードラップ） ---
+// --- スタイル定義（定義ごとに改行） ---
 
 const containerStyle: React.CSSProperties = {
   maxWidth: '800px',
