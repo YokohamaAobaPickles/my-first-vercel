@@ -42,15 +42,24 @@ export default function MemberNewPage() {
 
   // LINE情報とURLパラメータの初期反映
   useEffect(() => {
+
+    // 実行タイミングを確認
+    console.log('[DEBUG-NEW] useEffect triggered. isLoading:', isLoading);
+
     if (isLoading) return
 
     // 1. URLからメールアドレスを取得
     const emailParam = searchParams.get('email')
+
+    console.log('[DEBUG-NEW] emailParam from URL:', emailParam); // ここが null なら遷移元の問題
+
     if (emailParam) {
       setEmail(emailParam)
     }
 
     // 2. LINEのニックネームを初期値にセット（未入力の場合のみ）
+    console.log('[DEBUG-NEW] lineNickname from hook:', lineNickname); // ここが null なら hooks の問題
+    
     if (lineNickname && !formData.nickname) {
       setFormData(prev => ({ ...prev, nickname: lineNickname }))
     }

@@ -45,6 +45,9 @@ export const useAuthCheck = () => {
           }
 
           const profile = await liff.getProfile()
+
+          console.log('[DEBUG-AUTH] LIFF Profile fetched:', profile.displayName); //
+          
           setLineNickname(profile.displayName) // ニックネームを保持
 
           const { data: member, error } = await supabase

@@ -14,7 +14,7 @@
 
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import MemberNewPage from './page'
+import MemberNewPage from '@/app/members/new/page'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import { useSearchParams } from 'next/navigation'
 
@@ -38,24 +38,24 @@ describe('MemberNewPage (LINE連携・データ引き継ぎの検証)', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    ;(useSearchParams as any).mockReturnValue({
-      get: vi.fn().mockReturnValue(null)
-    })
+      ; (useSearchParams as any).mockReturnValue({
+        get: vi.fn().mockReturnValue(null)
+      })
   })
 
   it('【新規検証】LINE連携時、ニックネームが初期入力され、メールがreadonlyであること', () => {
     // 1. useAuthCheck からの情報をモック
-    ;(useAuthCheck as any).mockReturnValue({
+    ; (useAuthCheck as any).mockReturnValue({
       isLoading: false,
       currentLineId: TEST_LINE_ID,
       lineNickname: TEST_NICKNAME,
       user: null,
     })
 
-    // 2. URLパラメータをモック
-    ;(useSearchParams as any).mockReturnValue({
-      get: (key: string) => (key === 'email' ? TEST_EMAIL : null)
-    })
+      // 2. URLパラメータをモック
+      ; (useSearchParams as any).mockReturnValue({
+        get: (key: string) => (key === 'email' ? TEST_EMAIL : null)
+      })
 
     render(<MemberNewPage />)
 
@@ -67,11 +67,11 @@ describe('MemberNewPage (LINE連携・データ引き継ぎの検証)', () => {
     const emailInput = screen.getByPlaceholderText(/メールアドレス/i)
     expect((emailInput as any).value).toBe(TEST_EMAIL)
     // プロパティを直接チェックすることで環境依存を排除
-    expect((emailInput as any).readOnly).toBe(true) 
+    expect((emailInput as any).readOnly).toBe(true)
   })
 
   it('ロード中は適切なメッセージが表示され、フォームは表示されないこと', () => {
-    ;(useAuthCheck as any).mockReturnValue({
+    ; (useAuthCheck as any).mockReturnValue({
       isLoading: true,
       currentLineId: null,
       user: null,
@@ -81,7 +81,7 @@ describe('MemberNewPage (LINE連携・データ引き継ぎの検証)', () => {
   })
 
   it('以前の実装に含まれていたすべての詳細項目が表示されること', () => {
-    ;(useAuthCheck as any).mockReturnValue({
+    ; (useAuthCheck as any).mockReturnValue({
       isLoading: false,
       currentLineId: TEST_LINE_ID,
       user: null,
@@ -93,7 +93,7 @@ describe('MemberNewPage (LINE連携・データ引き継ぎの検証)', () => {
   })
 
   it('会員登録とゲスト登録のモード切替が可能であること', () => {
-    ;(useAuthCheck as any).mockReturnValue({
+    ; (useAuthCheck as any).mockReturnValue({
       isLoading: false,
       currentLineId: TEST_LINE_ID,
       user: null,
@@ -103,4 +103,18 @@ describe('MemberNewPage (LINE連携・データ引き継ぎの検証)', () => {
     fireEvent.click(guestTab)
     expect(screen.getByText(/ゲストとして登録する/i)).toBeTruthy()
   })
+
+  it('【エッジケース】LINE名が取得できなかった場合、ニックネーム欄は空のままであること', () => {
+    ; (useAuthCheck as any).mockReturnValue({
+      isLoading: false,
+      currentLineId: TEST_LINE_ID,
+      lineNickname: null, // 名前が取れなかったケース
+      user: null,
+    })
+
+    render(<MemberNewPage />)
+    const nicknameInput = screen.getByPlaceholderText(/ニックネーム/i)
+    expect((nicknameInput as any).value).toBe('')
+  })
+
 })
