@@ -1,16 +1,15 @@
 /**
  * Filename: hooks/useAuthCheck.ts
- * Version : V1.5.0
+ * Version : V1.6.0
  * Update  : 2026-01-25
  * 内容：
+ * V1.6.0
+ * - PCブラウザでのログイン後、LIFFによる400エラーを防ぐガードを追加
+ * - Supabaseセッションがある場合はLIFF初期化をスキップまたは限定化
  * V1.5.0
  * - 戻り値に user (DBレコード全体) を追加。PCユーザーの既読判定用。
  * V1.4.0
- * - PCブラウザ時のリダイレクトガードを強化 (returnの追加とreplaceへの変更)
- * V1.3.0
- * - LINEアプリ内(isInClient)判定による自動ログインの切り分け
- * V1.1.0 ~ V1.2.1
- * - 認証状態と登録状況をチェックし、ページで使いやすい値を返す
+ * - PCブラウザ時のリダイレクトガードを強化
  */
 
 import { useEffect, useState } from 'react'
@@ -24,32 +23,49 @@ export const useAuthCheck = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [userRoles, setUserRoles] = useState<string | null>(null)
   const [currentLineId, setCurrentLineId] = useState<string | null>(null)
-  const [user, setUser] = useState<any>(null) // V1.5.0 追加
+  const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
     const initAuth = async () => {
       try {
+        // 1. まずSupabaseのセッションがあるか（PCログイン済みか）確認
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (session?.user) {
+          // PCユーザーとしてログイン済みの場合
+          const { data: member } = await supabase
+            .from('members')
+            .select('*')
+            .eq('email', session.user.email)
+            .single()
+
+          if (member) {
+            setUserRoles(member.roles)
+            setCurrentLineId(member.line_id || null)
+            setUser(member)
+            setIsLoading(false)
+            return // LINEの処理へ行かずに終了
+          }
+        }
+
+        // 2. LINEアプリ内、またはLINEログインの処理
         await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID! })
 
-        // 1. 未ログイン時の振り分け
         if (!liff.isLoggedIn()) {
           if (liff.isInClient()) {
             liff.login()
-          } else {
-            if (pathname !== '/members/login') {
-              router.replace('/members/login')
-            }
+          } else if (pathname !== '/members/login') {
+            router.replace('/members/login')
           }
           setIsLoading(false)
           return 
         }
 
-        // 2. ログイン済みの処理
+        // LINEログイン済みのプロフィール取得
         const profile = await liff.getProfile()
         setCurrentLineId(profile.userId)
 
-        // roles だけでなく全てのカラム (*) を取得するように変更
-        const { data: member, error } = await supabase
+        const { data: member } = await supabase
           .from('members')
           .select('*')
           .eq('line_id', profile.userId)
@@ -57,11 +73,9 @@ export const useAuthCheck = () => {
 
         if (member) {
           setUserRoles(member.roles)
-          setUser(member) // V1.5.0 追加
-        } else {
-          if (pathname !== '/members/login') {
-            router.replace('/members/login')
-          }
+          setUser(member)
+        } else if (pathname !== '/members/login') {
+          router.replace('/members/login')
         }
 
       } catch (err) {
