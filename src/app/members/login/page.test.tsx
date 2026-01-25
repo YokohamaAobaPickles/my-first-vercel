@@ -1,25 +1,39 @@
 /**
  * Filename: src/app/members/login/page.test.tsx
- * Version : V1.1.0
+ * Version : V1.2.2
  * Update  : 2026-01-25
  * 内容：
- * V1.1.0
- * - ログイン特化型への変更に伴いテストケースを刷新
- * - 新規登録画面（/members/new）への誘導ボタンの存在確認を追加
+ * V1.2.2
+ * - Supabaseのメソッドチェーン・モックの定義を改善（既存ユーザー検知の失敗を修正）
  * - 80文字ワードラップ、条件判定の改行を適用
- * V1.0.4
- * - 詳細情報入力（ステップ2）の表示検証を追加
- * V1.0.3
- * - LINE初回ユーザー時の文言検証を追加
  */
 
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import LoginPage from './page'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
+import { supabase } from '@/lib/supabase'
 
-// 認証チェックとルーターのモック化
+// モックの基本構造を定義
 vi.mock('@/hooks/useAuthCheck')
+vi.mock('@/lib/supabase', () => {
+  const mockSingle = vi.fn()
+  const mockUpdate = vi.fn().mockReturnValue({
+    eq: vi.fn().mockResolvedValue({ error: null })
+  })
+
+  return {
+    supabase: {
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: mockSingle,
+        update: mockUpdate,
+      })),
+    },
+  }
+})
+
 const mockPush = vi.fn()
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -27,39 +41,70 @@ vi.mock('next/navigation', () => ({
   }),
 }))
 
-describe('LoginPage (認証・誘導の検証)', () => {
-  const TEST_LINE_ID = 'U_TEST_LOGIN'
+describe('LoginPage (LINE連携フローの検証)', () => {
+  const TEST_LINE_ID = 'U_TEST_LINE_999'
 
   beforeEach(() => {
     vi.clearAllMocks()
+    // window.alertをモック化（エラー回避）
+    vi.spyOn(window, 'alert').mockImplementation(() => {})
   })
 
-  it('新規登録ボタンを押した際、/members/new へ遷移すること', () => {
+  it('既存メールがない場合、新規登録画面へ遷移すること', async () => {
     ;(useAuthCheck as any).mockReturnValue({
       isLoading: false,
       currentLineId: TEST_LINE_ID,
     })
 
+    // select().eq().single() が null (データなし) を返すように設定
+    const fromSpy = vi.spyOn(supabase, 'from')
+    fromSpy.mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: null, error: { code: 'PGRST116' } }),
+    } as any)
+
     render(<LoginPage />)
 
-    // 「新規登録はこちら」ボタンを探してクリック
-    const signupBtn = screen.getByText(/新規登録はこちら/i)
-    fireEvent.click(signupBtn)
+    const emailInput = screen.getByPlaceholderText(/メールアドレスを入力/i)
+    fireEvent.change(emailInput, { target: { value: 'new@example.com' } })
+    fireEvent.click(screen.getByText(/次へ進む/i))
 
-    // 期待値: /members/new へ飛ばされること
-    expect(mockPush).toHaveBeenCalledWith('/members/new')
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith(
+        expect.stringContaining('/members/new?email=new%40example.com&fixed=true')
+      )
+    })
   })
 
-  it('PCブラウザ（LINE IDなし）の場合、ログインフォームが表示されること', () => {
+  it('既存メールがある場合、紐付けを行いプロフィールへ遷移すること', async () => {
     ;(useAuthCheck as any).mockReturnValue({
       isLoading: false,
-      currentLineId: null,
+      currentLineId: TEST_LINE_ID,
     })
+
+    // 既存ユーザーを返すように設定
+    const fromSpy = vi.spyOn(supabase, 'from')
+    fromSpy.mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ 
+        data: { id: 1, line_id: null }, 
+        error: null 
+      }),
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: null })
+      }),
+    } as any)
 
     render(<LoginPage />)
 
-    expect(screen.getByPlaceholderText(/メールアドレス/i)).toBeTruthy()
-    expect(screen.getByPlaceholderText(/パスワード/i)).toBeTruthy()
-    expect(screen.getByText(/ログイン \/ 新規登録/i)).toBeTruthy()
+    const emailInput = screen.getByPlaceholderText(/メールアドレスを入力/i)
+    fireEvent.change(emailInput, { target: { value: 'existing@example.com' } })
+    fireEvent.click(screen.getByText(/次へ進む/i))
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/members/profile')
+    })
   })
 })
