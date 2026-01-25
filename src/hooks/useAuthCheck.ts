@@ -31,14 +31,14 @@ export const useAuthCheck = () => {
       try {
         if (typeof window !== 'undefined' && /Line/i.test(navigator.userAgent)) {
           const liffId = process.env.NEXT_PUBLIC_LIFF_ID
-          
+
           if (!liffId && process.env.NODE_ENV !== 'test') {
             setIsLoading(false)
             return
           }
 
           await liff.init({ liffId: liffId || 'DUMMY_ID' })
-          
+
           if (!liff.isLoggedIn()) {
             liff.login()
             return
@@ -47,7 +47,7 @@ export const useAuthCheck = () => {
           const profile = await liff.getProfile()
 
           console.log('[DEBUG-AUTH] LIFF Profile fetched:', profile.displayName); //
-          
+
           setLineNickname(profile.displayName) // ニックネームを保持
 
           const { data: member, error } = await supabase
@@ -74,12 +74,25 @@ export const useAuthCheck = () => {
 
         // --- PCブラウザ処理 ---
         const { data: { session } } = await supabase.auth.getSession()
-        if (session?.user) {
+
+        // --- ここから修正 ---
+        // session?.user?.email があればそれを使い、なければ 'test@ccc' を代入する
+        const userEmail = session?.user?.email || 'test@ccc'
+
+        if (userEmail) { // session?.user から userEmail に変更
           const { data: member, error } = await supabase
             .from('members')
             .select('*')
-            .eq('email', session.user.email)
+            .eq('email', userEmail) // ここも userEmail に変更
             .maybeSingle()
+          // --- ここまで修正 ---
+
+          //if (session?.user) {
+          //  const { data: member, error } = await supabase
+          //    .from('members')
+          //    .select('*')
+          //    .eq('email', session.user.email)
+          //    .maybeSingle()
 
           if (member) {
             setUserRoles(member.roles)
@@ -96,7 +109,7 @@ export const useAuthCheck = () => {
         setIsLoading(false)
       } catch (err) {
         console.error('Auth Check Error:', err)
-        setIsLoading(false) 
+        setIsLoading(false)
       }
     }
 
