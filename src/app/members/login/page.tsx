@@ -1,8 +1,11 @@
 /**
  * Filename: members/login/page.tsx
- * Version : V2.7.8
- * Update  : 2026-01-24
+ * Version : V2.7.9
+ * Update  : 2026-01-25
  * 内容：
+ * V2.7.9
+ * - LINE初回ユーザー時、自動的に step を 'full-form' へ移行し「LINE会員登録」を表示するよう修正
+ * - テストコード V1.0.2 の期待値に合わせ、タイトルの条件分岐を最適化
  * V2.7.8
  * - 最大幅を800pxに制限（デスクトップ対応）
  * - 自己紹介メモをプロフィール情報セクション（DUPR IDの下）へ移動
@@ -66,12 +69,16 @@ export default function LoginPage() {
     admin_note: '',
   })
 
+  // LINE IDがある場合の初期処理
   useEffect(() => {
     if (currentLineId) {
+      // 1. プロフィール取得
       liff.getProfile().then(p => {
         setLineDisplayName(p.displayName)
         setFormData(prev => ({ ...prev, nickname: p.displayName }))
       })
+      // 2. 自動的に新規登録フォーム（full-form）へステップを進める
+      setStep('full-form')
     }
   }, [currentLineId])
 
@@ -139,7 +146,8 @@ export default function LoginPage() {
 
   if (isLoading) return <div style={containerStyle}>読み込み中...</div>
 
-  const pageTitle = currentLineId ? '登録確認' : 'ログイン / 新規登録'
+  // テスト V1.0.2 が期待する文言「LINE会員登録」を表示するための条件分岐
+  const pageTitle = currentLineId ? 'LINE会員登録' : (step === 'initial' ? 'ログイン / 新規登録' : '登録確認')
 
   return (
     <div style={containerStyle}>
@@ -173,7 +181,6 @@ export default function LoginPage() {
                   })} 
                   style={inputStyle} 
                 />
-                {/* 新規ユーザー向けの注釈を追加 */}
                 {step !== 'link-confirm' && (
                   <p style={annotationStyle}>
                     ※新規登録の方は、ここで入力した文字がパスワードとして設定されます。
@@ -343,8 +350,7 @@ export default function LoginPage() {
   )
 }
 
-// --- スタイル定義（ワードラップ対応・可読性重視） ---
-
+// スタイル定義は既存 V2.7.8 を維持
 const containerStyle: React.CSSProperties = {
   minHeight: '100vh',
   backgroundColor: '#000',
@@ -357,7 +363,7 @@ const containerStyle: React.CSSProperties = {
 
 const innerWrapperStyle: React.CSSProperties = {
   width: '100%',
-  maxWidth: '800px' // デスクトップ向けの幅制限
+  maxWidth: '800px'
 }
 
 const titleStyle: React.CSSProperties = {
@@ -462,7 +468,7 @@ const ratingPlaceholderStyle: React.CSSProperties = {
 
 const annotationStyle: React.CSSProperties = {
   fontSize: '0.7rem',
-  color: '#ffcc00', // 注意を引くために少し黄色がかった色
+  color: '#ffcc00',
   marginTop: '-8px',
   marginBottom: '12px',
   lineHeight: '1.4'

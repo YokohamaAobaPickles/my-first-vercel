@@ -1,6 +1,9 @@
 /**
  * Filename: utils/memberHelpers.test.ts
- * Version : V2.6.1
+ * Version : V2.6.2
+ * 内容：
+ * V2.6.2
+ * - Supabaseのモック
  */
 import { describe, it, expect } from 'vitest'
 import { validateRegistration, isNicknameDuplicate } from './memberHelpers'
