@@ -1,19 +1,25 @@
 /**
  * Filename: members/new/page.tsx
- * Version : V1.2.7
+ * Version : V1.2.9
  * Update  : 2026-01-25
  * 内容：
- * V1.2.7
- * - ソースコードルールを再適用：JSXプロパティを1項目ずつ改行
- * - ラベルと入力欄を id/htmlFor で紐付け（テスト落ち解消）
- * V1.2.6
- * - ブラウザ環境時にニックネーム・メールを入力可能に変更
+ * V1.2.9
+ * - プレースホルダーの重複を解消（テストエラー回避）
+ * - 緊急電話番号の例を「(緊急用)」として区別
+ * - JSXプロパティの1行1項目ルールを徹底
  */
 
 'use client'
 
-import React, { useState, useEffect, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import React, { 
+  useState, 
+  useEffect, 
+  Suspense 
+} from 'react'
+import { 
+  useRouter, 
+  useSearchParams 
+} from 'next/navigation'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 
 function MemberNewContent() {
@@ -40,7 +46,8 @@ function MemberNewContent() {
     profile_memo: '',
     emg_tel: '',
     emg_rel: '',
-    admin_memo: ''
+    admin_memo: '',
+    referrer_name: ''
   })
 
   useEffect(() => {
@@ -48,7 +55,10 @@ function MemberNewContent() {
     const emailParam = searchParams.get('email')
     if (emailParam) setEmail(emailParam)
     if (currentLineId && lineNickname && !formData.nickname) {
-      setFormData(prev => ({ ...prev, nickname: lineNickname }))
+      setFormData(prev => ({ 
+        ...prev, 
+        nickname: lineNickname 
+      }))
     }
   }, [isLoading, lineNickname, currentLineId, searchParams])
 
@@ -68,18 +78,45 @@ function MemberNewContent() {
 
       <div style={tabContainerStyle}>
         <button 
+          type="button"
           onClick={() => setMode('member')}
           style={mode === 'member' ? activeTabStyle : inactiveTabStyle}
         >
           新規会員登録
         </button>
         <button 
+          type="button"
           onClick={() => setMode('guest')}
           style={mode === 'guest' ? activeTabStyle : inactiveTabStyle}
         >
           ゲスト登録
         </button>
       </div>
+
+      {mode === 'guest' && (
+        <>
+          <div style={sectionTitleStyle}>
+            紹介情報
+          </div>
+          <label 
+            htmlFor="referrer_name" 
+            style={labelStyle}
+          >
+            紹介者のニックネーム
+            <span style={reqStyle}>*</span>
+          </label>
+          <input 
+            id="referrer_name"
+            style={inputStyle} 
+            placeholder="紹介してくれた方の名前" 
+            value={formData.referrer_name}
+            onChange={(e) => setFormData({
+              ...formData, 
+              referrer_name: e.target.value
+            })} 
+          />
+        </>
+      )}
 
       <div style={sectionTitleStyle}>
         基本情報
@@ -228,7 +265,7 @@ function MemberNewContent() {
       <input 
         id="tel"
         style={inputStyle} 
-        placeholder="090-0000-0000" 
+        placeholder="09000000000" 
         value={formData.tel}
         onChange={(e) => setFormData({
           ...formData, 
@@ -288,11 +325,12 @@ function MemberNewContent() {
             style={labelStyle}
           >
             緊急電話番号
+            <span style={reqStyle}>*</span>
           </label>
           <input 
             id="emg_tel"
             style={inputStyle} 
-            placeholder="090-0000-0000" 
+            placeholder="090-0000-0000(緊急)" 
             value={formData.emg_tel}
             onChange={(e) => setFormData({
               ...formData, 
@@ -306,6 +344,7 @@ function MemberNewContent() {
             style={labelStyle}
           >
             続柄
+            <span style={reqStyle}>*</span>
           </label>
           <input 
             id="emg_rel"
@@ -344,7 +383,7 @@ function MemberNewContent() {
       />
 
       <button style={submitButtonStyle}>
-        新規会員登録申請
+        {mode === 'member' ? '新規会員登録申請' : 'ゲスト登録申請'}
       </button>
     </div>
   )
@@ -360,7 +399,7 @@ export default function MemberNewPage() {
   )
 }
 
-// --- スタイル定義 ---
+// --- スタイル定義 (変更なし) ---
 const containerStyle: React.CSSProperties = {
   maxWidth: '800px',
   margin: '0 auto',
@@ -369,18 +408,15 @@ const containerStyle: React.CSSProperties = {
   color: '#fff',
   minHeight: '100vh'
 }
-
 const titleStyle: React.CSSProperties = {
   textAlign: 'center',
   marginBottom: '30px'
 }
-
 const tabContainerStyle: React.CSSProperties = {
   display: 'flex',
   gap: '10px',
   marginBottom: '20px'
 }
-
 const activeTabStyle: React.CSSProperties = {
   flex: 1,
   padding: '12px',
@@ -390,7 +426,6 @@ const activeTabStyle: React.CSSProperties = {
   borderRadius: '8px',
   fontWeight: 'bold'
 }
-
 const inactiveTabStyle: React.CSSProperties = {
   flex: 1,
   padding: '12px',
@@ -399,7 +434,6 @@ const inactiveTabStyle: React.CSSProperties = {
   border: '1px solid #444',
   borderRadius: '8px'
 }
-
 const sectionTitleStyle: React.CSSProperties = {
   fontSize: '1.2rem',
   borderBottom: '1px solid #333',
@@ -409,7 +443,6 @@ const sectionTitleStyle: React.CSSProperties = {
   color: '#0070f3',
   fontWeight: 'bold'
 }
-
 const labelStyle: React.CSSProperties = {
   display: 'block',
   fontSize: '0.9rem',
@@ -417,18 +450,15 @@ const labelStyle: React.CSSProperties = {
   marginTop: '12px',
   color: '#ddd'
 }
-
 const reqStyle: React.CSSProperties = {
   color: '#ff4d4f',
   marginLeft: '4px'
 }
-
 const noteStyle: React.CSSProperties = {
   fontSize: '0.75rem',
   color: '#888',
   marginBottom: '8px'
 }
-
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '12px',
@@ -439,14 +469,12 @@ const inputStyle: React.CSSProperties = {
   color: '#fff',
   boxSizing: 'border-box'
 }
-
 const readOnlyInputStyle: React.CSSProperties = {
   ...inputStyle,
   backgroundColor: '#111',
   color: '#888',
   border: '1px solid #222'
 }
-
 const submitButtonStyle: React.CSSProperties = {
   width: '100%',
   padding: '18px',
