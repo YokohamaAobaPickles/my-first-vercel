@@ -1,8 +1,10 @@
 /**
  * Filename: src/app/members/login/page.tsx
- * Version : V1.3.3
+ * Version : V1.3.5
  * Update  : 2026-01-25
  * 内容：
+ * V1.3.5
+ * - お知らせ管理機能デグレ確認のため一時的ににパラメタに情報追加する
  * V1.3.3
  * - 過去の全修正履歴を復元（V1.1.0〜V1.3.1）
  * - 一般ブラウザログインをスタブから「実働ロジック」へ変更
@@ -19,9 +21,9 @@
 
 'use client'
 
-import React, { 
-  useState, 
-  useEffect 
+import React, {
+  useState,
+  useEffect
 } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
@@ -30,10 +32,10 @@ import Link from 'next/link'
 
 export default function MemberLoginPage() {
   const router = useRouter()
-  const { 
-    currentLineId, 
-    user, 
-    isLoading 
+  const {
+    currentLineId,
+    user,
+    isLoading
   } = useAuthCheck()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -69,8 +71,8 @@ export default function MemberLoginPage() {
         } else {
           const { error: updateError } = await supabase
             .from('members')
-            .update({ 
-              line_id: currentLineId 
+            .update({
+              line_id: currentLineId
             })
             .eq('email', email)
 
@@ -110,8 +112,17 @@ export default function MemberLoginPage() {
 
       if (member) {
         alert(`${member.name}様、ログインしました`)
-        // 以前のようにプロフィール画面へ遷移させる
-        router.push('/members/profile')
+
+        // ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊
+        // 一般ブラウザ ログイン（デグレ確認用 V1.3.5）
+        // 【重要】セッションがないため、URLパラメータに会員情報を乗せて遷移
+        // これにより、プロフィール画面側で「誰が来たか」を特定できる可能性を作ります
+
+        router.push(`/members/profile?id=${member.id}`)
+
+        // ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊
+
+
       } else {
         alert('メールアドレスまたはパスワードが正しくありません')
       }
@@ -137,10 +148,10 @@ export default function MemberLoginPage() {
         <h1 style={titleStyle}>
           {currentLineId ? 'LINE会員確認' : 'ログイン'}
         </h1>
-        
+
         <div style={formContentStyle}>
           <p style={descStyle}>
-            {currentLineId 
+            {currentLineId
               ? '登録状況を確認します。メールアドレスを入力してください。'
               : 'メールアドレスとパスワードを入力してください。'}
           </p>
@@ -183,8 +194,8 @@ export default function MemberLoginPage() {
 
           {!currentLineId && (
             <div style={linkContainerStyle}>
-              <Link 
-                href="/members/new" 
+              <Link
+                href="/members/new"
                 style={linkStyle}
               >
                 新規会員登録はこちら
