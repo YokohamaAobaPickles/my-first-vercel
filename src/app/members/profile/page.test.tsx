@@ -1,8 +1,12 @@
 /**
  * Filename: src/app/members/profile/page.test.tsx
- * Version : V1.2.0
+ * Version : V1.3.0
  * Update  : 2026-01-25
  * 修正内容：
+ * V1.3.0
+ * - 未登録ユーザー（currentLineIdあり/userなし）時に、
+ * ログイン画面へ自動遷移することを検証するテストケースを追加
+ * - 80文字ワードラップ、条件判定の改行を適用
  * V1.2.0
  * - 正常系（登録済みユーザーの表示）のテストケースを追加
  * - 不要になった「旧仕様の確認テスト」を削除
@@ -19,9 +23,17 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import ProfilePage from './page'
 import { useAuthCheck } from '../../../hooks/useAuthCheck'
+import { useRouter } from 'next/navigation'
 
-// 認証チェックをモック化
+// 認証チェックとナビゲーションをモック化
 vi.mock('../../../hooks/useAuthCheck')
+
+const mockReplace = vi.fn()
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    replace: mockReplace,
+  }),
+}))
 
 describe('ProfilePage - 最終デグレ確認', () => {
   const TEST_LINE_ID = 'U_TEST_USER_456'
@@ -31,42 +43,43 @@ describe('ProfilePage - 最終デグレ確認', () => {
     member_number: 'M-001',
     member_kind: '正会員',
     roles: '一般',
-    status: 'active'
+    status: 'active',
   }
 
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('【新仕様】未登録ユーザーの場合、エラー画面ではなくローディングを表示し続けること', async () => {
-    // useAuthCheck がリダイレクト処理中（isLoading: true）の状態をシミュレート
+  it('【新仕様】未登録ユーザーの場合、ログイン画面へリダイレクトされること', async () => {
+    // データ取得は完了したが、ユーザーが見つからない状態をシミュレート
     ;(useAuthCheck as any).mockReturnValue({
-      isLoading: true,
+      isLoading: false,
       user: null,
-      currentLineId: TEST_LINE_ID
+      currentLineId: TEST_LINE_ID,
     })
 
     render(<ProfilePage />)
 
-    // 非同期処理を考慮して少し待機
-    await new Promise(resolve => setTimeout(resolve, 100))
-    
-    // 読み込み中が表示され続け、エラーメッセージが出ないことを確認
-    expect(screen.queryByText(/読み込み中.../)).toBeTruthy()
+    // 期待値: 
+    // 1. 会員情報が見つからないエラーが出ていないこと
+    // 2. ログイン画面(/members/login) へのリダイレクトが実行されること
     expect(screen.queryByText(/会員情報が見つかりませんでした/)).toBeNull()
+    
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith('/members/login')
+    })
   })
 
   it('【正常系】登録済みユーザーの場合、プロフィール情報が正しく表示されること', async () => {
-    // ログイン済み・データ取得完了の状態をモック
     ;(useAuthCheck as any).mockReturnValue({
       isLoading: false,
       user: TEST_USER,
-      currentLineId: TEST_LINE_ID
+      currentLineId: TEST_LINE_ID,
     })
 
     render(<ProfilePage />)
 
-    // V1.1.0 から構築してきた表示項目が欠落していないか検証（デグレ防止）
+    // 以前のバージョンで構築した表示項目の検証
     expect(screen.getByText(/テスト太郎/)).toBeTruthy()
     expect(screen.getByText(/タロウ/)).toBeTruthy()
     expect(screen.getByText(/M-001/)).toBeTruthy()
