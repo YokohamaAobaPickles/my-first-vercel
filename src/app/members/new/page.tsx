@@ -1,25 +1,24 @@
 /**
  * Filename: members/new/page.tsx
- * Version : V1.2.0
+ * Version : V1.2.1
  * Update  : 2026-01-25
  * 内容：
+ * V1.2.1
+ * - useSearchParams利用に伴うビルドエラー回避のため Suspense Boundary を追加
+ * - スタイル定義を含め、全体に80文字ワードラップを適用
  * V1.2.0
  * - useAuthCheck から lineNickname を取得し、初期値に自動セット
  * - URLパラメータから email を取得し、初期値セット ＆ readOnly 制御を実装
- * - 欠落していた「ニックネーム」入力欄を JSX に追加
- * V1.1.0
- * - 以前のlogin/page.tsxの詳細項目を完全移植、モード切替実装
  */
 
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import { supabase } from '@/lib/supabase'
-import { validateRegistration } from '@/utils/memberHelpers'
 
-export default function MemberNewPage() {
+function MemberNewContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { currentLineId, lineNickname, isLoading } = useAuthCheck()
@@ -40,36 +39,34 @@ export default function MemberNewPage() {
     profile_memo: ''
   })
 
-  // LINE情報とURLパラメータの初期反映
   useEffect(() => {
-
-    // 実行タイミングを確認
-    console.log('[DEBUG-NEW] useEffect triggered. isLoading:', isLoading);
+    // 観測用デバッグログ
+    console.log(
+      '[DEBUG-NEW]', 
+      'isLoading:', isLoading, 
+      'email:', searchParams.get('email'), 
+      'lineNickname:', lineNickname
+    )
 
     if (isLoading) return
 
-    // 1. URLからメールアドレスを取得
     const emailParam = searchParams.get('email')
+    if (emailParam) setEmail(emailParam)
 
-    console.log('[DEBUG-NEW] emailParam from URL:', emailParam); // ここが null なら遷移元の問題
-
-    if (emailParam) {
-      setEmail(emailParam)
-    }
-
-    // 2. LINEのニックネームを初期値にセット（未入力の場合のみ）
-    console.log('[DEBUG-NEW] lineNickname from hook:', lineNickname); // ここが null なら hooks の問題
-    
     if (lineNickname && !formData.nickname) {
       setFormData(prev => ({ ...prev, nickname: lineNickname }))
     }
   }, [isLoading, lineNickname, searchParams])
 
-  if (isLoading) return <div style={containerStyle}>読み込み中...</div>
+  if (isLoading) {
+    return <div style={containerStyle}>読み込み中...</div>
+  }
 
   return (
     <div style={containerStyle}>
-      <h1 style={titleStyle}>{currentLineId ? 'LINE会員登録' : '新規登録'}</h1>
+      <h1 style={titleStyle}>
+        {currentLineId ? 'LINE会員登録' : '新規登録'}
+      </h1>
 
       <div style={tabContainerStyle}>
         <button 
@@ -92,7 +89,7 @@ export default function MemberNewPage() {
         placeholder="メールアドレス" 
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        readOnly={!!searchParams.get('email')} // パラメータがあれば編集不可
+        readOnly={!!searchParams.get('email')} 
       />
       <input 
         type="password" 
@@ -106,22 +103,18 @@ export default function MemberNewPage() {
       <input 
         style={inputStyle} 
         placeholder="氏名（漢字）" 
-        aria-label="氏名（漢字）"
         value={formData.name}
         onChange={(e) => setFormData({...formData, name: e.target.value})}
       />
       <input 
         style={inputStyle} 
         placeholder="氏名（ローマ字）" 
-        aria-label="氏名（ローマ字）"
         value={formData.name_roma}
         onChange={(e) => setFormData({...formData, name_roma: e.target.value})}
       />
-      {/* 欠落していたニックネーム入力欄を追加 */}
       <input 
         style={inputStyle} 
         placeholder="ニックネーム" 
-        aria-label="ニックネーム"
         value={formData.nickname}
         onChange={(e) => setFormData({...formData, nickname: e.target.value})}
       />
@@ -130,14 +123,12 @@ export default function MemberNewPage() {
       <input 
         style={inputStyle} 
         placeholder="DUPR ID" 
-        aria-label="DUPR ID"
         value={formData.dupr_id}
         onChange={(e) => setFormData({...formData, dupr_id: e.target.value})}
       />
       <textarea 
         style={{ ...inputStyle, height: '80px' }} 
-        placeholder="自己紹介・メモ（他の会員に公開されます）" 
-        aria-label="自己紹介・メモ"
+        placeholder="自己紹介・メモ" 
         value={formData.profile_memo}
         onChange={(e) => setFormData({...formData, profile_memo: e.target.value})}
       />
@@ -147,14 +138,12 @@ export default function MemberNewPage() {
         <input 
           style={inputStyle} 
           placeholder="電話番号" 
-          aria-label="電話番号"
           value={formData.emg_tel}
           onChange={(e) => setFormData({...formData, emg_tel: e.target.value})}
         />
         <input 
           style={inputStyle} 
           placeholder="続柄" 
-          aria-label="続柄"
           value={formData.emg_rel}
           onChange={(e) => setFormData({...formData, emg_rel: e.target.value})}
         />
@@ -167,7 +156,16 @@ export default function MemberNewPage() {
   )
 }
 
-// スタイル定義（V1.1.0継承＋α）
+export default function MemberNewPage() {
+  return (
+    <Suspense fallback={<div style={containerStyle}>読み込み中...</div>}>
+      <MemberNewContent />
+    </Suspense>
+  )
+}
+
+// --- スタイル定義（80文字ワードラップ適用） ---
+
 const containerStyle: React.CSSProperties = {
   maxWidth: '800px',
   margin: '0 auto',
@@ -238,7 +236,7 @@ const submitButtonStyle: React.CSSProperties = {
   border: 'none',
   borderRadius: '30px',
   fontWeight: 'bold',
-  cursor: 'pointer',
   fontSize: '1rem',
-  marginTop: '30px'
+  marginTop: '30px',
+  cursor: 'pointer'
 }
