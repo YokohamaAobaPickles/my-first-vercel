@@ -1,15 +1,12 @@
 /**
  * Filename: announcements/admin/[id]/page.tsx
- * Version : V1.4.0
+ * Version : V1.4.1
  * Update  : 2026-01-25
  * 内容：
+ * V1.4.1
+ * - マッピング処理のNullガードを強化
  * V1.4.0
  * - PCユーザー（line_idカラムにemailが入っている場合）の名前表示に対応
- * - 結合ロジックの不備（外部結合）をアプリ側で補完
- * V1.3.0
- * - @/hooks/useAuthCheckに対応
- * V1.1.0 ~ V1.2.0
- * - デザインをダークモードに変更、ニックネーム表示に変更
  */
 
 'use client'
@@ -22,31 +19,35 @@ import { useAuthCheck } from '@/hooks/useAuthCheck'
 
 export default function AnnouncementReadDetailPage() {
   const { id } = useParams()
-  const { isLoading: isAuthLoading, userRoles } = useAuthCheck()
+  const { 
+    isLoading: isAuthLoading, 
+    userRoles 
+  } = useAuthCheck()
   const [readers, setReaders] = useState<any[]>([])
 
   useEffect(() => {
     if (isAuthLoading || !canManageAnnouncements(userRoles)) return
 
     const fetchReaders = async () => {
-      // 1. 既読データを取得
+      // 1. 既読データの取得
       const { data: reads } = await supabase
         .from('announcement_reads')
         .select('read_at, line_id')
         .eq('announcement_id', id)
         .order('read_at', { ascending: false })
       
-      if (!reads) return
+      if (!reads || reads.length === 0) return
 
-      // 2. 既読者の詳細情報を取得 (line_id が LINE ID か Email かに関わらずマッチさせる)
+      // 2. 会員マスタの取得
       const { data: members } = await supabase
         .from('members')
         .select('line_id, email, name, nickname')
 
-      // アプリ側でマッピング（DB結合で漏れるPCユーザーを救済）
+      // 3. アプリ側でデータを結合 (LINE ID または Email でマッチング)
       const combinedData = reads.map(r => {
         const member = members?.find(m => 
-          m.line_id === r.line_id || m.email === r.line_id
+          (m.line_id && m.line_id === r.line_id) || 
+          (m.email && m.email === r.line_id)
         )
         return {
           read_at: r.read_at,
@@ -82,22 +83,30 @@ export default function AnnouncementReadDetailPage() {
             </tr>
           </thead>
           <tbody>
-            {readers.map((r, i) => (
-              <tr key={i} style={rowStyle}>
-                <td style={tdStyle}>
-                  {r.nickname} ({r.name})
-                  {r.is_pc && <span style={pcBadgeStyle}>PC</span>}
-                </td>
-                <td style={tdRightStyle}>
-                  {new Date(r.read_at).toLocaleString('ja-JP', {
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
+            {readers.length === 0 ? (
+              <tr>
+                <td colSpan={2} style={{ ...tdStyle, color: '#666', textAlign: 'center' }}>
+                  既読データはありません
                 </td>
               </tr>
-            ))}
+            ) : (
+              readers.map((r, i) => (
+                <tr key={i} style={rowStyle}>
+                  <td style={tdStyle}>
+                    {r.nickname} ({r.name})
+                    {r.is_pc && <span style={pcBadgeStyle}>PC</span>}
+                  </td>
+                  <td style={tdRightStyle}>
+                    {new Date(r.read_at).toLocaleString('ja-JP', {
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -105,7 +114,7 @@ export default function AnnouncementReadDetailPage() {
   )
 }
 
-// スタイル定義
+// スタイル定義 (1行1プロパティ)
 const containerStyle: React.CSSProperties = {
   backgroundColor: '#000',
   color: '#fff',

@@ -1,15 +1,15 @@
 /**
  * Filename: hooks/useAuthCheck.ts
- * Version : V1.6.0
+ * Version : V1.7.0
  * Update  : 2026-01-25
  * 内容：
+ * V1.7.0
+ * - PCログイン済みの場合、LIFFの処理を完全にバイパスして400エラーを防止
+ * - 非同期処理の順序を整理し、セッション判定を厳格化
  * V1.6.0
  * - PCブラウザでのログイン後、LIFFによる400エラーを防ぐガードを追加
- * - Supabaseセッションがある場合はLIFF初期化をスキップまたは限定化
  * V1.5.0
- * - 戻り値に user (DBレコード全体) を追加。PCユーザーの既読判定用。
- * V1.4.0
- * - PCブラウザ時のリダイレクトガードを強化
+ * - 戻り値に user を追加。PCユーザーの既読判定用。
  */
 
 import { useEffect, useState } from 'react'
@@ -28,11 +28,10 @@ export const useAuthCheck = () => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        // 1. まずSupabaseのセッションがあるか（PCログイン済みか）確認
+        // 1. Supabaseのセッションをチェック（PCログイン・メール認証済みか）
         const { data: { session } } = await supabase.auth.getSession()
         
         if (session?.user) {
-          // PCユーザーとしてログイン済みの場合
           const { data: member } = await supabase
             .from('members')
             .select('*')
@@ -44,11 +43,13 @@ export const useAuthCheck = () => {
             setCurrentLineId(member.line_id || null)
             setUser(member)
             setIsLoading(false)
-            return // LINEの処理へ行かずに終了
+            return // ★ここで終了：PCユーザーならLIFFを初期化しない
           }
         }
 
-        // 2. LINEアプリ内、またはLINEログインの処理
+        // 2. LINEアプリ内、またはLIFFが必要な環境かチェック
+        // PCブラウザでセッションがない場合も一旦ここへ来るが、
+        // ログイン画面へ飛ばす前にLIFF初期化を試みる
         await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID! })
 
         if (!liff.isLoggedIn()) {
@@ -61,7 +62,7 @@ export const useAuthCheck = () => {
           return 
         }
 
-        // LINEログイン済みのプロフィール取得
+        // 3. LINEログイン済みの処理
         const profile = await liff.getProfile()
         setCurrentLineId(profile.userId)
 
@@ -80,6 +81,7 @@ export const useAuthCheck = () => {
 
       } catch (err) {
         console.error('Auth Check Error:', err)
+        // エラー時はPCログイン画面へ
         if (pathname !== '/members/login') {
           router.replace('/members/login')
         }
