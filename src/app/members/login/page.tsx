@@ -111,17 +111,15 @@ export default function MemberLoginPage() {
       if (error) throw error
 
       if (member) {
+
+        // 【重要】会員IDのみを「ブラウザを閉じると消える」一時保存領域に格納
+        // 個人情報を直接持たず、会員IDという「鍵」だけを保持する
+        sessionStorage.setItem('auth_member_id', member.id)
+
         alert(`${member.name}様、ログインしました`)
 
-        // ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊
-        // 一般ブラウザ ログイン（デグレ確認用 V1.3.5）
-        // 【重要】セッションがないため、URLパラメータに会員情報を乗せて遷移
-        // これにより、プロフィール画面側で「誰が来たか」を特定できる可能性を作ります
-
-        router.push(`/members/profile?id=${member.id}`)
-
-        // ＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊＊
-
+        // パラメータを付けず、シンプルにプロフィール画面へ
+        router.push(`/members/profile`)
 
       } else {
         alert('メールアドレスまたはパスワードが正しくありません')

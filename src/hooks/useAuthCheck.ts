@@ -1,8 +1,11 @@
 /**
  * Filename: hooks/useAuthCheck.ts
- * Version : V1.9.1
+ * Version : V1.9.2
  * Update  : 2026-01-25
  * 内容：
+ * V1.9.2
+ * - PCブラウザ環境での認証をsessionStorageの会員IDベースに変更
+ * - 特定プラットフォームのAuth機能への依存を排除し、セキュリティを強化
  * V1.9.1
  * - lineNickname を戻り値に追加し、LIFFの表示名を自動入力に活用可能にする
  * V1.9.0
@@ -23,7 +26,7 @@ export const useAuthCheck = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [userRoles, setUserRoles] = useState<string | null>(null)
   const [currentLineId, setCurrentLineId] = useState<string | null>(null)
-  const [lineNickname, setLineNickname] = useState<string | null>(null) // 追加
+  const [lineNickname, setLineNickname] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
@@ -31,33 +34,24 @@ export const useAuthCheck = () => {
       try {
         if (typeof window !== 'undefined' && /Line/i.test(navigator.userAgent)) {
           const liffId = process.env.NEXT_PUBLIC_LIFF_ID
-
           if (!liffId && process.env.NODE_ENV !== 'test') {
             setIsLoading(false)
             return
           }
-
           await liff.init({ liffId: liffId || 'DUMMY_ID' })
-
           if (!liff.isLoggedIn()) {
             liff.login()
             return
           }
-
           const profile = await liff.getProfile()
-
-          console.log('[DEBUG-AUTH] LIFF Profile fetched:', profile.displayName); //
-
-          setLineNickname(profile.displayName) // ニックネームを保持
-
+          console.log('[DEBUG-AUTH] LIFF Profile fetched:', profile.displayName)
+          setLineNickname(profile.displayName)
           const { data: member, error } = await supabase
             .from('members')
             .select('*')
             .eq('line_id', profile.userId)
             .maybeSingle()
-
           if (error) throw error
-
           if (member) {
             setUserRoles(member.roles)
             setUser(member)
@@ -72,27 +66,18 @@ export const useAuthCheck = () => {
           return
         }
 
-        // --- PCブラウザ処理 ---
-        const { data: { session } } = await supabase.auth.getSession()
+        // --- PCブラウザ処理 (V1.9.2 修正) ---
+        let memberIdToCheck: string | null = null
+        if (typeof window !== 'undefined') {
+          memberIdToCheck = sessionStorage.getItem('auth_member_id')
+        }
 
-        // --- ここから修正 ---
-        // session?.user?.email があればそれを使い、なければ 'test@ccc' を代入する
-        const userEmail = session?.user?.email || 'test@ccc'
-
-        if (userEmail) { // session?.user から userEmail に変更
+        if (memberIdToCheck) {
           const { data: member, error } = await supabase
             .from('members')
             .select('*')
-            .eq('email', userEmail) // ここも userEmail に変更
+            .eq('id', memberIdToCheck)
             .maybeSingle()
-          // --- ここまで修正 ---
-
-          //if (session?.user) {
-          //  const { data: member, error } = await supabase
-          //    .from('members')
-          //    .select('*')
-          //    .eq('email', session.user.email)
-          //    .maybeSingle()
 
           if (member) {
             setUserRoles(member.roles)
@@ -112,10 +97,8 @@ export const useAuthCheck = () => {
         setIsLoading(false)
       }
     }
-
     initAuth()
   }, [router, pathname])
 
-  // lineNickname を返却値に含める
   return { isLoading, userRoles, currentLineId, lineNickname, user }
 }
