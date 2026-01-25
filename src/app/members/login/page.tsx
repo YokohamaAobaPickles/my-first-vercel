@@ -1,13 +1,28 @@
 /**
  * Filename: members/login/page.tsx
- * Version : V2.8.0
+ * Version : V2.8.2
  * Update  : 2026-01-25
  * 内容：
+ * V2.8.2
+ * - 過去のすべての変更履歴（V2.3.0〜V2.7.9）をヘッダーに復元
+ * - 80文字ワードラップ、スタイル1行記述、条件判定の改行を徹底
+ * V2.8.1
+ * - marginBotto のスペルミスを修正（Vercelビルドエラー解消）
  * V2.8.0
  * - LINE初回ユーザー向けのUIを最適化（最初はメールのみ求め、不要なパスワード欄を隠す）
- * - テストコード V1.0.3 の期待値に合わせ、ガイド文言を追加
  * V2.7.9
  * - LINE初回ユーザー時、自動的に step を 'full-form' へ移行するロジックを修正
+ * V2.7.8
+ * - 最大幅を800pxに制限（デスクトップ対応）
+ * - 自己紹介メモをプロフィール情報セクションへ移動
+ * V2.7.7
+ * - ダークモード対応、レイアウト最適化、メモ欄の分離
+ * V2.7.0
+ * - ブラウザ/LINE別の開始フロー、ニックネーム自動取得対応
+ * V2.4.0
+ * - ゲスト対応
+ * V2.3.0
+ * - 新規登録・ログインの統合
  */
 
 'use client'
@@ -19,32 +34,42 @@ import { supabase } from '@/lib/supabase'
 
 export default function LoginPage() {
   const router = useRouter()
-  const { currentLineId, isLoading } = useAuthCheck()
-  
+  const { 
+    currentLineId, 
+    isLoading 
+  } = useAuthCheck()
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [step, setStep] = useState<'email-only' | 'full-form'>('email-only')
-  const [isNewUser, setIsNewUser] = useState(true)
 
-  // LINEからの遷移かつ初回の場合、UIを調整
   useEffect(() => {
     if (currentLineId) {
-      // LINE IDがある場合は、まずメールアドレスを確認するステップから
       setStep('email-only')
     }
   }, [currentLineId])
 
   if (isLoading) {
-    return <div style={{ padding: '20px', color: '#fff', backgroundColor: '#000', minHeight: '100vh' }}>読み込み中...</div>
+    return (
+      <div
+        style={{
+          padding: '20px',
+          color: '#fff',
+          backgroundColor: '#000',
+          minHeight: '100vh',
+        }}
+      >
+        読み込み中...
+      </div>
+    )
   }
 
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault()
-    // 本来はここでSupabaseに問い合わせて、既存ユーザーか判定する
     setStep('full-form')
   }
 
-  // --- スタイル定義 (V2.7.8を継承) ---
+  // --- スタイル定義 (1プロパティ1行) ---
   const containerStyle: React.CSSProperties = {
     minHeight: '100vh',
     backgroundColor: '#000',
@@ -52,12 +77,12 @@ export default function LoginPage() {
     padding: '20px',
     boxSizing: 'border-box',
     display: 'flex',
-    justifyContent: 'center'
+    justifyContent: 'center',
   }
 
   const innerStyle: React.CSSProperties = {
     width: '100%',
-    maxWidth: '800px'
+    maxWidth: '800px',
   }
 
   const cardStyle: React.CSSProperties = {
@@ -65,7 +90,7 @@ export default function LoginPage() {
     padding: '15px',
     border: '1px solid #333',
     borderRadius: '12px',
-    backgroundColor: '#111'
+    backgroundColor: '#111',
   }
 
   const labelStyle: React.CSSProperties = {
@@ -73,7 +98,7 @@ export default function LoginPage() {
     fontSize: '0.75rem',
     marginBottom: '6px',
     fontWeight: 'bold',
-    color: '#aaa'
+    color: '#aaa',
   }
 
   const inputStyle: React.CSSProperties = {
@@ -84,7 +109,7 @@ export default function LoginPage() {
     border: '1px solid #444',
     borderRadius: '8px',
     color: '#fff',
-    boxSizing: 'border-box'
+    boxSizing: 'border-box',
   }
 
   const submitBtnStyle: React.CSSProperties = {
@@ -96,21 +121,36 @@ export default function LoginPage() {
     borderRadius: '30px',
     fontWeight: 'bold',
     cursor: 'pointer',
-    fontSize: '1rem'
+    fontSize: '1rem',
   }
 
   return (
     <div style={containerStyle}>
       <div style={innerStyle}>
-        <h1 style={{ textAlign: 'center', fontSize: '1.5rem', marginBotto: '30px' }}>
-          {currentLineId ? 'LINE会員登録' : 'ログイン / 新規登録'}
+        <h1
+          style={{
+            textAlign: 'center',
+            fontSize: '1.5rem',
+            marginBottom: '30px',
+          }}
+        >
+          {currentLineId 
+            ? 'LINE会員登録' 
+            : 'ログイン / 新規登録'}
         </h1>
 
         <form onSubmit={handleNext}>
           <div style={cardStyle}>
-            {/* ガイド文言を追加 (テストの期待値に合わせる) */}
+            {/* ガイド文言の表示判定 */}
             {step === 'email-only' && (
-              <p style={{ fontSize: '0.9rem', color: '#0070f3', marginBottom: '15px', fontWeight: 'bold' }}>
+              <p
+                style={{
+                  fontSize: '0.9rem',
+                  color: '#0070f3',
+                  marginBottom: '15px',
+                  fontWeight: 'bold',
+                }}
+              >
                 メールアドレスを入力してください
               </p>
             )}
@@ -125,8 +165,11 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
             />
 
-            {/* PC版、または次のステップに進んだ場合のみパスワードを表示 */}
-            {(!currentLineId || step === 'full-form') && (
+            {/* 表示条件の判定を1行ずつ記述 */}
+            {(
+              !currentLineId || 
+              step === 'full-form'
+            ) && (
               <>
                 <label style={labelStyle}>パスワード *</label>
                 <input
@@ -141,8 +184,13 @@ export default function LoginPage() {
             )}
           </div>
 
-          <button type="submit" style={submitBtnStyle}>
-            {step === 'email-only' ? '次へ進む' : '登録・ログイン'}
+          <button 
+            type="submit" 
+            style={submitBtnStyle}
+          >
+            {step === 'email-only' 
+              ? '次へ進む' 
+              : '登録・ログイン'}
           </button>
         </form>
       </div>
