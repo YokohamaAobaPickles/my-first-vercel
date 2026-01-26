@@ -1,0 +1,10 @@
+// 暫定：テストのインポートエラーを防ぐためだけの定義
+export const useAuthCheck = () => {
+  return {
+    user: null,
+    isLoading: true,
+    currentLineId: null,
+    userRoles: null,
+    lineNickname: null,
+  }
+}
