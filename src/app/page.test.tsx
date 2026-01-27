@@ -15,6 +15,7 @@
  * - LINE初回アクセス、LINEリピート、PC未ログイン、PCログイン済みの4ケースを網羅
  */
 
+import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
 import { render, waitFor } from '@testing-library/react'
 import RootPage from './page'
 import { useRouter } from 'next/navigation'
@@ -43,13 +44,13 @@ describe('RootPage (app/page.tsx) - 交通整理のテスト', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    ;(useRouter as vi.Mock).mockReturnValue({ replace: mockReplace })
+    ;(useRouter as Mock).mockReturnValue({ replace: mockReplace })
   })
 
   describe('LINEアプリからのアクセス (currentLineIdがある場合)', () => {
     // Case 1: LINE初回アクセス (IDあり / DB未登録)
     test('【Case 1】DB未登録なら /members/login へリダイレクトすること', async () => {
-      (useAuthCheck as vi.Mock).mockReturnValue({
+      (useAuthCheck as Mock).mockReturnValue({
         user: null,
         isLoading: false,
         currentLineId: 'LINE_ID_EXAMPLE',
@@ -60,7 +61,7 @@ describe('RootPage (app/page.tsx) - 交通整理のテスト', () => {
 
     // Case 2: LINEリピート (IDあり / DB登録済み)
     test('【Case 2】DB登録済みなら /members/profile へリダイレクトすること', async () => {
-      (useAuthCheck as vi.Mock).mockReturnValue({
+      (useAuthCheck as Mock).mockReturnValue({
         user: { id: 'existing-uuid' },
         isLoading: false,
         currentLineId: 'LINE_ID_EXAMPLE',
@@ -73,7 +74,7 @@ describe('RootPage (app/page.tsx) - 交通整理のテスト', () => {
   describe('ブラウザからのアクセス (currentLineIdがない場合)', () => {
     // Case 3: ブラウザ未ログイン (IDなし / セッションなし)
     test('【Case 3】未ログインなら /members/login へリダイレクトすること', async () => {
-      (useAuthCheck as vi.Mock).mockReturnValue({
+      (useAuthCheck as Mock).mockReturnValue({
         user: null,
         isLoading: false,
         currentLineId: null,
@@ -84,7 +85,7 @@ describe('RootPage (app/page.tsx) - 交通整理のテスト', () => {
 
     // Case 4: ブラウザログイン済み (IDなし / セッションあり)
     test('【Case 4】ログイン済みなら /members/profile へリダイレクトすること', async () => {
-      (useAuthCheck as vi.Mock).mockReturnValue({
+      (useAuthCheck as Mock).mockReturnValue({
         user: { id: 'existing-uuid' },
         isLoading: false,
         currentLineId: null,

@@ -1,197 +1,228 @@
 /**
  * Filename: announcements/new/page.tsx
- * Version : V1.1.0
- * Update  : 2026-01-21
- * 修正内容：
+ * Version : V1.3.0
+ * Update  : 2026-01-25
+ * 内容：
+ * V1.3.0
+ * - レイアウト修正(800px、中央寄せ)
+ * - ダークモードでの入力欄視認性向上
+ * - 公開日・ステータス設定のスタイル崩れを修正
+ * V1.2.0
+ * - hook/authCheckに対応
+ * V1.1.0
  * - DBカラム名に合わせて target_role に修正
  * - author_id (LINE ID) を保存するように追加
  */
 
 'use client'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import liff from '@line/liff'
+import Link from 'next/link'
 import { canManageAnnouncements } from '@/utils/auth'
+import { useAuthCheck } from '@/hooks/useAuthCheck'
 
 export default function NewAnnouncementPage() {
   const router = useRouter()
-  const [loading, setLoading] = useState(true)
+  const { 
+    isLoading: isAuthLoading, 
+    userRoles, 
+    currentLineId, 
+    user 
+  } = useAuthCheck()
+  
   const [saving, setSaving] = useState(false)
-  const [hasPermission, setHasPermission] = useState(false)
-  const [lineId, setLineId] = useState<string | null>(null)
-
-  // フォームの状態
-  const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
-  const [publishDate, setPublishDate] = useState(new Date().toISOString().split('T')[0])
-  const [isPinned, setIsPinned] = useState(false)
-  const [targetRole, setTargetRole] = useState('ALL') // 全員(ALL) または特定のロール
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID! })
-        if (!liff.isLoggedIn()) {
-          liff.login()
-          return
-        }
-        const profile = await liff.getProfile()
-        setLineId(profile.userId) // 作成者IDとして保持
-
-        const { data: member } = await supabase
-          .from('members')
-          .select('roles')
-          .eq('line_id', profile.userId)
-          .single()
-
-        if (canManageAnnouncements(member?.roles || null)) {
-          setHasPermission(true)
-        } else {
-          alert('アクセス権限がありません。')
-          router.push('/announcements')
-        }
-      } catch (err) {
-        console.error('Auth error:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-    checkAuth()
-  }, [router])
+  const [form, setForm] = useState({ 
+    title: '', 
+    content: '', 
+    date: new Date().toISOString().split('T')[0], 
+    isPinned: false,
+    status: 'published'
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!title || !content) {
-      alert('タイトルと本文を入力してください。')
-      return
-    }
-
     setSaving(true)
-    const { error } = await supabase.from('announcements').insert([
-      {
-        title,
-        content,
-        publish_date: publishDate,
-        is_pinned: isPinned,
-        target_role: targetRole, // カラム名を修正
-        status: 'published',
-        author_id: lineId, // 作成者のLINE IDを記録
-      },
-    ])
-
-    if (error) {
-      alert('保存に失敗しました: ' + error.message)
+    const { error } = await supabase.from('announcements').insert({
+      title: form.title, 
+      content: form.content, 
+      publish_date: form.date, 
+      is_pinned: form.isPinned, 
+      author_id: currentLineId || user?.email,
+      status: form.status
+    })
+    
+    if (!error) {
+      router.push('/announcements/admin')
     } else {
-      alert('お知らせを公開しました。')
-      router.push('/announcements')
+      alert(error.message)
     }
     setSaving(false)
   }
 
-  if (loading) return <div style={{ padding: '20px' }}>権限を確認中...</div>
-  if (!hasPermission) return null
+  if (isAuthLoading) return <div style={containerStyle}>読み込み中...</div>
+  if (!canManageAnnouncements(userRoles)) {
+    return <div style={containerStyle}>権限がありません</div>
+  }
 
   return (
-    <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-      <h1 style={{ fontSize: '1.2rem', marginBottom: '20px', fontWeight: 'bold' }}>
-        お知らせ新規作成
-      </h1>
-      
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '15px' }}>
-          <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px', fontWeight: 'bold' }}>タイトル</label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '1rem' }}
-            placeholder="例：次回会合のお知らせ"
-            required
+    <div style={containerStyle}>
+      <div style={{ marginBottom: '20px' }}>
+        <Link href="/announcements/admin" style={cancelLinkStyle}>
+          ← キャンセル
+        </Link>
+      </div>
+
+      <h2 style={formTitleStyle}>新規お知らせ投稿</h2>
+
+      <form onSubmit={handleSubmit} style={formStyle}>
+        <div style={fieldGroupStyle}>
+          <label style={labelStyle}>タイトル *</label>
+          <input 
+            type="text" 
+            required 
+            placeholder="記事のタイトル" 
+            value={form.title} 
+            onChange={e => setForm({...form, title: e.target.value})} 
+            style={inputStyle} 
           />
         </div>
 
-        <div style={{ marginBottom: '15px' }}>
-          <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px', fontWeight: 'bold' }}>本文</label>
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            style={{ width: '100%', height: '200px', padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '1rem', lineHeight: '1.5' }}
-            placeholder="お知らせの内容を入力してください"
-            required
+        <div style={fieldGroupStyle}>
+          <label style={labelStyle}>本文 *</label>
+          <textarea 
+            required 
+            placeholder="本文を入力" 
+            value={form.content} 
+            onChange={e => setForm({...form, content: e.target.value})} 
+            style={{ ...inputStyle, height: '250px', resize: 'vertical' }} 
           />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px', fontWeight: 'bold' }}>公開日</label>
-            <input
-              type="date"
-              value={publishDate}
-              onChange={(e) => setPublishDate(e.target.value)}
-              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
+        <div style={rowStyle}>
+          <div style={{ flex: 1 }}>
+            <label style={labelStyle}>公開開始日</label>
+            <input 
+              type="date" 
+              value={form.date} 
+              onChange={e => setForm({...form, date: e.target.value})} 
+              style={inputStyle} 
             />
           </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px', fontWeight: 'bold' }}>表示対象</label>
-            <select
-              value={targetRole}
-              onChange={(e) => setTargetRole(e.target.value)}
-              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: 'black' }}
+          <div style={{ flex: 1 }}>
+            <label style={labelStyle}>公開状況</label>
+            <select 
+              value={form.status} 
+              onChange={e => setForm({...form, status: e.target.value})} 
+              style={inputStyle}
             >
-              <option value="ALL">全員</option>
-              <option value="PREMIUM">プレミア会員</option>
+              <option value="published">公開</option>
+              <option value="draft">下書き</option>
+              <option value="disabled">無効</option>
             </select>
           </div>
         </div>
 
-        <div style={{ 
-          marginBottom: '25px', 
-          padding: '10px', 
-          backgroundColor: '#333', 
-          borderRadius: '8px',
-          display: 'flex',
-          alignItems: 'center'
-        }}>
-          <input
-            type="checkbox"
-            id="pinned"
-            checked={isPinned}
-            onChange={(e) => setIsPinned(e.target.checked)}
-            style={{ width: '18px', height: '18px', marginRight: '10px' }}
-          />
-          <label htmlFor="pinned" style={{ fontSize: '0.9rem', cursor: 'pointer' }}>
-            重要記事として一覧の上部に固定する
+        <div style={checkboxWrapperStyle}>
+          <label style={checkboxLabelStyle}>
+            <input 
+              type="checkbox" 
+              checked={form.isPinned} 
+              onChange={e => setForm({...form, isPinned: e.target.checked})} 
+            />
+            <span>重要記事としてトップに固定する</span>
           </label>
         </div>
 
-        <button
-          type="submit"
-          disabled={saving}
-          style={{
-            width: '100%',
-            padding: '16px',
-            backgroundColor: saving ? '#ccc' : '#0070f3',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '1rem',
-            fontWeight: 'bold',
-            boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-          }}
-        >
-          {saving ? '保存中...' : 'お知らせを公開する'}
+        <button disabled={saving} style={submitBtnStyle}>
+          {saving ? '保存中...' : '登録する'}
         </button>
       </form>
-
-      <div style={{ marginTop: '20px', textAlign: 'center' }}>
-        <button 
-          onClick={() => router.back()} 
-          style={{ background: 'none', border: 'none', color: '#666', textDecoration: 'underline', fontSize: '0.9rem' }}
-        >
-          キャンセルして戻る
-        </button>
-      </div>
     </div>
   )
+}
+
+const containerStyle: React.CSSProperties = {
+  backgroundColor: '#000',
+  color: '#fff',
+  minHeight: '100vh',
+  padding: '20px',
+  maxWidth: '800px',
+  margin: '0 auto'
+}
+
+const cancelLinkStyle: React.CSSProperties = {
+  color: '#888',
+  textDecoration: 'none',
+  fontSize: '0.9rem'
+}
+
+const formTitleStyle: React.CSSProperties = {
+  fontSize: '1.4rem',
+  marginBottom: '25px',
+  textAlign: 'center'
+}
+
+const formStyle: React.CSSProperties = {
+  backgroundColor: '#111',
+  padding: '25px',
+  borderRadius: '12px',
+  border: '1px solid #222'
+}
+
+const fieldGroupStyle: React.CSSProperties = {
+  marginBottom: '20px'
+}
+
+const rowStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: '20px',
+  marginBottom: '20px'
+}
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: '0.8rem',
+  color: '#aaa',
+  marginBottom: '8px',
+  fontWeight: 'bold'
+}
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '12px',
+  backgroundColor: '#222',
+  border: '1px solid #444',
+  borderRadius: '8px',
+  color: '#fff',
+  fontSize: '1rem',
+  boxSizing: 'border-box'
+}
+
+const checkboxWrapperStyle: React.CSSProperties = {
+  backgroundColor: '#1a1a1a',
+  padding: '15px',
+  borderRadius: '8px',
+  marginBottom: '25px',
+  border: '1px solid #333'
+}
+
+const checkboxLabelStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '12px',
+  cursor: 'pointer',
+  fontSize: '0.9rem'
+}
+
+const submitBtnStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '16px',
+  backgroundColor: '#0070f3',
+  color: 'white',
+  border: 'none',
+  borderRadius: '30px',
+  fontWeight: 'bold',
+  cursor: 'pointer',
+  fontSize: '1rem'
 }

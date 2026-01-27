@@ -1,118 +1,108 @@
 /**
  * Filename: announcements/admin/[id]/page.tsx
- * Version : V1.2.0
- * Update  : 2026-01-22
- * 修正内容：
- * V1.2.0
- * - ニックネーム(本名)表示に変更
- * V1.1.0
- * - テーブル内カラム修正 user_id → line_id
- * - デザインをダークモード（黒背景・白文字）に変更
- * - 戻るボタンをシンプルなテキストリンクに変更
+ * Version : V1.4.1
+ * Update  : 2026-01-25
+ * 内容：
+ * V1.4.1
+ * - マッピング処理のNullガードを強化
+ * V1.4.0
+ * - PCユーザー（line_idカラムにemailが入っている場合）の名前表示に対応
  */
 
 'use client'
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import liff from '@line/liff'
 import { canManageAnnouncements } from '@/utils/auth'
-
-type ReadUser = {
-  line_id: string
-  read_at: string
-  members: {
-    name: string
-    nickname: string
-  } | null
-}
+import { useAuthCheck } from '@/hooks/useAuthCheck'
 
 export default function AnnouncementReadDetailPage() {
   const { id } = useParams()
-  const router = useRouter()
-  const [readers, setReaders] = useState<ReadUser[]>([])
-  const [announcementTitle, setAnnouncementTitle] = useState('')
-  const [loading, setLoading] = useState(true)
+  const { 
+    isLoading: isAuthLoading, 
+    userRoles 
+  } = useAuthCheck()
+  const [readers, setReaders] = useState<any[]>([])
 
   useEffect(() => {
-    const fetchReadData = async () => {
-      try {
-        await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID! })
-        if (!liff.isLoggedIn()) return liff.login()
+    if (isAuthLoading || !canManageAnnouncements(userRoles)) return
 
-        const profile = await liff.getProfile()
-        const { data: member } = await supabase.from('members').select('roles').eq('line_id', profile.userId).single()
+    const fetchReaders = async () => {
+      // 1. 既読データの取得
+      const { data: reads } = await supabase
+        .from('announcement_reads')
+        .select('read_at, line_id')
+        .eq('announcement_id', id)
+        .order('read_at', { ascending: false })
+      
+      if (!reads || reads.length === 0) return
 
-        if (!canManageAnnouncements(member?.roles || null)) {
-          router.push('/announcements')
-          return
+      // 2. 会員マスタの取得
+      const { data: members } = await supabase
+        .from('members')
+        .select('line_id, email, name, nickname')
+
+      // 3. アプリ側でデータを結合 (LINE ID または Email でマッチング)
+      const combinedData = reads.map(r => {
+        const member = members?.find(m => 
+          (m.line_id && m.line_id === r.line_id) || 
+          (m.email && m.email === r.line_id)
+        )
+        return {
+          read_at: r.read_at,
+          name: member?.name || '不明なユーザー',
+          nickname: member?.nickname || 'ゲスト',
+          is_pc: !member?.line_id
         }
+      })
 
-        const { data: ann } = await supabase.from('announcements').select('title').eq('id', id).single()
-        if (ann) setAnnouncementTitle(ann.title)
-
-        // カラム名を line_id に修正して取得
-        const { data: readData, error } = await supabase
-          .from('announcement_reads')
-          .select(`
-            line_id,
-            read_at,
-            members (
-              name,
-              nickname
-            )
-          `)
-          .eq('announcement_id', id)
-          .order('read_at', { ascending: false });
-
-        if (!error) setReaders(readData as any)
-      } catch (err) {
-        console.error(err)
-      } finally {
-        setLoading(false)
-      }
+      setReaders(combinedData)
     }
-    fetchReadData()
-  }, [id])
+    fetchReaders()
+  }, [isAuthLoading, userRoles, id])
 
-  if (loading) return <div style={{ padding: '20px', backgroundColor: '#121212', color: '#fff', minHeight: '100vh' }}>読み込み中...</div>
+  if (isAuthLoading) return <div style={containerStyle}>読み込み中...</div>
 
   return (
-    <div style={{
-      padding: '20px',
-      maxWidth: '600px',
-      margin: '0 auto',
-      backgroundColor: '#121212', // 深い黒
-      color: '#ffffff',           // 白文字
-      minHeight: '100vh'
-    }}>
-      <h1 style={{ fontSize: '0.9rem', color: '#aaa', marginBottom: '5px' }}>既読ユーザー一覧</h1>
-      <h2 style={{ fontSize: '1.3rem', marginBottom: '20px', borderBottom: '1px solid #333', paddingBottom: '10px' }}>
-        {announcementTitle}
-      </h2>
+    <div style={containerStyle}>
+      <div style={{ marginBottom: '20px' }}>
+        <Link href="/announcements/admin" style={backLinkStyle}>
+          ← 管理パネルに戻る
+        </Link>
+      </div>
 
-      <div style={{ border: '1px solid #333', borderRadius: '8px', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <h3 style={titleStyle}>既読ユーザー一覧</h3>
+
+      <div style={tableContainerStyle}>
+        <table style={tableStyle}>
           <thead>
-            <tr style={{ backgroundColor: '#1e1e1e', borderBottom: '1px solid #333' }}>
-              <th style={{ padding: '12px', textAlign: 'left', fontSize: '0.9rem', color: '#aaa' }}>氏名</th>
-              <th style={{ padding: '12px', textAlign: 'right', fontSize: '0.9rem', color: '#aaa' }}>既読日時</th>
+            <tr style={headerRowStyle}>
+              <th style={thStyle}>氏名 (ニックネーム)</th>
+              <th style={thRightStyle}>既読日時</th>
             </tr>
           </thead>
           <tbody>
             {readers.length === 0 ? (
               <tr>
-                <td colSpan={2} style={{ padding: '20px', textAlign: 'center', color: '#666' }}>既読ユーザーはいません</td>
+                <td colSpan={2} style={{ ...tdStyle, color: '#666', textAlign: 'center' }}>
+                  既読データはありません
+                </td>
               </tr>
             ) : (
-              readers.map((r, index) => (
-                <tr key={index} style={{ borderBottom: '1px solid #222' }}>
-                  <td style={{ padding: '12px', fontSize: '1rem' }}>{r.members
-                    ? `${r.members.nickname} (${r.members.name})`
-                    : '不明なユーザー'}</td>
-                  <td style={{ padding: '12px', textAlign: 'right', fontSize: '0.8rem', color: '#aaa' }}>
-                    {new Date(r.read_at).toLocaleString('ja-JP')}
+              readers.map((r, i) => (
+                <tr key={i} style={rowStyle}>
+                  <td style={tdStyle}>
+                    {r.nickname} ({r.name})
+                    {r.is_pc && <span style={pcBadgeStyle}>PC</span>}
+                  </td>
+                  <td style={tdRightStyle}>
+                    {new Date(r.read_at).toLocaleString('ja-JP', {
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
                   </td>
                 </tr>
               ))
@@ -120,16 +110,84 @@ export default function AnnouncementReadDetailPage() {
           </tbody>
         </table>
       </div>
-
-      <div style={{ marginTop: '40px' }}>
-        <Link href="/announcements/admin" style={{
-          textDecoration: 'none',
-          color: '#0070f3', // リンクらしい青色
-          fontSize: '1rem'
-        }}>
-          ← 管理一覧へ戻る
-        </Link>
-      </div>
     </div>
   )
+}
+
+// スタイル定義 (1行1プロパティ)
+const containerStyle: React.CSSProperties = {
+  backgroundColor: '#000',
+  color: '#fff',
+  minHeight: '100vh',
+  padding: '20px',
+  maxWidth: '800px',
+  margin: '0 auto'
+}
+
+const backLinkStyle: React.CSSProperties = {
+  color: '#aaa',
+  textDecoration: 'none',
+  fontSize: '0.9rem'
+}
+
+const titleStyle: React.CSSProperties = {
+  fontSize: '1.2rem',
+  margin: '20px 0',
+  borderLeft: '4px solid #0070f3',
+  paddingLeft: '12px'
+}
+
+const tableContainerStyle: React.CSSProperties = {
+  backgroundColor: '#111',
+  borderRadius: '10px',
+  border: '1px solid #222',
+  overflow: 'hidden'
+}
+
+const tableStyle: React.CSSProperties = {
+  width: '100%',
+  borderCollapse: 'collapse'
+}
+
+const headerRowStyle: React.CSSProperties = {
+  borderBottom: '2px solid #222',
+  backgroundColor: '#1a1a1a'
+}
+
+const thStyle: React.CSSProperties = {
+  textAlign: 'left',
+  padding: '15px',
+  fontSize: '0.85rem',
+  color: '#888'
+}
+
+const thRightStyle: React.CSSProperties = {
+  ...thStyle,
+  textAlign: 'right'
+}
+
+const rowStyle: React.CSSProperties = {
+  borderBottom: '1px solid #222'
+}
+
+const tdStyle: React.CSSProperties = {
+  padding: '15px',
+  fontSize: '0.95rem'
+}
+
+const tdRightStyle: React.CSSProperties = {
+  ...tdStyle,
+  textAlign: 'right',
+  fontSize: '0.85rem',
+  color: '#aaa'
+}
+
+const pcBadgeStyle: React.CSSProperties = {
+  fontSize: '0.6rem',
+  backgroundColor: '#333',
+  color: '#aaa',
+  padding: '2px 4px',
+  borderRadius: '3px',
+  marginLeft: '8px',
+  verticalAlign: 'middle'
 }

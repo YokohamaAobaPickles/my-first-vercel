@@ -1,173 +1,206 @@
 /**
  * Filename: announcements/admin/page.tsx
- * Version : V1.1.0
- * Update  : 2026-01-22
- * 修正内容：
+ * Version : V1.3.1
+ * Update  : 2026-01-25
+ * 内容：
+ * V1.3.1
+ * - 管理者一覧にも「重要」ラベルを表示するように修正
+ * V1.3.0
+ * - 一般向け「記事一覧に戻る」リンクを追加
+ * - レイアウトをダークモード(800px)へ調整
+ * V1.2.0
+ * - useAuthCheck対応版
+ * V1.1.0
  * - 各記事の既読者数（👀）を表示する機能を追加
  */
 
 'use client'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import liff from '@line/liff'
 import { canManageAnnouncements } from '@/utils/auth'
-
-type Announcement = {
-  id: number
-  title: string
-  publish_date: string
-  status: string
-  is_pinned: boolean
-}
+import { useAuthCheck } from '@/hooks/useAuthCheck'
 
 export default function AnnouncementAdminPage() {
-  const router = useRouter()
-  const [announcements, setAnnouncements] = useState<Announcement[]>([])
-  const [readCounts, setReadCounts] = useState<{ [key: number]: number }>({}) // ★ 既読数保持用
-  const [loading, setLoading] = useState(true)
-  const [hasPermission, setHasPermission] = useState(false)
+  const { 
+    isLoading: isAuthLoading, 
+    userRoles 
+  } = useAuthCheck()
+  
+  const [announcements, setAnnouncements] = useState<any[]>([])
+  const [readCounts, setReadCounts] = useState<{[key: number]: number}>({})
 
   useEffect(() => {
-    const checkAuthAndFetch = async () => {
-      try {
-        await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID! })
-        if (!liff.isLoggedIn()) {
-          liff.login()
-          return
-        }
+    if (isAuthLoading || !canManageAnnouncements(userRoles)) return
 
-        const profile = await liff.getProfile()
-        const { data: member } = await supabase
-          .from('members')
-          .select('roles')
-          .eq('line_id', profile.userId)
-          .single()
+    const fetchData = async () => {
+      const { data } = await supabase
+        .from('announcements')
+        .select('*')
+        .order('is_pinned', { ascending: false }) // ピン留めを優先
+        .order('publish_date', { ascending: false })
+      
+      setAnnouncements(data || [])
 
-        if (!canManageAnnouncements(member?.roles || null)) {
-          alert('権限がありません')
-          router.push('/announcements')
-          return
-        }
-        setHasPermission(true)
-
-        // 1. お知らせ一覧取得
-        const { data: annData, error: annError } = await supabase
-          .from('announcements')
-          .select('id, title, publish_date, status, is_pinned')
-          .order('publish_date', { ascending: false })
-          .order('created_at', { ascending: false })
-
-        if (annError) throw annError
-        setAnnouncements(annData || [])
-
-        // ★ 2. 既読数の集計取得
-        const { data: reads, error: readsError } = await supabase
-          .from('announcement_reads') // 正しいテーブル名
-          .select('announcement_id')
-
-        if (!readsError && reads) {
-          const counts: { [key: number]: number } = {}
-          reads.forEach(r => {
-            const aid = Number(r.announcement_id)
-            counts[aid] = (counts[aid] || 0) + 1
-          })
-          setReadCounts(counts)
-        }
-
-      } catch (err) {
-        console.error(err)
-      } finally {
-        setLoading(false)
+      const { data: reads } = await supabase
+        .from('announcement_reads')
+        .select('announcement_id')
+      
+      if (reads) {
+        const counts: any = {}
+        reads.forEach(r => {
+          counts[r.announcement_id] = (counts[r.announcement_id] || 0) + 1
+        })
+        setReadCounts(counts)
       }
     }
-    checkAuthAndFetch()
-  }, [router])
+    fetchData()
+  }, [isAuthLoading, userRoles])
 
-  if (loading) return <div style={{ padding: '20px' }}>読み込み中...</div>
-  if (!hasPermission) return null
+  if (isAuthLoading) return <div style={containerStyle}>読み込み中...</div>
+  if (!canManageAnnouncements(userRoles)) {
+    return <div style={containerStyle}>権限がありません</div>
+  }
 
   return (
-    <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h1 style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>お知らせ管理</h1>
-        <Link href="/announcements/new" style={{
-          backgroundColor: '#0070f3',
-          color: 'white',
-          padding: '8px 16px',
-          borderRadius: '20px',
-          textDecoration: 'none',
-          fontSize: '0.9rem',
-          fontWeight: 'bold'
-        }}>
-          ＋ 新規作成
+    <div style={containerStyle}>
+      <div style={navWrapperStyle}>
+        <Link href="/announcements" style={backLinkStyle}>
+          ← 一般向け記事一覧に戻る
+        </Link>
+        <Link href="/announcements/new" style={newBtnStyle}>
+          + 新規作成
         </Link>
       </div>
 
-      <div style={{ borderTop: '1px solid #eee' }}>
-        {announcements.map((ann) => (
-          <div key={ann.id} style={{
-            padding: '15px 0',
-            borderBottom: '1px solid #eee',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                <span style={{
-                  fontSize: '0.7rem',
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  backgroundColor: ann.status === 'published' ? '#e6f7ff' : ann.status === 'disable' ? '#f5f5f5' : '#fff1f0',
-                  color: ann.status === 'published' ? '#1890ff' : ann.status === 'disable' ? '#8c8c8c' : '#f5222d',
-                  border: `1px solid ${ann.status === 'published' ? '#91d5ff' : ann.status === 'disable' ? '#d9d9d9' : '#ffa39e'}`
-                }}>
-                  {ann.status === 'published' ? '公開' : ann.status === 'disable' ? '無効' : '下書き'}
-                </span>
-                <span style={{ fontSize: '0.8rem', color: '#666' }}>{ann.publish_date}</span>
+      <h2 style={titleStyle}>お知らせ管理 (管理者用)</h2>
 
-                {/* ★ 既読数の表示を追加 */}
-                <Link href={`/announcements/admin/${ann.id}`} style={{
-                  fontSize: '0.8rem',
-                  color: '#0070f3', // 青色にしてリンクであることを強調
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '3px',
-                  marginLeft: '8px',
-                  textDecoration: 'underline' // アンダーラインを追加
-                }}>
-                  👀 {readCounts[ann.id] || 0}
-                </Link>              </div>
-              <Link href={`/announcements/${ann.id}`} style={{
-                textDecoration: 'none',
-                color: '#333',
-                fontWeight: ann.is_pinned ? 'bold' : 'normal'
-              }}>
-                {ann.is_pinned && '📌 '}{ann.title}
-              </Link>
+      {announcements.map(ann => (
+        <div key={ann.id} style={adminCardStyle}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={statusBadgeStyle(ann.status)}>
+                {ann.status === 'published' ? '公開中' : '下書き/無効'}
+              </div>
+              {ann.is_pinned && <span style={pinBadgeStyle}>重要</span>}
             </div>
-            <Link href={`/announcements/edit/${ann.id}`} style={{
-              fontSize: '0.9rem',
-              color: '#0070f3',
-              textDecoration: 'none',
-              marginLeft: '15px',
-              padding: '8px',
-              border: '1px solid #0070f3',
-              borderRadius: '6px'
-            }}>
+            <div style={cardTitleStyle}>{ann.title}</div>
+            <div style={cardMetaStyle}>{ann.publish_date}</div>
+          </div>
+          
+          <div style={actionGroupStyle}>
+            <Link 
+              href={`/announcements/admin/${ann.id}`} 
+              style={readCountLinkStyle}
+            >
+              👀 {readCounts[ann.id] || 0}
+            </Link>
+            <Link 
+              href={`/announcements/edit/${ann.id}`} 
+              style={editLinkStyle}
+            >
               編集
             </Link>
           </div>
-        ))}
-      </div>
-
-      <div style={{ marginTop: '30px' }}>
-        <Link href="/announcements" style={{ color: '#666', fontSize: '0.9rem' }}>
-          ← 一般公開一覧へ
-        </Link>
-      </div>
+        </div>
+      ))}
     </div>
   )
+}
+
+// スタイル定義
+const containerStyle: React.CSSProperties = {
+  backgroundColor: '#000',
+  color: '#fff',
+  minHeight: '100vh',
+  padding: '20px',
+  maxWidth: '800px',
+  margin: '0 auto'
+}
+
+const navWrapperStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: '20px'
+}
+
+const backLinkStyle: React.CSSProperties = {
+  color: '#aaa',
+  textDecoration: 'none',
+  fontSize: '0.9rem'
+}
+
+const newBtnStyle: React.CSSProperties = {
+  backgroundColor: '#0070f3',
+  color: 'white',
+  padding: '10px 20px',
+  borderRadius: '8px',
+  textDecoration: 'none',
+  fontSize: '0.9rem',
+  fontWeight: 'bold'
+}
+
+const titleStyle: React.CSSProperties = {
+  fontSize: '1.3rem',
+  marginBottom: '20px'
+}
+
+const adminCardStyle: React.CSSProperties = {
+  border: '1px solid #222',
+  padding: '15px',
+  borderRadius: '10px',
+  marginBottom: '12px',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  backgroundColor: '#111'
+}
+
+const statusBadgeStyle = (status: string): React.CSSProperties => ({
+  fontSize: '0.7rem',
+  color: status === 'published' ? '#4caf50' : '#888',
+  marginBottom: '4px'
+})
+
+const pinBadgeStyle: React.CSSProperties = {
+  backgroundColor: '#ff4d4f',
+  color: 'white',
+  padding: '1px 5px',
+  borderRadius: '3px',
+  fontSize: '0.65rem',
+  marginBottom: '4px'
+}
+
+const cardTitleStyle: React.CSSProperties = {
+  fontSize: '1rem',
+  fontWeight: 'bold',
+  marginBottom: '4px'
+}
+
+const cardMetaStyle: React.CSSProperties = {
+  fontSize: '0.75rem',
+  color: '#666'
+}
+
+const actionGroupStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '15px'
+}
+
+const readCountLinkStyle: React.CSSProperties = {
+  textDecoration: 'none',
+  color: '#aaa',
+  fontSize: '0.9rem',
+  backgroundColor: '#222',
+  padding: '4px 8px',
+  borderRadius: '6px'
+}
+
+const editLinkStyle: React.CSSProperties = {
+  color: '#4dabf7',
+  textDecoration: 'none',
+  fontSize: '0.9rem',
+  fontWeight: 'bold'
 }
