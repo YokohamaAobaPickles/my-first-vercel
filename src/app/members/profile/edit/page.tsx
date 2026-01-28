@@ -1,10 +1,11 @@
 /**
  * Filename: src/app/members/profile/edit/page.tsx
- * Version : V1.6.2
- * Update  : 2026-01-27
+ * Version : V1.6.5
+ * Update  : 2026-01-28
  * 内容：
- * - 一般メンバー向け業務ルール（基本情報の readOnly 化）
- * - 80文字ワードラップ / スタイル定義の改行ルール適用
+ * - 連絡先・住所セクションの復元（テストエラー解消）
+ * - Hooks の順序修正 (Error #310 回避)
+ * - ニックネーム重複チェック、公開設定、LINEユーザー制御の統合
  */
 
 'use client'
@@ -18,6 +19,8 @@ export default function EditProfilePage() {
   const { user, isLoading } = useAuthCheck()
   const router = useRouter()
 
+  // --- Hooks は必ず冒頭に ---
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     nickname: '',
     postal: '',
@@ -27,7 +30,8 @@ export default function EditProfilePage() {
     dupr_id: '',
     emg_tel: '',
     emg_rel: '',
-    emg_memo: ''
+    emg_memo: '',
+    is_profile_public: true
   })
 
   useEffect(() => {
@@ -41,107 +45,115 @@ export default function EditProfilePage() {
         dupr_id: user.dupr_id || '',
         emg_tel: user.emg_tel || '',
         emg_rel: user.emg_rel || '',
-        emg_memo: user.emg_memo || ''
+        emg_memo: user.emg_memo || '',
+        is_profile_public: user.is_profile_public ?? true
       })
     }
   }, [user])
 
-  if (isLoading) {
-    return <div style={styles.container}>読み込み中...</div>
-  }
+  // --- 早期リターンは Hooks の後 ---
+  if (isLoading) return <div style={styles.container}>読み込み中...</div>
   if (!user) return null
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    const { id, value } = e.target
-    setFormData(prev => ({ ...prev, [id]: value }))
+    const { id, value, type } = e.target as HTMLInputElement
+    const val = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+    setFormData(prev => ({ ...prev, [id]: val }))
   }
 
-  const [isSubmitting, setIsSubmitting] = useState(false) // 状態管理を追加
-
   const handleSave = async () => {
-    if (!user?.id) return
+    if (!user.id) return
 
-    // --- ニックネーム重複チェック ---
-    // ニックネームが変更されており、かつ空でない場合のみチェック
     if (formData.nickname !== user.nickname && formData.nickname !== '') {
       const isDup = await checkNicknameExists(formData.nickname)
       if (isDup) {
         alert('このニックネームは既に他のメンバーに使用されています。')
-        return // 保存を中断
+        return
       }
     }
 
     setIsSubmitting(true)
-
     try {
-      // 既に実装済みの API 関数を呼び出す
       const res = await updateMemberProfile(user.id, formData)
-
       if (res.success) {
-        alert('プロフィールを更新しました')
+        alert('プロフィールを保存しました')
         router.push('/members/profile')
       } else {
-        alert(`保存に失敗しました: ${res.error?.message}`)
+        alert(`エラー: ${res.error?.message}`)
       }
-    } catch (error) {
-      alert('通信エラーが発生しました')
+    } catch (err) {
+      alert('予期せぬエラーが発生しました')
     } finally {
       setIsSubmitting(false)
     }
   }
+
+  const isLineUser = !!user.line_id
 
   return (
     <div style={styles.container}>
       <div style={styles.wrapper}>
         <h1 style={styles.title}>プロフィール編集</h1>
 
-        {/* 1. 編集不可セクション */}
+        {/* 公開設定 */}
         <section style={styles.section}>
-          <h2 style={styles.sectionTitle}>基本情報（変更不可）</h2>
+          <h2 style={styles.sectionTitle}>公開設定</h2>
           <div style={styles.card}>
-            {[
-              { id: 'name', label: '氏名', val: user.name },
-              { id: 'name_roma', label: '氏名（ローマ字）', val: user.name_roma },
-              { id: 'gender', label: '性別', val: user.gender },
-              { id: 'birthday', label: '生年月日', val: user.birthday },
-              { id: 'member_number', label: '会員番号', val: user.member_number },
-              { id: 'roles', label: 'ロール', val: user.roles }
-            ].map(item => (
-              <div key={item.id} style={styles.inputGroup}>
-                <label htmlFor={item.id} style={styles.label}>
-                  {item.label}
-                </label>
-                <input
-                  id={item.id}
-                  style={styles.readOnlyInput}
-                  value={item.val || ''}
-                  readOnly
-                />
-              </div>
-            ))}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <input
+                type="checkbox"
+                id="is_profile_public"
+                checked={formData.is_profile_public}
+                onChange={handleChange}
+                style={{ width: '20px', height: '20px' }}
+              />
+              <label htmlFor="is_profile_public" style={styles.label}>
+                プロフィールを他の会員に公開する
+              </label>
+            </div>
           </div>
         </section>
 
-        {/* 2. 編集可能セクション */}
+        {/* 公開プロフィール */}
         <section style={styles.section}>
           <h2 style={styles.sectionTitle}>公開プロフィール</h2>
           <div style={styles.card}>
             <div style={styles.inputGroup}>
               <label htmlFor="nickname" style={styles.label}>
-                ニックネーム
+                ニックネーム {isLineUser && '(LINE連携中は変更不可)'}
               </label>
               <input
                 id="nickname"
-                style={styles.input}
+                style={isLineUser ? styles.readOnlyInput : styles.input}
                 value={formData.nickname}
+                onChange={handleChange}
+                readOnly={isLineUser}
+              />
+            </div>
+            <div style={styles.inputGroup}>
+              <label htmlFor="profile_memo" style={styles.label}>自己紹介</label>
+              <textarea
+                id="profile_memo"
+                style={{ ...styles.input, height: '80px' }}
+                value={formData.profile_memo}
+                onChange={handleChange}
+              />
+            </div>
+            <div style={styles.inputGroup}>
+              <label htmlFor="dupr_id" style={styles.label}>DUPR ID</label>
+              <input
+                id="dupr_id"
+                style={styles.input}
+                value={formData.dupr_id}
                 onChange={handleChange}
               />
             </div>
           </div>
         </section>
 
+        {/* 連絡先・住所 (ここを復元しました) */}
         <section style={styles.section}>
           <h2 style={styles.sectionTitle}>連絡先・住所</h2>
           <div style={styles.card}>
@@ -175,6 +187,7 @@ export default function EditProfilePage() {
           </div>
         </section>
 
+        {/* 緊急連絡先 */}
         <section style={styles.section}>
           <h2 style={styles.sectionTitle}>緊急連絡先</h2>
           <div style={styles.card}>
@@ -201,18 +214,28 @@ export default function EditProfilePage() {
           </div>
         </section>
 
+        {/* 基本情報（変更不可） */}
         <section style={styles.section}>
-          <h2 style={styles.sectionTitle}>競技情報</h2>
+          <h2 style={styles.sectionTitle}>基本情報（変更不可）</h2>
           <div style={styles.card}>
-            <div style={styles.inputGroup}>
-              <label htmlFor="dupr_id" style={styles.label}>DUPR ID</label>
-              <input
-                id="dupr_id"
-                style={styles.input}
-                value={formData.dupr_id}
-                onChange={handleChange}
-              />
-            </div>
+            {[
+              { id: 'name', label: '氏名', val: user.name },
+              { id: 'name_roma', label: '氏名（ローマ字）', val: user.name_roma },
+              { id: 'gender', label: '性別', val: user.gender },
+              { id: 'birthday', label: '生年月日', val: user.birthday },
+              { id: 'member_number', label: '会員番号', val: user.member_number },
+              { id: 'roles', label: 'ロール', val: user.roles }
+            ].map(item => (
+              <div key={item.id} style={styles.inputGroup}>
+                <label htmlFor={item.id} style={styles.label}>{item.label}</label>
+                <input
+                  id={item.id}
+                  style={styles.readOnlyInput}
+                  value={item.val || ''}
+                  readOnly
+                />
+              </div>
+            ))}
           </div>
         </section>
 
@@ -220,11 +243,16 @@ export default function EditProfilePage() {
           <button
             onClick={() => router.push('/members/profile')}
             style={styles.cancelButton}
+            disabled={isSubmitting}
           >
             キャンセル
           </button>
-          <button onClick={handleSave} style={styles.saveButton}>
-            保存する
+          <button
+            onClick={handleSave}
+            style={styles.saveButton}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? '保存中...' : '保存する'}
           </button>
         </div>
       </div>
@@ -242,18 +270,9 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: '#fff',
     minHeight: '100vh'
   },
-  wrapper: {
-    width: '100%',
-    maxWidth: '500px'
-  },
-  title: {
-    fontSize: '1.5rem',
-    marginBottom: '30px',
-    textAlign: 'center'
-  },
-  section: {
-    marginBottom: '32px'
-  },
+  wrapper: { width: '100%', maxWidth: '500px' },
+  title: { fontSize: '1.5rem', marginBottom: '30px', textAlign: 'center' },
+  section: { marginBottom: '32px' },
   sectionTitle: {
     fontSize: '0.9rem',
     color: '#888',
@@ -266,15 +285,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     padding: '20px',
     border: '1px solid #333'
   },
-  inputGroup: {
-    marginBottom: '16px'
-  },
-  label: {
-    display: 'block',
-    fontSize: '0.85rem',
-    color: '#aaa',
-    marginBottom: '6px'
-  },
+  inputGroup: { marginBottom: '16px' },
+  label: { display: 'block', fontSize: '0.85rem', color: '#aaa', marginBottom: '6px' },
   input: {
     width: '100%',
     padding: '12px',
@@ -296,12 +308,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     outline: 'none',
     cursor: 'not-allowed'
   },
-  buttonContainer: {
-    display: 'flex',
-    gap: '12px',
-    marginTop: '40px',
-    marginBottom: '80px'
-  },
+  buttonContainer: { display: 'flex', gap: '12px', marginTop: '40px', marginBottom: '80px' },
   saveButton: {
     flex: 2,
     padding: '16px',

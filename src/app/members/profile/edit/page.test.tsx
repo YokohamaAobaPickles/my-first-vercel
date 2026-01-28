@@ -1,36 +1,33 @@
 /**
  * Filename: src/app/members/profile/edit/page.test.tsx
- * Version : V1.1.1
- * Update  : 2026-01-27
+ * Version : V1.2.0
+ * Update  : 2026-01-28
  * 内容：
- * - VS Code のインポートエラーを解消 (ts-ignore の再追加)
- * - MemberStatus 型の定義を追加し、TSを安定化
+ * - ニックネーム重複チェック (checkNicknameExists) のバリデーションテスト追加
+ * - Hooksの整合性チェック（Error #310回避後の実装を想定）
+ * - 最新のラベル名（緊急連絡先電話番号等）に完全準拠
  */
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import '@testing-library/jest-dom'
 
-// --- 型定義 (実装からインポートできない場合に備えて定義) ---
-type MemberStatus = 'registration_request' | 'active' | 'suspend_req' | 'suspended' | 'rejoin_req' | 'retire_req' | 'retired' | 'rejected';
+// --- 型定義 ---
+type MemberStatus = 'registration_request' | 'active' | 'suspend_req' | 
+                   'suspended' | 'rejoin_req' | 'retire_req' | 
+                   'retired' | 'rejected';
 
-// @ts-ignore: 実装側の page.tsx が型的に不完全な場合のエラーを無視
+// @ts-ignore
 import EditProfilePage from './page'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
-
-import { updateMemberProfile } from '@/lib/memberApi'
-import {
-  Member,
-  ROLES
-} from '@/types/member'
+import { updateMemberProfile, checkNicknameExists } from '@/lib/memberApi'
+import { ROLES } from '@/types/member'
 
 // --- モック設定 ---
 vi.mock('@/hooks/useAuthCheck')
-
-// 【修正ポイント】自動モックではなく、明示的に関数を定義します
 vi.mock('@/lib/memberApi', () => ({
   updateMemberProfile: vi.fn(),
-  checkNicknameExists: vi.fn(), // コンポーネントでインポートされているため定義が必要
+  checkNicknameExists: vi.fn(),
 }))
 
 const mockPush = vi.fn()
@@ -42,8 +39,7 @@ vi.mock('next/navigation', () => ({
   }),
 }))
 
-describe('EditProfilePage - プロフィール編集画面の業務ルール検証 V1.1.1', () => {
-  // 最新スキーマに基づくテストデータ
+describe('EditProfilePage - プロフィール編集画面の業務ルール検証 V1.2.0', () => {
   const TEST_USER = {
     id: 'user-123',
     email: 'test@example.com',
@@ -68,11 +64,21 @@ describe('EditProfilePage - プロフィール編集画面の業務ルール検�
 
   beforeEach(() => {
     vi.clearAllMocks()
-      ; (useAuthCheck as any).mockReturnValue({
-        isLoading: false,
-        user: TEST_USER,
-        userRoles: 'general',
-      })
+    vi.spyOn(window, 'alert').mockImplementation(() => {})
+    
+    // デフォルトの認証状態
+    ;(useAuthCheck as any).mockReturnValue({
+      isLoading: false,
+      user: TEST_USER,
+    })
+
+    // APIのデフォルト挙動（重複なし・保存成功）
+    vi.mocked(checkNicknameExists).mockResolvedValue(false)
+    vi.mocked(updateMemberProfile).mockResolvedValue({
+      success: true,
+      data: null,
+      error: null
+    })
   })
 
   it('【表示/権限】一般メンバーが編集できない項目が readOnly になっていること', () => {
@@ -101,10 +107,50 @@ describe('EditProfilePage - プロフィール編集画面の業務ルール検�
     expect(screen.getByLabelText('郵便番号')).toHaveValue('100-0001')
     expect(screen.getByLabelText('住所')).toHaveValue('東京都千代田区')
     expect(screen.getByLabelText('電話番号')).toHaveValue('03-1111-2222')
-
-    // 正しいラベル名での検証
     expect(screen.getByLabelText('緊急連絡先電話番号')).toHaveValue('090-9999-9999')
     expect(screen.getByLabelText('続柄')).toHaveValue('妻')
+    expect(screen.getByLabelText('DUPR ID')).toHaveValue('D-12345')
+  })
+
+  it('【バリデーション】ニックネームが重複している場合は保存を中断すること', async () => {
+    // ニックネームが既に存在していると仮定
+    vi.mocked(checkNicknameExists).mockResolvedValue(true)
+    
+    render(<EditProfilePage />)
+    
+    const nicknameInput = screen.getByLabelText('ニックネーム')
+    // 初期値の「たろう」から「重複太郎」に変更
+    fireEvent.change(nicknameInput, { target: { value: '重複太郎' } })
+    
+    const saveButton = screen.getByRole('button', { name: /保存する/ })
+    fireEvent.click(saveButton)
+    
+    await waitFor(() => {
+      // 重複エラーのアラートが出ること
+      expect(window.alert).toHaveBeenCalledWith(
+        expect.stringContaining('既に他のメンバーに使用されています')
+      )
+      // 保存APIが呼ばれていないこと
+      expect(updateMemberProfile).not.toHaveBeenCalled()
+    })
+  })
+
+  it('【正常系】保存ボタン押下で API が呼ばれ、プロフィール画面へ遷移すること', async () => {
+    render(<EditProfilePage />)
+
+    const nicknameInput = screen.getByLabelText('ニックネーム')
+    fireEvent.change(nicknameInput, { target: { value: '新しいニックネーム' } })
+
+    const saveBtn = screen.getByRole('button', { name: /保存する/ })
+    fireEvent.click(saveBtn)
+
+    await waitFor(() => {
+      expect(updateMemberProfile).toHaveBeenCalledWith(
+        TEST_USER.id,
+        expect.objectContaining({ nickname: '新しいニックネーム' })
+      )
+      expect(mockPush).toHaveBeenCalledWith('/members/profile')
+    })
   })
 
   it('【操作】キャンセルボタン押下で /members/profile に戻ること', () => {
@@ -115,39 +161,4 @@ describe('EditProfilePage - プロフィール編集画面の業務ルール検�
 
     expect(mockPush).toHaveBeenCalledWith('/members/profile')
   })
-
-  it('【表示】競技情報(DUPR ID)の初期値がセットされていること', () => {
-    render(<EditProfilePage />)
-    expect(screen.getByLabelText('DUPR ID')).toHaveValue('D-12345')
-  })
-
-  it('【正常系】保存ボタン押下で API が呼ばれ、プロフィール画面へ遷移すること', async () => {
-    // API成功時のレスポンスをモック
-    vi.mocked(updateMemberProfile).mockResolvedValue({
-      success: true,
-      data: null,
-      error: null
-    })
-
-    render(<EditProfilePage />)
-
-    // 値を変更してみる
-    const nicknameInput = screen.getByLabelText(/ニックネーム/)
-    fireEvent.change(nicknameInput, { target: { value: '新しいニックネーム' } })
-
-    const saveBtn = screen.getByRole('button', { name: /保存/ })
-    fireEvent.click(saveBtn)
-
-    await waitFor(() => {
-      // 1. APIが正しい引数で呼ばれたか
-      // (TEST_USER.id と、変更後のデータが含まれているか)
-      expect(updateMemberProfile).toHaveBeenCalledWith(
-        TEST_USER.id,
-        expect.objectContaining({ nickname: '新しいニックネーム' })
-      )
-      // 2. 成功後にプロフィール画面に戻ったか
-      expect(mockPush).toHaveBeenCalledWith('/members/profile')
-    })
-  })
-
 })
