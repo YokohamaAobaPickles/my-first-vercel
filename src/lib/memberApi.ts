@@ -1,13 +1,11 @@
 /**
  * Filename: src/lib/memberApi.ts
- * Version : V2.0.0
- * Update  : 2026-01-27
- * 内容：
- * - 会員データのCRUD操作（Supabase連携層）。
- * - V2.0.0 変更点:
- * 1. memberHelpers.ts から DB 問い合わせ関数を完全移管。
- * 2. maybeSingle() を採用し、データなしを正常系(null)として扱う。
- * 3. 全ての戻り値を ApiResponse<T> 形式に統一。
+ * Version : V2.0.1
+ * Update  : 2026-01-28
+ * Remarks : 
+ * V2.0.1 - registerMember の戻り値を ApiResponse<Member> に変更
+ * V2.0.1 - insert 時に .select().single() を追加し、作成されたレコードを返却
+ * V2.0.1 - 書式遵守：80カラムラップを適用
  */
 
 import { supabase } from '@/lib/supabase';
@@ -44,7 +42,9 @@ export const fetchMembers = async (): Promise<ApiResponse<Member[]>> => {
 /**
  * IDによる特定会員の取得
  */
-export const fetchMemberById = async (id: string): Promise<ApiResponse<Member>> => {
+export const fetchMemberById = async (
+  id: string
+): Promise<ApiResponse<Member>> => {
   const { data, error } = await supabase
     .from('members')
     .select('*')
@@ -66,7 +66,7 @@ export const fetchMemberByEmail = async (
     .from('members')
     .select('*')
     .eq('email', email)
-    .maybeSingle(); // 0件でもエラーにならず data: null を返す
+    .maybeSingle();
 
   if (error) return handleError(error);
   return { success: true, data: data as Member | null, error: null };
@@ -152,14 +152,17 @@ export const updateMemberProfile = async (
 /**
  * 新規会員登録 (API層)
  * * パスワードや初期ステータスを含む会員データをDBに保存する
+ * * 成功時は作成されたレコード(id等を含む)を返す
  */
 export const registerMember = async (
   input: MemberInput
-): Promise<ApiResponse<null>> => {
-  const { error } = await supabase
+): Promise<ApiResponse<Member>> => {
+  const { data, error } = await supabase
     .from('members')
-    .insert(input);
+    .insert(input)
+    .select()
+    .single();
 
   if (error) return handleError(error);
-  return { success: true, data: null, error: null };
+  return { success: true, data: data as Member, error: null };
 };

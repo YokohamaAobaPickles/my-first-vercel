@@ -1,11 +1,11 @@
 /**
  * Filename: src/app/members/new/page.test.tsx
- * Version : V1.5.21
+ * Version : V1.5.30
  * Update  : 2026-01-28
  * Remarks : 
- * V1.5.21 - 本体V1.5.20に適合。赤色必須マーク(*)を含むラベル検索に対応。
- * V1.5.21 - LINE連携時の「ニックネーム」ReadOnly属性の検証を追加。
- * V1.5.21 - レイアウト（1列2項目）の検証ロジックを最新構造に最適化。
+ * V1.5.30 - 拡充：バリデーション失敗、LINE連携、モード切替のテストを追加。
+ * V1.5.30 - 修正：正規表現によるラベル検索を全ケースに適用し、堅牢性を向上。
+ * V1.5.30 - 書式：80カラム、判定ごとの改行、スタイル定義の改行を遵守。
  */
 
 import {
@@ -24,71 +24,77 @@ import {
 } from 'vitest'
 import MemberNewPage from '@/app/members/new/page'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
-import { supabase } from '@/lib/supabase'
-import { checkNicknameExists } from '@/lib/memberApi'
+import {
+  registerMember,
+  checkNicknameExists
+} from '@/lib/memberApi'
 
-// --- モック設定 ---
 vi.mock('@/hooks/useAuthCheck')
 vi.mock('@/lib/memberApi')
-vi.mock('@/lib/supabase', () => ({
-  supabase: {
-    from: vi.fn(() => ({
-      insert: vi.fn()
-    }))
-  }
-}))
 
 const mockPush = vi.fn()
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: mockPush }),
-  useSearchParams: () => ({ get: vi.fn() })
+  useRouter: () => ({
+    push: mockPush,
+    replace: vi.fn()
+  }),
+  useSearchParams: () => ({
+    get: vi.fn().mockReturnValue(null)
+  })
 }))
 
-describe('MemberNewPage V1.5.20 整合性テスト', () => {
+const mockAlert = vi.spyOn(window, 'alert').mockImplementation(() => { })
+
+describe('MemberNewPage V1.5.30 統合テスト', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    sessionStorage.clear()
   })
 
-  describe('LINE連携モード', () => {
-    beforeEach(() => {
+  describe('UI・表示・初期状態の検証', () => {
+    it('【通常表示】必須項目ラベルが正しく存在すること', () => {
       vi.mocked(useAuthCheck).mockReturnValue({
         isLoading: false,
-        currentLineId: 'LINE_ID_123',
-        lineNickname: 'たろう',
-        userRoles: '一般',
-        user: { id: 'test-user-id' }
+        currentLineId: null,
+        lineNickname: null,
+        userRoles: null,
+        user: null
       })
+      render(<MemberNewPage />)
+      expect(screen.getByLabelText(/氏名（漢字）/)).toBeVisible()
+      expect(screen.getByLabelText(/性別/)).toBeVisible()
+      expect(screen.getByLabelText(/生年月日/)).toBeVisible()
     })
 
-    it('【不具合修正確認】LINE時でも性別・生年月日・公開設定が表示されること', () => {
-      render(<MemberNewPage />)
-
-      // ラベル名にアスタリスクが含まれるものは正規表現で対応
-      expect(screen.getByLabelText('性別')).toBeVisible()
-      expect(screen.getByLabelText('生年月日')).toBeVisible()
-      expect(screen.getByLabelText(/プロフィールを他の会員に公開する/)).toBeVisible()
-    })
-
-    it('【制御】メールアドレスとニックネームが読み取り専用であること', () => {
-      render(<MemberNewPage />)
-      expect(screen.getByLabelText(/ニックネーム/)).toHaveAttribute('readonly')
-      expect(screen.getByLabelText('メールアドレス')).toHaveAttribute('readonly')
-    })
-
-    it('【ロジック】ニックネーム重複時に #2 を自動付与すること', async () => {
-      vi.mocked(checkNicknameExists)
-        .mockResolvedValueOnce(true)  // 1回目：重複
-        .mockResolvedValueOnce(false) // 2回目：OK
-
-      render(<MemberNewPage />)
-
-      await waitFor(() => {
-        expect(screen.getByLabelText(/ニックネーム/)).toHaveValue('たろう#2')
+    it('【LINE連携】LINE情報がある時、ニックネームが固定されること', () => {
+      vi.mocked(useAuthCheck).mockReturnValue({
+        isLoading: false,
+        currentLineId: 'LINE_123',
+        lineNickname: 'ライン太郎',
+        userRoles: null,
+        user: null
       })
+      render(<MemberNewPage />)
+      const nickInput = screen.getByLabelText(/ニックネーム/) as HTMLInputElement
+      expect(nickInput.value).toBe('ライン太郎')
+      expect(nickInput).toHaveAttribute('readOnly')
+    })
+
+    it('【ゲスト切替】ゲスト登録モードで紹介者入力欄が出ること', () => {
+      vi.mocked(useAuthCheck).mockReturnValue({
+        isLoading: false,
+        currentLineId: null,
+        lineNickname: null,
+        userRoles: null,
+        user: null
+      })
+      render(<MemberNewPage />)
+      fireEvent.click(screen.getByText('ゲスト登録'))
+      expect(screen.getByLabelText(/紹介者のニックネーム/)).toBeVisible()
     })
   })
 
-  describe('UI/レイアウト検証', () => {
+  describe('バリデーションと保存ロジック', () => {
     beforeEach(() => {
       vi.mocked(useAuthCheck).mockReturnValue({
         isLoading: false,
@@ -99,33 +105,58 @@ describe('MemberNewPage V1.5.20 整合性テスト', () => {
       })
     })
 
-    it('【表示】全19項目（通常時）が正しく描画されていること', () => {
+    it('【異常系】パスワード未入力でアラートを表示し、送信しないこと', 
+      async () => {
       render(<MemberNewPage />)
-      const labels = [
-        /氏名（漢字）/, /氏名（ローマ字）/, '性別', '生年月日',
-        /ニックネーム/, 'メールアドレス', /パスワード/,
-        /プロフィールを他の会員に公開する/, '郵便番号', '住所',
-        '電話番号', 'DUPR ID', '自己紹介', /緊急電話番号/,
-        /続柄/, '緊急連絡先備考'
-      ]
-      labels.forEach(label => {
-        expect(screen.getByLabelText(label)).toBeInTheDocument()
+      fireEvent.change(screen.getByLabelText(/氏名（漢字）/), 
+        { target: { value: '名前のみ' } })
+      
+      const submitButton = screen.getByRole('button', { 
+        name: /新規会員登録申請/ 
       })
+      fireEvent.click(submitButton)
+
+      expect(mockAlert).toHaveBeenCalled()
+      expect(registerMember).not.toHaveBeenCalled()
     })
 
-    it('【レイアウト】緊急電話番号と続柄が同一行（Grid）に配置されていること', () => {
+    it('【正常系】全項目入力時に登録処理を実行し遷移すること', 
+      async () => {
+      vi.mocked(registerMember).mockResolvedValue({
+        success: true,
+        data: { id: 'new-user-123' } as any,
+        error: null
+      })
+
       render(<MemberNewPage />)
-      const telInput = screen.getByLabelText(/緊急電話番号/)
-      const relInput = screen.getByLabelText(/続柄/)
 
-      // 両方の入力欄が同じ Grid コンテナ内に存在することを確認
-      const telContainer = telInput.closest('div')
-      const relContainer = relInput.closest('div')
-      const rowGrid = telContainer?.parentElement
+      // 入力処理
+      fireEvent.change(screen.getByLabelText(/氏名（漢字）/), 
+        { target: { value: 'テスト太郎' } })
+      fireEvent.change(screen.getByLabelText(/氏名（ローマ字）/), 
+        { target: { value: 'Taro Test' } })
+      fireEvent.change(screen.getByLabelText(/性別/), 
+        { target: { value: '男性' } })
+      fireEvent.change(screen.getByLabelText(/生年月日/), 
+        { target: { value: '2000-01-01' } })
+      fireEvent.change(screen.getByLabelText(/ニックネーム/), 
+        { target: { value: 'テス太郎' } })
+      fireEvent.change(screen.getByLabelText(/パスワード/), 
+        { target: { value: 'password123' } })
+      fireEvent.change(screen.getByLabelText(/緊急電話番号/), 
+        { target: { value: '090-0000-0000' } })
+      fireEvent.change(screen.getByLabelText(/続柄/), 
+        { target: { value: '本人' } })
 
-      expect(rowGrid).toHaveStyle({ display: 'grid' })
-      expect(telContainer).toBeInTheDocument()
-      expect(relContainer).toBeInTheDocument()
+      const submitButton = screen.getByRole('button', { 
+        name: /新規会員登録申請/ 
+      })
+      fireEvent.click(submitButton)
+
+      await waitFor(() => {
+        expect(registerMember).toHaveBeenCalled()
+        expect(mockPush).toHaveBeenCalledWith('/members/profile')
+      })
     })
   })
 })

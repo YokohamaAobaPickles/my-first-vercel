@@ -1,10 +1,11 @@
 /**
  * Filename: src/app/members/new/page.tsx
- * Version : V1.5.21
+ * Version : V1.5.28
  * Update  : 2026-01-28
  * Remarks : 
- * V1.5.21 - 型修正：nickname の string | null 不整合を解消
- * V1.5.21 - 書式遵守：80カラムラップ、判定文改行、スタイル定義改行を適用
+ * V1.5.28 - 修正：Vitestのハング解消のため性別・生年月日の入力欄を追加。
+ * V1.5.28 - 修正：二重更新防止ロジックと依存配列の最適化。
+ * V1.5.28 - 書式：80カラムラップ、判定・スタイル定義の改行を徹底。
  */
 
 'use client'
@@ -29,6 +30,7 @@ import { validateRegistration } from '@/utils/memberHelpers'
 function MemberNewContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const emailParam = searchParams.get('email')
   const {
     lineNickname,
     currentLineId,
@@ -60,45 +62,68 @@ function MemberNewContent() {
 
   useEffect(() => {
     let isMounted = true
-    const initData = async () => {
-      if (isLoading) return
 
-      const emailParam = searchParams.get('email')
-
+    if (
+      !isLoading &&
+      isMounted
+    ) {
       setFormData(prev => {
-        // nickname に null が入らないよう明示的に undefined へ変換
         const nextNickname = currentLineId
           ? (lineNickname ?? undefined)
-          : prev.nickname;
+          : prev.nickname
+        const nextEmail = currentLineId
+          ? (emailParam ?? '')
+          : (emailParam ?? prev.email)
+
+        if (
+          prev.nickname === nextNickname &&
+          prev.email === nextEmail
+        ) {
+          return prev
+        }
 
         return {
           ...prev,
           nickname: nextNickname,
-          email: currentLineId
-            ? (emailParam ?? '')
-            : (emailParam ?? prev.email)
+          email: nextEmail
         }
       })
     }
-    initData()
-    return () => { isMounted = false }
-  }, [isLoading, lineNickname, currentLineId, searchParams])
+
+    return () => {
+      isMounted = false
+    }
+  }, [
+    isLoading,
+    lineNickname,
+    currentLineId,
+    emailParam
+  ])
 
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
-    const { id, value, type } = e.target as HTMLInputElement
+    const {
+      id,
+      value,
+      type
+    } = e.target as HTMLInputElement
     const val = type === 'checkbox'
       ? (e.target as HTMLInputElement).checked
       : value
-    setFormData(prev => ({ ...prev, [id]: val }))
+    setFormData(prev => ({
+      ...prev,
+      [id]: val
+    }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (isSubmitting) return
+    if (isSubmitting) {
+      return
+    }
 
     const submissionData: MemberInput = {
       ...(formData as MemberInput),
@@ -110,7 +135,10 @@ function MemberNewContent() {
       roles: 'general'
     }
 
-    const { isValid, errors } = validateRegistration(submissionData)
+    const {
+      isValid,
+      errors
+    } = validateRegistration(submissionData)
 
     if (
       !isValid ||
@@ -124,15 +152,17 @@ function MemberNewContent() {
     try {
       const response = await registerMember(submissionData)
       if (!response.success) {
-        // ここを強化して、400エラーの具体的な理由をコンソールに出す
-        console.error('Registration API Error Details:', {
-          message: response.message,
-          error: response.error,
-          sentData: submissionData
-        })
-        alert(`登録失敗: ${response.message}\n詳細はコンソールを確認してください`)
+        alert(`登録失敗: ${response.message}`)
         return
       }
+
+      if (
+        !currentLineId &&
+        response.data?.id
+      ) {
+        sessionStorage.setItem('auth_member_id', response.data.id)
+      }
+
       alert('登録申請が完了しました')
       router.push('/members/profile')
     } catch (err) {
@@ -142,7 +172,9 @@ function MemberNewContent() {
     }
   }
 
-  if (isLoading) return <div style={containerStyle}>読み込み中...</div>
+  if (isLoading) {
+    return <div style={containerStyle}>読み込み中...</div>
+  }
 
   const isLineLinked = !!currentLineId
 
@@ -173,8 +205,12 @@ function MemberNewContent() {
         {mode === 'guest' && (
           <section style={sectionBoxStyle}>
             <div style={sectionTitleStyle}>紹介情報</div>
-            <label htmlFor="introducer" style={labelStyle}>
-              紹介者のニックネーム<span style={reqStyle}>*</span>
+            <label
+              htmlFor="introducer"
+              style={labelStyle}
+            >
+              紹介者のニックネーム
+              <span style={reqStyle}>*</span>
             </label>
             <input
               id="introducer"
@@ -189,8 +225,12 @@ function MemberNewContent() {
         <section style={sectionBoxStyle}>
           <div style={sectionTitleStyle}>基本情報</div>
 
-          <label htmlFor="name" style={labelStyle}>
-            氏名（漢字）<span style={reqStyle}>*</span>
+          <label
+            htmlFor="name"
+            style={labelStyle}
+          >
+            氏名（漢字）
+            <span style={reqStyle}>*</span>
           </label>
           <input
             id="name"
@@ -200,8 +240,12 @@ function MemberNewContent() {
             placeholder="山田 太郎"
           />
 
-          <label htmlFor="name_roma" style={labelStyle}>
-            氏名（ローマ字）<span style={reqStyle}>*</span>
+          <label
+            htmlFor="name_roma"
+            style={labelStyle}
+          >
+            氏名（ローマ字）
+            <span style={reqStyle}>*</span>
           </label>
           <input
             id="name_roma"
@@ -211,8 +255,46 @@ function MemberNewContent() {
             placeholder="Taro Yamada"
           />
 
-          <label htmlFor="nickname" style={labelStyle}>
-            ニックネーム<span style={reqStyle}>*</span>
+          <label
+            htmlFor="gender"
+            style={labelStyle}
+          >
+            性別
+            <span style={reqStyle}>*</span>
+          </label>
+          <select
+            id="gender"
+            style={inputStyle}
+            value={formData.gender || '未回答'}
+            onChange={handleChange}
+          >
+            <option value="未回答">未回答</option>
+            <option value="男性">男性</option>
+            <option value="女性">女性</option>
+            <option value="その他">その他</option>
+          </select>
+
+          <label
+            htmlFor="birthday"
+            style={labelStyle}
+          >
+            生年月日
+            <span style={reqStyle}>*</span>
+          </label>
+          <input
+            id="birthday"
+            type="date"
+            style={inputStyle}
+            value={formData.birthday || ''}
+            onChange={handleChange}
+          />
+
+          <label
+            htmlFor="nickname"
+            style={labelStyle}
+          >
+            ニックネーム
+            <span style={reqStyle}>*</span>
           </label>
           <input
             id="nickname"
@@ -222,7 +304,12 @@ function MemberNewContent() {
             onChange={handleChange}
           />
 
-          <label htmlFor="email" style={labelStyle}>メールアドレス</label>
+          <label
+            htmlFor="email"
+            style={labelStyle}
+          >
+            メールアドレス
+          </label>
           <input
             id="email"
             style={isLineLinked ? readOnlyInputStyle : inputStyle}
@@ -231,8 +318,12 @@ function MemberNewContent() {
             onChange={handleChange}
           />
 
-          <label htmlFor="password" style={labelStyle}>
-            パスワード<span style={reqStyle}>*</span>
+          <label
+            htmlFor="password"
+            style={labelStyle}
+          >
+            パスワード
+            <span style={reqStyle}>*</span>
           </label>
           <input
             id="password"
@@ -254,11 +345,20 @@ function MemberNewContent() {
               onChange={handleChange}
               style={checkboxStyle}
             />
-            <label htmlFor="is_profile_public" style={labelStyle}>
+            <label
+              htmlFor="is_profile_public"
+              style={labelStyle}
+            >
               プロフィールを他の会員に公開する
             </label>
           </div>
-          <label htmlFor="postal" style={labelStyle}>郵便番号</label>
+
+          <label
+            htmlFor="postal"
+            style={labelStyle}
+          >
+            郵便番号
+          </label>
           <input
             id="postal"
             style={inputStyle}
@@ -266,14 +366,26 @@ function MemberNewContent() {
             onChange={handleChange}
             placeholder="123-4567"
           />
-          <label htmlFor="address" style={labelStyle}>住所</label>
+
+          <label
+            htmlFor="address"
+            style={labelStyle}
+          >
+            住所
+          </label>
           <input
             id="address"
             style={inputStyle}
             value={formData.address || ''}
             onChange={handleChange}
           />
-          <label htmlFor="tel" style={labelStyle}>電話番号</label>
+
+          <label
+            htmlFor="tel"
+            style={labelStyle}
+          >
+            電話番号
+          </label>
           <input
             id="tel"
             style={inputStyle}
@@ -281,14 +393,26 @@ function MemberNewContent() {
             onChange={handleChange}
             placeholder="090-0000-0000"
           />
-          <label htmlFor="dupr_id" style={labelStyle}>DUPR ID</label>
+
+          <label
+            htmlFor="dupr_id"
+            style={labelStyle}
+          >
+            DUPR ID
+          </label>
           <input
             id="dupr_id"
             style={inputStyle}
             value={formData.dupr_id || ''}
             onChange={handleChange}
           />
-          <label htmlFor="profile_memo" style={labelStyle}>自己紹介</label>
+
+          <label
+            htmlFor="profile_memo"
+            style={labelStyle}
+          >
+            自己紹介
+          </label>
           <textarea
             id="profile_memo"
             style={{
@@ -305,8 +429,12 @@ function MemberNewContent() {
           <div style={sectionTitleStyle}>緊急連絡情報</div>
           <div style={gridRowStyle}>
             <div>
-              <label htmlFor="emg_tel" style={labelStyle}>
-                緊急電話番号<span style={reqStyle}>*</span>
+              <label
+                htmlFor="emg_tel"
+                style={labelStyle}
+              >
+                緊急電話番号
+                <span style={reqStyle}>*</span>
               </label>
               <input
                 id="emg_tel"
@@ -316,8 +444,12 @@ function MemberNewContent() {
               />
             </div>
             <div>
-              <label htmlFor="emg_rel" style={labelStyle}>
-                続柄<span style={reqStyle}>*</span>
+              <label
+                htmlFor="emg_rel"
+                style={labelStyle}
+              >
+                続柄
+                <span style={reqStyle}>*</span>
               </label>
               <input
                 id="emg_rel"
@@ -327,7 +459,12 @@ function MemberNewContent() {
               />
             </div>
           </div>
-          <label htmlFor="emg_memo" style={labelStyle}>緊急連絡先備考</label>
+          <label
+            htmlFor="emg_memo"
+            style={labelStyle}
+          >
+            緊急連絡先備考
+          </label>
           <input
             id="emg_memo"
             style={inputStyle}
@@ -341,10 +478,14 @@ function MemberNewContent() {
           disabled={isSubmitting}
           style={{
             ...submitButtonStyle,
-            backgroundColor: isSubmitting ? '#444' : '#0070f3'
+            backgroundColor: isSubmitting
+              ? '#444'
+              : '#0070f3'
           }}
         >
-          {isSubmitting ? '送信中...' : '新規会員登録申請'}
+          {isSubmitting
+            ? '送信中...'
+            : '新規会員登録申請'}
         </button>
       </form>
     </div>
@@ -359,7 +500,6 @@ export default function MemberNewPage() {
   )
 }
 
-// スタイル定義
 const containerStyle: React.CSSProperties = {
   maxWidth: '600px',
   margin: '0 auto',
