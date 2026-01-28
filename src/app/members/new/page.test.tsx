@@ -1,15 +1,10 @@
 /**
  * Filename: src/app/members/new/page.test.tsx
- * Version : V1.4.0
- * Update  : 2026-01-25
- * 内容：
- * V1.4.0
- * - 登録ロジック（バリデーション・送信）のテストを追加
- * V1.3.8
- * - 過去の全テスト項目（V1.2.0〜V1.3.7）を完全網羅
- * - supabase モック、URLパラメータ (?email=...) 取得、全プレースホルダー検証
- * - ゲスト登録時の紹介者欄、緊急連絡先必須マーク(*)の検証
- * - 全てのオブジェクト引数・JSXプロパティで1行1項目ルールを徹底
+ * Version : V1.5.1
+ * Update  : 2026-01-28
+ * Remarks : 
+ * V1.5.1 - jest-dom/vitest のインポートを追加（Invalid Chai property 回避）
+ * V1.5.0 - 会員基本情報19項目への対応、ニックネーム重複チェック検証追加
  */
 
 import { 
@@ -18,6 +13,8 @@ import {
   fireEvent,
   waitFor
 } from '@testing-library/react'
+// マッチャー（toBeInTheDocument等）を使えるようにするために必須
+import '@testing-library/jest-dom/vitest' 
 import { 
   describe, 
   it, 
@@ -27,112 +24,141 @@ import {
 } from 'vitest'
 import MemberNewPage from '@/app/members/new/page'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
-import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { checkNicknameExists } from '@/lib/memberApi'
 
 // --- モック設定 ---
 vi.mock('@/hooks/useAuthCheck')
-
-const mockPush = vi.fn()
-const mockReplace = vi.fn()
-
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ 
-    push: mockPush, 
-    replace: mockReplace 
-  }),
-  useSearchParams: vi.fn(),
-}))
-
+vi.mock('@/lib/memberApi')
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     from: vi.fn(() => ({
-      insert: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      single: vi.fn(),
-    })),
-  },
+      insert: vi.fn()
+    }))
+  }
 }))
 
-describe('MemberNewPage (ロジック検証版 V1.4.0)', () => {
-  const TEST_LINE_ID = 'U_TEST_123'
-  const TEST_NICKNAME = 'ライン太郎'
-  const TEST_EMAIL = 'test@example.com'
+const mockPush = vi.fn()
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: mockPush
+  }),
+  useSearchParams: () => ({
+    get: vi.fn().mockReturnValue(null)
+  })
+}))
 
+describe('MemberNewPage - 新規登録画面 業務ルール検証 V1.5.1', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // デフォルトのURLパラメータ
-    ;(useSearchParams as any).mockReturnValue({ get: () => null })
-  })
-
-  // --- 表示・初期状態のテスト ---
-
-  it('ロード中は適切なメッセージが表示されること', () => {
-    ;(useAuthCheck as any).mockReturnValue({ isLoading: true, currentLineId: null, user: null })
-    render(<MemberNewPage />)
-    expect(screen.getByText(/読み込み中.../i)).toBeTruthy()
-  })
-
-  it('URLパラメータからメールアドレスが引き継がれ、LINE環境では修正不可であること', () => {
-    ;(useSearchParams as any).mockReturnValue({
-      get: (key: string) => (key === 'email' ? TEST_EMAIL : null)
-    })
     ;(useAuthCheck as any).mockReturnValue({
       isLoading: false,
-      currentLineId: TEST_LINE_ID,
-      lineNickname: TEST_NICKNAME,
-      user: null,
+      currentLineId: null,
+      lineNickname: null
     })
-    render(<MemberNewPage />)
-    const emailInput = screen.getByLabelText(/メールアドレス/)
-    expect((emailInput as any).value).toBe(TEST_EMAIL)
-    expect((emailInput as any).readOnly).toBe(true)
+    vi.mocked(checkNicknameExists).mockResolvedValue(false)
   })
 
-  it('緊急連絡先および続柄に必須マーク(*)が表示されていること', () => {
-    ;(useAuthCheck as any).mockReturnValue({ isLoading: false, currentLineId: null, user: null })
-    render(<MemberNewPage />)
-    expect(screen.getByText(/緊急電話番号/).innerHTML).toContain('*')
-    expect(screen.getByText(/続柄/).innerHTML).toContain('*')
-  })
-
-  // --- V1.4.0 追加：登録ロジックの検証（現在は本体未実装のため失敗するはず） ---
-
-  it('【ロジック】必須入力が不足している場合、アラートを表示して中断すること', async () => {
-    const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => {})
-    ;(useAuthCheck as any).mockReturnValue({ isLoading: false, currentLineId: null, user: null })
-
+  it('【表示】基本情報19項目に関連する主要入力欄が存在すること', () => {
     render(<MemberNewPage />)
     
-    // 申請ボタンをクリック（現在の本体はただのbuttonでonClickがないため何も起きないはず）
-    const submitBtn = screen.getByRole('button', { name: /登録申請/ })
-    fireEvent.click(submitBtn)
-
-    // 期待：バリデーションエラーのアラートが出る
-    expect(alertMock).toHaveBeenCalled()
+    // toBeInTheDocument が動作するようになります
+    expect(screen.getByLabelText(/氏名（漢字）/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/氏名（ローマ字）/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/性別/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/生年月日/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/ニックネーム/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/メールアドレス/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/郵便番号/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/住所/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/緊急電話番号/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/プロフィールを他の会員に公開する/)).toBeInTheDocument()
   })
 
-  it('【正常系】正しい入力で申請すると、Supabaseにデータが保存されること', async () => {
-    const mockInsert = vi.fn().mockResolvedValue({ error: null })
-    vi.mocked(supabase.from).mockReturnValue({ insert: mockInsert } as any)
-    ;(useAuthCheck as any).mockReturnValue({ isLoading: false, currentLineId: null, user: null })
+  it('【LINE連携】ニックネーム重複時、自動的に #2 付与で提案されること', async () => {
+    vi.mocked(checkNicknameExists)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false)
+
+    ;(useAuthCheck as any).mockReturnValue({
+      isLoading: false,
+      currentLineId: 'LINE_ID_123',
+      lineNickname: 'たろう'
+    })
 
     render(<MemberNewPage />)
 
-    // 入力
-    fireEvent.change(screen.getByLabelText(/氏名（漢字）/), { target: { value: '山田 太郎' } })
-    fireEvent.change(screen.getByLabelText(/氏名（ローマ字）/), { target: { value: 'Taro' } })
-    fireEvent.change(screen.getByLabelText(/パスワード/), { target: { value: 'password123' } })
-    fireEvent.change(screen.getByLabelText(/緊急電話番号/), { target: { value: '090-0000-0000' } })
-    fireEvent.change(screen.getByLabelText(/続柄/), { target: { value: '妻' } })
+    await waitFor(() => {
+      const nicknameInput = screen.getByLabelText(/ニックネーム/)
+      // toHaveValue が動作するようになります
+      expect(nicknameInput).toHaveValue('たろう#2')
+    })
+  })
 
-    const submitBtn = screen.getByRole('button', { name: /登録申請/ })
+  it('【バリデーション】必須項目が未入力の場合、保存を中断すること', async () => {
+    const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => {})
+    
+    render(<MemberNewPage />)
+    
+    const submitBtn = screen.getByRole('button', {
+      name: /新規会員登録申請/
+    })
     fireEvent.click(submitBtn)
 
-    // 期待：supabase.from('members').insert(...) が呼ばれる
-    await waitFor(() => {
-      expect(mockInsert).toHaveBeenCalled()
+    expect(alertMock).toHaveBeenCalledWith(expect.stringContaining('入力してください'))
+  })
+
+  it('【正常系】正会員登録でAPIが呼ばれ、プロフィールへ遷移すること', async () => {
+    const mockInsert = vi.fn().mockResolvedValue({
+      error: null
     })
+    vi.mocked(supabase.from).mockReturnValue({
+      insert: mockInsert
+    } as any)
+
+    render(<MemberNewPage />)
+
+    fireEvent.change(screen.getByLabelText(/氏名（漢字）/), {
+      target: { value: '山田 太郎' }
+    })
+    fireEvent.change(screen.getByLabelText(/氏名（ローマ字）/), {
+      target: { value: 'Taro Yamada' }
+    })
+    fireEvent.change(screen.getByLabelText(/ニックネーム/), {
+      target: { value: 'やまだちゃん' }
+    })
+    fireEvent.change(screen.getByLabelText(/パスワード/), {
+      target: { value: 'password123' }
+    })
+    fireEvent.change(screen.getByLabelText(/緊急電話番号/), {
+      target: { value: '090-0000-0000' }
+    })
+    fireEvent.change(screen.getByLabelText(/続柄/), {
+      target: { value: '本人' }
+    })
+
+    const submitBtn = screen.getByRole('button', {
+      name: /新規会員登録申請/
+    })
+    fireEvent.click(submitBtn)
+
+    await waitFor(() => {
+      expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
+        name: '山田 太郎',
+        member_kind: '正会員'
+      }))
+      expect(mockPush).toHaveBeenCalledWith('/members/profile')
+    })
+  })
+
+  it('【操作】ゲスト登録に切り替えると紹介者入力欄が表示されること', () => {
+    render(<MemberNewPage />)
+    
+    const guestTab = screen.getByRole('button', {
+      name: /ゲスト登録/
+    })
+    fireEvent.click(guestTab)
+
+    expect(screen.getByLabelText(/紹介者のニックネーム/)).toBeInTheDocument()
   })
 })

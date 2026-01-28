@@ -1,16 +1,12 @@
 /**
- * Filename: members/new/page.tsx
- * Version : V1.4.0
- * Update  : 2026-01-26
+ * Filename: src/app/members/new/page.tsx
+ * Version : V1.5.0
+ * Update  : 2026-01-28
  * 内容：
- * V1.4.0
- * - 登録申請（handleSubmit）ロジックの実装
- * - 必須入力項目のバリデーション追加
- * - 送信中の多重リクエスト防止
- * V1.2.9
- * - プレースホルダーの重複を解消（テストエラー回避）
- * - 緊急電話番号の例を「(緊急用)」として区別
- * - JSXプロパティの1行1項目ルールを徹底
+ * - 19項目の会員基本情報に対応（性別、生年月日、公開設定の追加）
+ * - ニックネーム重複チェックの実装（重複時は #2 を付与して提案）
+ * - 項目名を Profile 編集画面と統一（postal 等）
+ * - 80文字ワードラップ、JSXプロパティ/スタイル定義の改行ルール適用
  */
 
 'use client'
@@ -26,6 +22,7 @@ import {
 } from 'next/navigation'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import { supabase } from '@/lib/supabase'
+import { checkNicknameExists } from '@/lib/memberApi'
 
 function MemberNewContent() {
   const router = useRouter()
@@ -45,52 +42,85 @@ function MemberNewContent() {
     name: '',
     name_roma: '',
     nickname: '',
-    zip_code: '',
+    gender: '未回答',
+    birthday: '',
+    postal: '',
     address: '',
     tel: '',
     dupr_id: '',
     profile_memo: '',
     emg_tel: '',
     emg_rel: '',
+    emg_memo: '',
     admin_memo: '',
-    referrer_name: ''
+    referrer_name: '',
+    is_profile_public: true
   })
 
+  // LINE連携時のニックネーム自動設定（重複回避ロジック）
   useEffect(() => {
-    if (isLoading) return
-    const emailParam = searchParams.get('email')
-    if (emailParam) {
-      setEmail(emailParam)
+    const initNickname = async () => {
+      if (isLoading) return
+      
+      const emailParam = searchParams.get('email')
+      if (emailParam) setEmail(emailParam)
+
+      if (currentLineId && lineNickname && !formData.nickname) {
+        let suggestedName = lineNickname
+        let isDup = await checkNicknameExists(suggestedName)
+        let counter = 2
+        
+        while (isDup) {
+          suggestedName = `${lineNickname}#${counter}`
+          isDup = await checkNicknameExists(suggestedName)
+          counter++
+        }
+
+        setFormData(prev => ({ 
+          ...prev, 
+          nickname: suggestedName 
+        }))
+      }
     }
-    if (currentLineId && lineNickname && !formData.nickname) {
-      setFormData(prev => ({ 
-        ...prev, 
-        nickname: lineNickname 
-      }))
-    }
-  }, [isLoading, lineNickname, currentLineId, searchParams])
+    initNickname()
+  }, [
+    isLoading, 
+    lineNickname, 
+    currentLineId, 
+    searchParams
+  ])
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { 
+      id, 
+      value, 
+      type 
+    } = e.target as HTMLInputElement
+    const val = type === 'checkbox' 
+      ? (e.target as HTMLInputElement).checked 
+      : value
+    setFormData(prev => ({ 
+      ...prev, 
+      [id]: val 
+    }))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (isSubmitting) return
 
     // バリデーション
-    const requiredFields = [
-      { key: formData.name, label: '氏名（漢字）' },
-      { key: formData.name_roma, label: '氏名（ローマ字）' },
-      { key: password, label: 'パスワード' },
-      { key: formData.emg_tel, label: '緊急電話番号' },
-      { key: formData.emg_rel, label: '続柄' }
-    ]
-
-    const missing = requiredFields.find(f => !f.key)
-    if (missing) {
-      alert(`${missing.label}を入力してください`)
+    if (!formData.name || !formData.name_roma || !password || !formData.emg_tel) {
+      alert('必須項目を入力してください')
       return
     }
 
-    if (password.length < 8) {
-      alert('パスワードは8文字以上で設定してください')
+    // ニックネーム重複の最終チェック
+    const isDup = await checkNicknameExists(formData.nickname)
+    if (isDup) {
+      alert('このニックネームは既に使用されています。')
       return
     }
 
@@ -112,35 +142,24 @@ function MemberNewContent() {
       alert('登録申請が完了しました')
       router.push('/members/profile')
     } catch (err) {
-      console.error(err)
-      alert('エラーが発生しました。時間を置いて再度お試しください。')
+      alert('エラーが発生しました')
     } finally {
       setIsSubmitting(false)
     }
   }
 
   if (isLoading) {
-    return (
-      <div style={containerStyle}>
-        読み込み中...
-      </div>
-    )
+    return <div style={containerStyle}>読み込み中...</div>
   }
 
   return (
     <div style={containerStyle}>
-      <form 
-        onSubmit={handleSubmit}
-      >
-        <h1 
-          style={titleStyle}
-        >
+      <form onSubmit={handleSubmit}>
+        <h1 style={titleStyle}>
           {currentLineId ? 'LINE会員登録' : '新規会員登録'}
         </h1>
 
-        <div 
-          style={tabContainerStyle}
-        >
+        <div style={tabContainerStyle}>
           <button 
             type="button"
             onClick={() => setMode('member')}
@@ -158,7 +177,7 @@ function MemberNewContent() {
         </div>
 
         {mode === 'guest' && (
-          <>
+          <section style={sectionBoxStyle}>
             <div style={sectionTitleStyle}>紹介情報</div>
             <label htmlFor="referrer_name" style={labelStyle}>
               紹介者のニックネーム<span style={reqStyle}>*</span>
@@ -166,195 +185,148 @@ function MemberNewContent() {
             <input 
               id="referrer_name"
               style={inputStyle} 
-              placeholder="紹介してくれた方の名前" 
               value={formData.referrer_name}
-              onChange={(e) => setFormData({ 
-                ...formData, 
-                referrer_name: e.target.value 
-              })} 
+              onChange={handleChange} 
             />
-          </>
+          </section>
         )}
 
-        <div style={sectionTitleStyle}>基本情報</div>
-        
-        <label htmlFor="name" style={labelStyle}>
-          氏名（漢字）<span style={reqStyle}>*</span>
-        </label>
-        <input 
-          id="name"
-          style={inputStyle} 
-          placeholder="山田 太郎" 
-          value={formData.name}
-          onChange={(e) => setFormData({ 
-            ...formData, 
-            name: e.target.value 
-          })} 
-        />
-        
-        <label htmlFor="name_roma" style={labelStyle}>
-          氏名（ローマ字）<span style={reqStyle}>*</span>
-        </label>
-        <input 
-          id="name_roma"
-          style={inputStyle} 
-          placeholder="Taro Yamada" 
-          value={formData.name_roma}
-          onChange={(e) => setFormData({ 
-            ...formData, 
-            name_roma: e.target.value 
-          })} 
-        />
-
-        <label htmlFor="nickname" style={labelStyle}>
-          ニックネーム {currentLineId && '（修正不可）'}
-        </label>
-        <input 
-          id="nickname"
-          style={currentLineId ? readOnlyInputStyle : inputStyle} 
-          value={formData.nickname}
-          readOnly={!!currentLineId}
-          onChange={(e) => setFormData({ 
-            ...formData, 
-            nickname: e.target.value 
-          })}
-        />
-
-        <label htmlFor="email" style={labelStyle}>
-          メールアドレス {currentLineId && '（修正不可）'}
-        </label>
-        <input 
-          id="email"
-          style={currentLineId ? readOnlyInputStyle : inputStyle} 
-          value={email}
-          readOnly={!!currentLineId}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-
-        <label htmlFor="password" style={labelStyle}>
-          パスワード<span style={reqStyle}>*</span>
-        </label>
-        <p style={noteStyle}>※PCログイン等で使用します</p>
-        <input 
-          id="password"
-          type="password" 
-          style={inputStyle} 
-          placeholder="8文字以上" 
-          value={password} 
-          onChange={(e) => setPassword(e.target.value)} 
-        />
-
-        <div style={sectionTitleStyle}>プロフィール情報</div>
-        
-        <label htmlFor="zip_code" style={labelStyle}>郵便番号</label>
-        <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+        <section style={sectionBoxStyle}>
+          <div style={sectionTitleStyle}>基本情報</div>
+          
+          <label htmlFor="name" style={labelStyle}>
+            氏名（漢字）<span style={reqStyle}>*</span>
+          </label>
           <input 
-            id="zip_code"
-            style={{ ...inputStyle, width: '50%' }} 
-            placeholder="000-0000" 
-            value={formData.zip_code}
-            onChange={(e) => setFormData({ 
-              ...formData, 
-              zip_code: e.target.value 
-            })} 
+            id="name"
+            style={inputStyle} 
+            value={formData.name}
+            onChange={handleChange} 
           />
-          <div style={{ width: '50%' }}></div>
-        </div>
+          
+          <label htmlFor="name_roma" style={labelStyle}>
+            氏名（ローマ字）<span style={reqStyle}>*</span>
+          </label>
+          <input 
+            id="name_roma"
+            style={inputStyle} 
+            value={formData.name_roma}
+            onChange={handleChange} 
+          />
 
-        <label htmlFor="address" style={labelStyle}>住所</label>
-        <input 
-          id="address" 
-          style={inputStyle} 
-          placeholder="住所を入力してください" 
-          value={formData.address} 
-          onChange={(e) => setFormData({ 
-            ...formData, 
-            address: e.target.value 
-          })} 
-        />
+          <label htmlFor="gender" style={labelStyle}>性別</label>
+          <select 
+            id="gender"
+            style={inputStyle}
+            value={formData.gender}
+            onChange={handleChange}
+          >
+            <option value="未回答">未回答</option>
+            <option value="男性">男性</option>
+            <option value="女性">女性</option>
+            <option value="その他">その他</option>
+          </select>
 
-        <label htmlFor="tel" style={labelStyle}>電話番号</label>
-        <input 
-          id="tel" 
-          style={inputStyle} 
-          placeholder="09000000000" 
-          value={formData.tel} 
-          onChange={(e) => setFormData({ 
-            ...formData, 
-            tel: e.target.value 
-          })} 
-        />
+          <label htmlFor="birthday" style={labelStyle}>生年月日</label>
+          <input 
+            id="birthday"
+            type="date"
+            style={inputStyle}
+            value={formData.birthday}
+            onChange={handleChange}
+          />
 
-        <label htmlFor="dupr_id" style={labelStyle}>DUPR ID</label>
-        <input 
-          id="dupr_id" 
-          style={inputStyle} 
-          placeholder="DUPR IDを入力" 
-          value={formData.dupr_id} 
-          onChange={(e) => setFormData({ 
-            ...formData, 
-            dupr_id: e.target.value 
-          })} 
-        />
+          <label htmlFor="nickname" style={labelStyle}>
+            ニックネーム<span style={reqStyle}>*</span>
+          </label>
+          <input 
+            id="nickname"
+            style={inputStyle} 
+            value={formData.nickname}
+            onChange={handleChange}
+          />
 
-        <label htmlFor="profile_memo" style={labelStyle}>自己紹介</label>
-        <textarea 
-          id="profile_memo" 
-          style={{ ...inputStyle, height: '80px' }} 
-          placeholder="自己紹介を入力してください" 
-          value={formData.profile_memo} 
-          onChange={(e) => setFormData({ 
-            ...formData, 
-            profile_memo: e.target.value 
-          })} 
-        />
+          <label htmlFor="email" style={labelStyle}>メールアドレス</label>
+          <input 
+            id="email"
+            style={currentLineId ? readOnlyInputStyle : inputStyle} 
+            value={email}
+            readOnly={!!currentLineId}
+            onChange={(e) => setEmail(e.target.value)}
+          />
 
-        <div style={sectionTitleStyle}>緊急連絡情報</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-          <div>
-            <label htmlFor="emg_tel" style={labelStyle}>
-              緊急電話番号<span style={reqStyle}>*</span>
-            </label>
+          <label htmlFor="password" style={labelStyle}>
+            パスワード<span style={reqStyle}>*</span>
+          </label>
+          <input 
+            id="password"
+            type="password" 
+            style={inputStyle} 
+            value={password} 
+            onChange={(e) => setPassword(e.target.value)} 
+          />
+        </section>
+
+        <section style={sectionBoxStyle}>
+          <div style={sectionTitleStyle}>プロフィール・連絡先</div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
             <input 
-              id="emg_tel" 
-              style={inputStyle} 
-              placeholder="090-0000-0000(緊急)" 
-              value={formData.emg_tel} 
-              onChange={(e) => setFormData({ 
-                ...formData, 
-                emg_tel: e.target.value 
-              })} 
+              id="is_profile_public"
+              type="checkbox"
+              checked={formData.is_profile_public}
+              onChange={handleChange}
+              style={{ width: '20px', height: '20px', marginRight: '8px' }}
             />
-          </div>
-          <div>
-            <label htmlFor="emg_rel" style={labelStyle}>
-              続柄<span style={reqStyle}>*</span>
+            <label htmlFor="is_profile_public" style={labelStyle}>
+              プロフィールを他の会員に公開する
             </label>
-            <input 
-              id="emg_rel" 
-              style={inputStyle} 
-              placeholder="例：夫、妻、父" 
-              value={formData.emg_rel} 
-              onChange={(e) => setFormData({ 
-                ...formData, 
-                emg_rel: e.target.value 
-              })} 
-            />
           </div>
-        </div>
 
-        <label htmlFor="admin_memo" style={labelStyle}>管理者向け連絡事項</label>
-        <p style={noteStyle}>※他の会員には公開されません</p>
-        <textarea 
-          id="admin_memo" 
-          style={{ ...inputStyle, height: '60px' }} 
-          placeholder="事務局への伝達事項" 
-          value={formData.admin_memo} 
-          onChange={(e) => setFormData({ 
-            ...formData, 
-            admin_memo: e.target.value 
-          })} 
-        />
+          <label htmlFor="postal" style={labelStyle}>郵便番号</label>
+          <input 
+            id="postal"
+            style={inputStyle} 
+            value={formData.postal}
+            onChange={handleChange} 
+          />
+
+          <label htmlFor="address" style={labelStyle}>住所</label>
+          <input 
+            id="address" 
+            style={inputStyle} 
+            value={formData.address} 
+            onChange={handleChange} 
+          />
+
+          <label htmlFor="tel" style={labelStyle}>電話番号</label>
+          <input 
+            id="tel" 
+            style={inputStyle} 
+            value={formData.tel} 
+            onChange={handleChange} 
+          />
+
+          <label htmlFor="emg_tel" style={labelStyle}>
+            緊急電話番号<span style={reqStyle}>*</span>
+          </label>
+          <input 
+            id="emg_tel" 
+            style={inputStyle} 
+            value={formData.emg_tel} 
+            onChange={handleChange} 
+          />
+
+          <label htmlFor="emg_rel" style={labelStyle}>
+            続柄<span style={reqStyle}>*</span>
+          </label>
+          <input 
+            id="emg_rel" 
+            style={inputStyle} 
+            value={formData.emg_rel} 
+            onChange={handleChange} 
+          />
+        </section>
 
         <button 
           type="submit" 
@@ -364,9 +336,7 @@ function MemberNewContent() {
             backgroundColor: isSubmitting ? '#444' : '#0070f3'
           }}
         >
-          {isSubmitting 
-            ? '送信中...' 
-            : (mode === 'member' ? '新規会員登録申請' : 'ゲスト登録申請')}
+          {isSubmitting ? '送信中...' : '新規会員登録申請'}
         </button>
       </form>
     </div>
@@ -375,20 +345,19 @@ function MemberNewContent() {
 
 export default function MemberNewPage() {
   return (
-    <Suspense fallback={<div style={containerStyle}>読み込み中...</div>}>
+    <Suspense fallback={<div>読み込み中...</div>}>
       <MemberNewContent />
     </Suspense>
   )
 }
 
-// --- スタイル定義（1項目1行） ---
+// --- スタイル定義 ---
 const containerStyle: React.CSSProperties = {
-  maxWidth: '800px',
+  maxWidth: '600px',
   margin: '0 auto',
   padding: '20px',
   backgroundColor: '#000',
-  color: '#fff',
-  minHeight: '100vh'
+  color: '#fff'
 }
 
 const titleStyle: React.CSSProperties = {
@@ -408,8 +377,7 @@ const activeTabStyle: React.CSSProperties = {
   backgroundColor: '#0070f3',
   color: 'white',
   border: 'none',
-  borderRadius: '8px',
-  fontWeight: 'bold'
+  borderRadius: '8px'
 }
 
 const inactiveTabStyle: React.CSSProperties = {
@@ -421,62 +389,50 @@ const inactiveTabStyle: React.CSSProperties = {
   borderRadius: '8px'
 }
 
+const sectionBoxStyle: React.CSSProperties = {
+  marginBottom: '32px'
+}
+
 const sectionTitleStyle: React.CSSProperties = {
-  fontSize: '1.2rem',
-  borderBottom: '1px solid #333',
-  paddingBottom: '8px',
-  marginTop: '32px',
-  marginBottom: '16px',
+  fontSize: '1.1rem',
   color: '#0070f3',
+  marginBottom: '12px',
   fontWeight: 'bold'
 }
 
 const labelStyle: React.CSSProperties = {
   display: 'block',
-  fontSize: '0.9rem',
-  marginBottom: '6px',
-  marginTop: '12px',
-  color: '#ddd'
+  fontSize: '0.85rem',
+  marginBottom: '8px',
+  color: '#aaa'
 }
 
 const reqStyle: React.CSSProperties = {
-  color: '#ff4d4f',
-  marginLeft: '4px'
-}
-
-const noteStyle: React.CSSProperties = {
-  fontSize: '0.75rem',
-  color: '#888',
-  marginBottom: '8px'
+  color: '#ff4d4f'
 }
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '12px',
-  marginBottom: '12px',
-  backgroundColor: '#222',
-  border: '1px solid #444',
+  backgroundColor: '#111',
+  border: '1px solid #333',
   borderRadius: '8px',
   color: '#fff',
-  boxSizing: 'border-box'
+  marginBottom: '16px'
 }
 
 const readOnlyInputStyle: React.CSSProperties = {
   ...inputStyle,
-  backgroundColor: '#111',
-  color: '#888',
-  border: '1px solid #222'
+  backgroundColor: '#1a1a1a',
+  color: '#666'
 }
 
 const submitButtonStyle: React.CSSProperties = {
   width: '100%',
-  padding: '18px',
-  backgroundColor: '#0070f3',
-  color: 'white',
-  border: 'none',
+  padding: '16px',
   borderRadius: '30px',
+  color: '#fff',
+  border: 'none',
   fontWeight: 'bold',
-  fontSize: '1.1rem',
-  marginTop: '40px',
   cursor: 'pointer'
 }
