@@ -9,36 +9,36 @@
 
 'use client'
 
-import React, { 
-  useState, 
-  useEffect, 
-  Suspense 
+import React, {
+  useState,
+  useEffect,
+  Suspense
 } from 'react'
-import { 
-  useRouter, 
-  useSearchParams 
+import {
+  useRouter,
+  useSearchParams
 } from 'next/navigation'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import { MemberInput } from '@/types/member'
-import { 
-  registerMember, 
-  checkNicknameExists 
+import {
+  registerMember,
+  checkNicknameExists
 } from '@/lib/memberApi'
 import { validateRegistration } from '@/utils/memberHelpers'
 
 function MemberNewContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { 
-    lineNickname, 
-    currentLineId, 
-    isLoading 
+  const {
+    lineNickname,
+    currentLineId,
+    isLoading
   } = useAuthCheck()
 
   const [mode, setMode] = useState<'member' | 'guest'>('member')
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
+
   const [formData, setFormData] = useState<Partial<MemberInput>>({
     name: '',
     name_roma: '',
@@ -62,20 +62,20 @@ function MemberNewContent() {
     let isMounted = true
     const initData = async () => {
       if (isLoading) return
-      
+
       const emailParam = searchParams.get('email')
-      
+
       setFormData(prev => {
         // nickname に null が入らないよう明示的に undefined へ変換
-        const nextNickname = currentLineId 
-          ? (lineNickname ?? undefined) 
+        const nextNickname = currentLineId
+          ? (lineNickname ?? undefined)
           : prev.nickname;
-          
+
         return {
           ...prev,
           nickname: nextNickname,
-          email: currentLineId 
-            ? (emailParam ?? '') 
+          email: currentLineId
+            ? (emailParam ?? '')
             : (emailParam ?? prev.email)
         }
       })
@@ -90,8 +90,8 @@ function MemberNewContent() {
     >
   ) => {
     const { id, value, type } = e.target as HTMLInputElement
-    const val = type === 'checkbox' 
-      ? (e.target as HTMLInputElement).checked 
+    const val = type === 'checkbox'
+      ? (e.target as HTMLInputElement).checked
       : value
     setFormData(prev => ({ ...prev, [id]: val }))
   }
@@ -110,9 +110,9 @@ function MemberNewContent() {
     }
 
     const { isValid, errors } = validateRegistration(submissionData)
-    
+
     if (
-      !isValid || 
+      !isValid ||
       !password
     ) {
       alert(errors.join('\n') || '必須項目を正しく入力してください')
@@ -123,7 +123,13 @@ function MemberNewContent() {
     try {
       const response = await registerMember(submissionData)
       if (!response.success) {
-        alert(`登録失敗: ${response.message}`)
+        // ここを強化して、400エラーの具体的な理由をコンソールに出す
+        console.error('Registration API Error Details:', {
+          message: response.message,
+          error: response.error,
+          sentData: submissionData
+        })
+        alert(`登録失敗: ${response.message}\n詳細はコンソールを確認してください`)
         return
       }
       alert('登録申請が完了しました')
@@ -147,16 +153,16 @@ function MemberNewContent() {
         </h1>
 
         <div style={tabContainerStyle}>
-          <button 
-            type="button" 
-            onClick={() => setMode('member')} 
+          <button
+            type="button"
+            onClick={() => setMode('member')}
             style={mode === 'member' ? activeTabStyle : inactiveTabStyle}
           >
             新規会員登録
           </button>
-          <button 
-            type="button" 
-            onClick={() => setMode('guest')} 
+          <button
+            type="button"
+            onClick={() => setMode('guest')}
             style={mode === 'guest' ? activeTabStyle : inactiveTabStyle}
           >
             ゲスト登録
@@ -169,128 +175,128 @@ function MemberNewContent() {
             <label htmlFor="introducer" style={labelStyle}>
               紹介者のニックネーム<span style={reqStyle}>*</span>
             </label>
-            <input 
-              id="introducer" 
-              style={inputStyle} 
-              value={formData.introducer || ''} 
-              onChange={handleChange} 
-              placeholder="紹介者名を入力" 
+            <input
+              id="introducer"
+              style={inputStyle}
+              value={formData.introducer || ''}
+              onChange={handleChange}
+              placeholder="紹介者名を入力"
             />
           </section>
         )}
 
         <section style={sectionBoxStyle}>
           <div style={sectionTitleStyle}>基本情報</div>
-          
+
           <label htmlFor="name" style={labelStyle}>
             氏名（漢字）<span style={reqStyle}>*</span>
           </label>
-          <input 
-            id="name" 
-            style={inputStyle} 
-            value={formData.name || ''} 
-            onChange={handleChange} 
-            placeholder="山田 太郎" 
+          <input
+            id="name"
+            style={inputStyle}
+            value={formData.name || ''}
+            onChange={handleChange}
+            placeholder="山田 太郎"
           />
-          
+
           <label htmlFor="name_roma" style={labelStyle}>
             氏名（ローマ字）<span style={reqStyle}>*</span>
           </label>
-          <input 
-            id="name_roma" 
-            style={inputStyle} 
-            value={formData.name_roma || ''} 
-            onChange={handleChange} 
-            placeholder="Taro Yamada" 
+          <input
+            id="name_roma"
+            style={inputStyle}
+            value={formData.name_roma || ''}
+            onChange={handleChange}
+            placeholder="Taro Yamada"
           />
 
           <label htmlFor="nickname" style={labelStyle}>
             ニックネーム<span style={reqStyle}>*</span>
           </label>
-          <input 
-            id="nickname" 
-            style={isLineLinked ? readOnlyInputStyle : inputStyle} 
-            value={formData.nickname || ''} 
+          <input
+            id="nickname"
+            style={isLineLinked ? readOnlyInputStyle : inputStyle}
+            value={formData.nickname || ''}
             readOnly={isLineLinked}
-            onChange={handleChange} 
+            onChange={handleChange}
           />
 
           <label htmlFor="email" style={labelStyle}>メールアドレス</label>
-          <input 
-            id="email" 
-            style={isLineLinked ? readOnlyInputStyle : inputStyle} 
-            value={formData.email || ''} 
+          <input
+            id="email"
+            style={isLineLinked ? readOnlyInputStyle : inputStyle}
+            value={formData.email || ''}
             readOnly={isLineLinked}
-            onChange={handleChange} 
+            onChange={handleChange}
           />
 
           <label htmlFor="password" style={labelStyle}>
             パスワード<span style={reqStyle}>*</span>
           </label>
-          <input 
-            id="password" 
-            type="password" 
-            style={inputStyle} 
-            value={password} 
-            onChange={(e) => setPassword(e.target.value)} 
-            placeholder="8文字以上" 
+          <input
+            id="password"
+            type="password"
+            style={inputStyle}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="8文字以上"
           />
         </section>
 
         <section style={sectionBoxStyle}>
           <div style={sectionTitleStyle}>プロフィール・連絡先</div>
           <div style={checkboxWrapperStyle}>
-            <input 
-              id="is_profile_public" 
-              type="checkbox" 
-              checked={formData.is_profile_public ?? true} 
-              onChange={handleChange} 
-              style={checkboxStyle} 
+            <input
+              id="is_profile_public"
+              type="checkbox"
+              checked={formData.is_profile_public ?? true}
+              onChange={handleChange}
+              style={checkboxStyle}
             />
             <label htmlFor="is_profile_public" style={labelStyle}>
               プロフィールを他の会員に公開する
             </label>
           </div>
           <label htmlFor="postal" style={labelStyle}>郵便番号</label>
-          <input 
-            id="postal" 
-            style={inputStyle} 
-            value={formData.postal || ''} 
-            onChange={handleChange} 
-            placeholder="123-4567" 
+          <input
+            id="postal"
+            style={inputStyle}
+            value={formData.postal || ''}
+            onChange={handleChange}
+            placeholder="123-4567"
           />
           <label htmlFor="address" style={labelStyle}>住所</label>
-          <input 
-            id="address" 
-            style={inputStyle} 
-            value={formData.address || ''} 
-            onChange={handleChange} 
+          <input
+            id="address"
+            style={inputStyle}
+            value={formData.address || ''}
+            onChange={handleChange}
           />
           <label htmlFor="tel" style={labelStyle}>電話番号</label>
-          <input 
-            id="tel" 
-            style={inputStyle} 
-            value={formData.tel || ''} 
-            onChange={handleChange} 
-            placeholder="090-0000-0000" 
+          <input
+            id="tel"
+            style={inputStyle}
+            value={formData.tel || ''}
+            onChange={handleChange}
+            placeholder="090-0000-0000"
           />
           <label htmlFor="dupr_id" style={labelStyle}>DUPR ID</label>
-          <input 
-            id="dupr_id" 
-            style={inputStyle} 
-            value={formData.dupr_id || ''} 
-            onChange={handleChange} 
+          <input
+            id="dupr_id"
+            style={inputStyle}
+            value={formData.dupr_id || ''}
+            onChange={handleChange}
           />
           <label htmlFor="profile_memo" style={labelStyle}>自己紹介</label>
-          <textarea 
-            id="profile_memo" 
-            style={{ 
-              ...inputStyle, 
-              height: '80px' 
-            }} 
-            value={formData.profile_memo || ''} 
-            onChange={handleChange} 
-            placeholder="テニス歴など" 
+          <textarea
+            id="profile_memo"
+            style={{
+              ...inputStyle,
+              height: '80px'
+            }}
+            value={formData.profile_memo || ''}
+            onChange={handleChange}
+            placeholder="テニス歴など"
           />
         </section>
 
@@ -301,40 +307,40 @@ function MemberNewContent() {
               <label htmlFor="emg_tel" style={labelStyle}>
                 緊急電話番号<span style={reqStyle}>*</span>
               </label>
-              <input 
-                id="emg_tel" 
-                style={inputStyle} 
-                value={formData.emg_tel || ''} 
-                onChange={handleChange} 
+              <input
+                id="emg_tel"
+                style={inputStyle}
+                value={formData.emg_tel || ''}
+                onChange={handleChange}
               />
             </div>
             <div>
               <label htmlFor="emg_rel" style={labelStyle}>
                 続柄<span style={reqStyle}>*</span>
               </label>
-              <input 
-                id="emg_rel" 
-                style={inputStyle} 
-                value={formData.emg_rel || ''} 
-                onChange={handleChange} 
+              <input
+                id="emg_rel"
+                style={inputStyle}
+                value={formData.emg_rel || ''}
+                onChange={handleChange}
               />
             </div>
           </div>
           <label htmlFor="emg_memo" style={labelStyle}>緊急連絡先備考</label>
-          <input 
-            id="emg_memo" 
-            style={inputStyle} 
-            value={formData.emg_memo || ''} 
-            onChange={handleChange} 
+          <input
+            id="emg_memo"
+            style={inputStyle}
+            value={formData.emg_memo || ''}
+            onChange={handleChange}
           />
         </section>
 
-        <button 
-          type="submit" 
-          disabled={isSubmitting} 
-          style={{ 
-            ...submitButtonStyle, 
-            backgroundColor: isSubmitting ? '#444' : '#0070f3' 
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          style={{
+            ...submitButtonStyle,
+            backgroundColor: isSubmitting ? '#444' : '#0070f3'
           }}
         >
           {isSubmitting ? '送信中...' : '新規会員登録申請'}
