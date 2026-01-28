@@ -10,7 +10,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import AdminDashboard from './page'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
-import { ROLES } from '@/utils/auth'
+import { ROLES } from '@/types/member'
 // APIのモック化用
 import * as memberApi from '@/lib/memberApi'
 

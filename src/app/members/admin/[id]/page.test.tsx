@@ -13,7 +13,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import MemberDetailPage from './page';
 import { useAuthCheck } from '@/hooks/useAuthCheck';
-import { ROLES } from '@/utils/auth';
+import { ROLES } from '@/types/member';
 import * as memberApi from '@/lib/memberApi';
 
 // 1. モックの定義

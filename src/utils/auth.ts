@@ -1,104 +1,107 @@
 /**
- * Filename: utils/auth.ts
- * Version : V1.4.2
- * Update  : 2026-01-26
- * 修正内容:
- * V1.4.2
- * - SYSTEM_ADMIN (system_admin) を復活
- * - hasPermission 内で system_admin 保持者への全権限許可を実装
- * - 会員管理権限の4者（会長・副会長・会員担当・システム管理者）対応
- * V1.3.0
- * - DB識別子の変更に伴うロール定数の小文字化と名称変更
- * - ANNOUNCEMENT_MANAGER -> notice_manager への変更
+ * src/utils/auth.ts
+ * Version : V2.1.1
+ * Update  : 2026-01-27
+ * 内容：
+ * - 権限・ログイン可否判定ロジック。
+ * - 以前このファイルにあった ROLES 定義を削除し、@/types/member に一本化。
  */
-
-// ロールの定数定義（DBに保存する識別子と一致させる）
-export const ROLES = {
-  SYSTEM_ADMIN: 'system_admin',
-  PRESIDENT: 'president',
-  VICE_PRESIDENT: 'vice_president',
-  MEMBER_MANAGER: 'member_manager',
-  NOTICE_MANAGER: 'notice_manager',
-  EVENT_MANAGER: 'event_manager',
-  ACCOUNTANT: 'accountant',
-  AUDITOR: 'auditor',
-  ASSET_MANAGER: 'asset_manager',
-} as const;
+import { Member, MemberStatus, ROLES } from '@/types/member';
 
 /**
- * ユーザーのロール文字列を配列に変換し、必要なロールのいずれかを持っているか判定する
+ * 内部共通：権限判定コア
+ * 配列に含まれているロールのみを許可する（隠れた判定を持たない）
+ * @param userRoles - 会員が持つカンマ区切りのロール文字列
+ * @param allowedRoles - 許可されるロールの配列
  */
 const hasPermission = (
-  userRoles: string | null, 
+  userRoles: string | null,
   allowedRoles: string[]
 ): boolean => {
-  if (!userRoles) {
-    return false;
-  }
+  if (!userRoles) return false;
   
-  const userRolesArray = userRoles.split(',').map(r => r.trim());
-
-  // システム管理者は、いかなる管理権限チェックも無条件でパスする
-  if (userRolesArray.includes(ROLES.SYSTEM_ADMIN)) {
-    return true;
-  }
+  // カンマ区切りの文字列を配列に変換
+  const userRolesArray = userRoles.split(',').map((r) => r.trim());
   
-  // 許可されたロールリストのいずれかが、ユーザーの保持ロールに含まれているか
-  return allowedRoles.some(role => userRolesArray.includes(role));
+  // allowedRoles 配列に含まれているかどうかをチェック
+  return allowedRoles.some((role) => userRolesArray.includes(role));
 };
 
-// --- 各機能ごとの権限チェック関数 ---
+/**
+ * ログイン可否判定
+ * * ステータスに基づいてログインを許可するかを決定する
+ */
+export const canLogin = (status: MemberStatus | null): boolean => {
+  if (!status) return false;
+  const allowedStatuses: MemberStatus[] = [
+    'active', 
+    'registration_request', 
+    'suspended', 
+    'suspend_req', 
+    'rejoin_req', 
+    'retire_req'
+  ];
+  return allowedStatuses.includes(status);
+};
 
-// 担当管理権限（ロール変更：会長・副会長・会員管理担当）
-export const canManageRoles = (roles: string | null) => 
+/**
+ * 特定ロール保持判定 (単体チェック用)
+ */
+export const hasRole = (user: Member | null, role: string): boolean => {
+  if (!user || !user.roles) return false;
+  const userRolesArray = user.roles.split(',').map((r) => r.trim());
+  return userRolesArray.includes(role);
+};
+
+// --- 機能別権限チェック ---
+// ROLES オブジェクトは @/types/member から提供されるものを使用
+
+export const canManageMembers = (roles: string | null) =>
   hasPermission(roles, [
+    ROLES.SYSTEM_ADMIN,
     ROLES.PRESIDENT, 
     ROLES.VICE_PRESIDENT, 
     ROLES.MEMBER_MANAGER
   ]);
 
-// 会員管理権限（承認・退会処理など：会長・副会長・会員管理担当）
-// ※システム管理者は hasPermission 内で自動的に許可されるため、ここで 4 者になる
-export const canManageMembers = (roles: string | null) => 
+export const canManageAnnouncements = (roles: string | null) =>
   hasPermission(roles, [
+    ROLES.SYSTEM_ADMIN,
     ROLES.PRESIDENT, 
     ROLES.VICE_PRESIDENT, 
-    ROLES.MEMBER_MANAGER
+    ROLES.ANNOUNCEMENT_MANAGER
   ]);
 
-// お知らせ管理権限（作成・編集・削除）
-export const canManageAnnouncements = (roles: string | null) => 
+export const canManageEvents = (roles: string | null) =>
   hasPermission(roles, [
+    ROLES.SYSTEM_ADMIN,
     ROLES.PRESIDENT, 
-    ROLES.VICE_PRESIDENT, 
-    ROLES.NOTICE_MANAGER
-  ]);
-
-// イベント管理権限（作成・編集・削除）
-export const canManageEvents = (roles: string | null) => 
-  hasPermission(roles, [
-    ROLES.PRESIDENT, 
-    ROLES.VICE_PRESIDENT, 
     ROLES.EVENT_MANAGER
   ]);
 
-// 会計管理権限
-export const canManageAccounts = (roles: string | null) => 
+export const canManageAccounts = (roles: string | null) =>
   hasPermission(roles, [
+    ROLES.SYSTEM_ADMIN,
     ROLES.PRESIDENT, 
     ROLES.ACCOUNTANT
   ]);
 
-// 監査権限
-export const canManageAudits = (roles: string | null) => 
+export const canManageAudits = (roles: string | null) =>
   hasPermission(roles, [
+    ROLES.SYSTEM_ADMIN,
     ROLES.PRESIDENT, 
     ROLES.AUDITOR
   ]);
 
-// 資産管理権限
-export const canManageAssets = (roles: string | null) => 
+export const canManageAssets = (roles: string | null) =>
   hasPermission(roles, [
+    ROLES.SYSTEM_ADMIN,
     ROLES.PRESIDENT, 
     ROLES.ASSET_MANAGER
+  ]);
+
+export const canManageRoles = (roles: string | null) =>
+  hasPermission(roles, [
+    ROLES.SYSTEM_ADMIN,
+    ROLES.PRESIDENT
   ]);
