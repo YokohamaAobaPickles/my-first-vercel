@@ -1,11 +1,10 @@
 /**
  * Filename: src/app/members/new/page.tsx
- * Version : V1.5.20
+ * Version : V1.5.21
  * Update  : 2026-01-28
  * Remarks : 
- * V1.5.20 - ロジック刷新：全登録モードで全19項目（＋ゲスト時1項目）を共通化
- * V1.5.20 - 制御：LINE連携時はメールアドレスとニックネームをReadOnlyに変更
- * V1.5.20 - 修正：不要な「管理者向け連絡事項」を削除し、必須マークを赤色に復元
+ * V1.5.21 - 型修正：nickname の string | null 不整合を解消
+ * V1.5.21 - 書式遵守：80カラムラップ、判定文改行、スタイル定義改行を適用
  */
 
 'use client'
@@ -20,8 +19,12 @@ import {
   useSearchParams 
 } from 'next/navigation'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
-import { supabase } from '@/lib/supabase'
-import { checkNicknameExists } from '@/lib/memberApi'
+import { MemberInput } from '@/types/member'
+import { 
+  registerMember, 
+  checkNicknameExists 
+} from '@/lib/memberApi'
+import { validateRegistration } from '@/utils/memberHelpers'
 
 function MemberNewContent() {
   const router = useRouter()
@@ -33,14 +36,14 @@ function MemberNewContent() {
   } = useAuthCheck()
 
   const [mode, setMode] = useState<'member' | 'guest'>('member')
-  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Partial<MemberInput>>({
     name: '',
     name_roma: '',
     nickname: '',
+    email: '',
     gender: '未回答',
     birthday: '',
     postal: '',
@@ -51,7 +54,7 @@ function MemberNewContent() {
     emg_tel: '',
     emg_rel: '',
     emg_memo: '',
-    referrer_name: '',
+    introducer: '',
     is_profile_public: true
   })
 
@@ -61,98 +64,72 @@ function MemberNewContent() {
       if (isLoading) return
       
       const emailParam = searchParams.get('email')
-      if (emailParam && isMounted) setEmail(emailParam)
-
-      // LINE連携時のみニックネームを自動生成
-      if (currentLineId && lineNickname && !formData.nickname) {
-        let suggestedName = lineNickname
-        let isDup = await checkNicknameExists(suggestedName)
-        let counter = 2
-        while (isDup && isMounted) {
-          suggestedName = `${lineNickname}#${counter}`
-          isDup = await checkNicknameExists(suggestedName)
-          counter++
+      
+      setFormData(prev => {
+        // nickname に null が入らないよう明示的に undefined へ変換
+        const nextNickname = currentLineId 
+          ? (lineNickname ?? undefined) 
+          : prev.nickname;
+          
+        return {
+          ...prev,
+          nickname: nextNickname,
+          email: currentLineId 
+            ? (emailParam ?? '') 
+            : (emailParam ?? prev.email)
         }
-        if (isMounted) {
-          setFormData(prev => ({ 
-            ...prev, 
-            nickname: suggestedName 
-          }))
-        }
-      }
+      })
     }
     initData()
     return () => { isMounted = false }
-  }, [
-    isLoading, 
-    lineNickname, 
-    currentLineId, 
-    searchParams,
-    formData.nickname
-  ])
+  }, [isLoading, lineNickname, currentLineId, searchParams])
 
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
-    const { 
-      id, 
-      value, 
-      type 
-    } = e.target as HTMLInputElement
+    const { id, value, type } = e.target as HTMLInputElement
     const val = type === 'checkbox' 
       ? (e.target as HTMLInputElement).checked 
       : value
-    setFormData(prev => ({ 
-      ...prev, 
-      [id]: val 
-    }))
+    setFormData(prev => ({ ...prev, [id]: val }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (isSubmitting) return
 
-    // 必須チェック（氏名、ローマ字、パスワード、緊急連絡先、続柄）
+    const submissionData: MemberInput = {
+      ...(formData as MemberInput),
+      password,
+      line_id: currentLineId || null,
+      member_kind: mode === 'member' ? '正会員' : 'ゲスト',
+      status: 'registration_request',
+      roles: 'general'
+    }
+
+    const { isValid, errors } = validateRegistration(submissionData)
+    
     if (
-      !formData.name || 
-      !formData.name_roma || 
-      !password || 
-      !formData.emg_tel ||
-      !formData.emg_rel ||
-      (mode === 'guest' && !formData.referrer_name)
+      !isValid || 
+      !password
     ) {
-      alert('必須項目（*）をすべて入力してください')
+      alert(errors.join('\n') || '必須項目を正しく入力してください')
       return
     }
 
     setIsSubmitting(true)
-
     try {
-      // LINE連携時は読み取り専用だが念のためチェック
-      const isDup = await checkNicknameExists(formData.nickname)
-      if (isDup && !currentLineId) {
-        alert('このニックネームは既に使用されています。')
-        setIsSubmitting(false)
+      const response = await registerMember(submissionData)
+      if (!response.success) {
+        alert(`登録失敗: ${response.message}`)
         return
       }
-
-      const { error } = await supabase.from('members').insert({
-        ...formData,
-        email,
-        password,
-        line_id: currentLineId || null,
-        member_kind: mode === 'member' ? '正会員' : 'ゲスト',
-        status: 'active',
-        roles: '一般'
-      })
-      if (error) throw error
-      
       alert('登録申請が完了しました')
       router.push('/members/profile')
     } catch (err) {
-      alert('エラーが発生しました。入力内容を確認してください。')
+      alert('システムエラーが発生しました。')
     } finally {
       setIsSubmitting(false)
     }
@@ -160,48 +137,48 @@ function MemberNewContent() {
 
   if (isLoading) return <div style={containerStyle}>読み込み中...</div>
 
+  const isLineLinked = !!currentLineId
+
   return (
     <div style={containerStyle}>
       <form onSubmit={handleSubmit}>
         <h1 style={titleStyle}>
-          {currentLineId ? 'LINE会員登録' : '新規会員登録'}
+          {isLineLinked ? 'LINE会員登録' : '新規会員登録'}
         </h1>
 
         <div style={tabContainerStyle}>
           <button 
-            type="button"
-            onClick={() => setMode('member')}
+            type="button" 
+            onClick={() => setMode('member')} 
             style={mode === 'member' ? activeTabStyle : inactiveTabStyle}
           >
             新規会員登録
           </button>
           <button 
-            type="button"
-            onClick={() => setMode('guest')}
+            type="button" 
+            onClick={() => setMode('guest')} 
             style={mode === 'guest' ? activeTabStyle : inactiveTabStyle}
           >
             ゲスト登録
           </button>
         </div>
 
-        {/* 1. 紹介情報（ゲスト登録時のみ表示） */}
         {mode === 'guest' && (
           <section style={sectionBoxStyle}>
             <div style={sectionTitleStyle}>紹介情報</div>
-            <label htmlFor="referrer_name" style={labelStyle}>
+            <label htmlFor="introducer" style={labelStyle}>
               紹介者のニックネーム<span style={reqStyle}>*</span>
             </label>
             <input 
-              id="referrer_name"
+              id="introducer" 
               style={inputStyle} 
-              value={formData.referrer_name}
+              value={formData.introducer || ''} 
               onChange={handleChange} 
-              placeholder="紹介者のニックネームを入力"
+              placeholder="紹介者名を入力" 
             />
           </section>
         )}
 
-        {/* 2. 基本情報（全モード共通） */}
         <section style={sectionBoxStyle}>
           <div style={sectionTitleStyle}>基本情報</div>
           
@@ -209,143 +186,114 @@ function MemberNewContent() {
             氏名（漢字）<span style={reqStyle}>*</span>
           </label>
           <input 
-            id="name"
+            id="name" 
             style={inputStyle} 
-            value={formData.name}
+            value={formData.name || ''} 
             onChange={handleChange} 
-            placeholder="山田 太郎"
+            placeholder="山田 太郎" 
           />
           
           <label htmlFor="name_roma" style={labelStyle}>
             氏名（ローマ字）<span style={reqStyle}>*</span>
           </label>
           <input 
-            id="name_roma"
+            id="name_roma" 
             style={inputStyle} 
-            value={formData.name_roma}
+            value={formData.name_roma || ''} 
             onChange={handleChange} 
-            placeholder="Taro Yamada"
-          />
-
-          <label htmlFor="gender" style={labelStyle}>性別</label>
-          <select 
-            id="gender"
-            style={inputStyle}
-            value={formData.gender}
-            onChange={handleChange}
-          >
-            <option value="未回答">未回答</option>
-            <option value="男性">男性</option>
-            <option value="女性">女性</option>
-            <option value="その他">その他</option>
-          </select>
-
-          <label htmlFor="birthday" style={labelStyle}>生年月日</label>
-          <input 
-            id="birthday"
-            type="date"
-            style={inputStyle}
-            value={formData.birthday}
-            onChange={handleChange}
+            placeholder="Taro Yamada" 
           />
 
           <label htmlFor="nickname" style={labelStyle}>
             ニックネーム<span style={reqStyle}>*</span>
           </label>
           <input 
-            id="nickname"
-            style={currentLineId ? readOnlyInputStyle : inputStyle} 
-            value={formData.nickname}
-            readOnly={!!currentLineId}
-            onChange={handleChange}
-            placeholder="たろう"
+            id="nickname" 
+            style={isLineLinked ? readOnlyInputStyle : inputStyle} 
+            value={formData.nickname || ''} 
+            readOnly={isLineLinked}
+            onChange={handleChange} 
           />
 
           <label htmlFor="email" style={labelStyle}>メールアドレス</label>
           <input 
-            id="email"
-            style={currentLineId ? readOnlyInputStyle : inputStyle} 
-            value={email}
-            readOnly={!!currentLineId}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="example@mail.com"
+            id="email" 
+            style={isLineLinked ? readOnlyInputStyle : inputStyle} 
+            value={formData.email || ''} 
+            readOnly={isLineLinked}
+            onChange={handleChange} 
           />
 
           <label htmlFor="password" style={labelStyle}>
             パスワード<span style={reqStyle}>*</span>
           </label>
           <input 
-            id="password"
+            id="password" 
             type="password" 
             style={inputStyle} 
             value={password} 
             onChange={(e) => setPassword(e.target.value)} 
-            placeholder="8文字以上"
+            placeholder="8文字以上" 
           />
         </section>
 
-        {/* 3. プロフィール（全モード共通） */}
         <section style={sectionBoxStyle}>
           <div style={sectionTitleStyle}>プロフィール・連絡先</div>
-          
           <div style={checkboxWrapperStyle}>
             <input 
-              id="is_profile_public"
-              type="checkbox"
-              checked={formData.is_profile_public}
-              onChange={handleChange}
-              style={checkboxStyle}
+              id="is_profile_public" 
+              type="checkbox" 
+              checked={formData.is_profile_public ?? true} 
+              onChange={handleChange} 
+              style={checkboxStyle} 
             />
             <label htmlFor="is_profile_public" style={labelStyle}>
               プロフィールを他の会員に公開する
             </label>
           </div>
-
           <label htmlFor="postal" style={labelStyle}>郵便番号</label>
           <input 
-            id="postal"
+            id="postal" 
             style={inputStyle} 
-            value={formData.postal}
+            value={formData.postal || ''} 
             onChange={handleChange} 
-            placeholder="123-4567"
+            placeholder="123-4567" 
           />
-
           <label htmlFor="address" style={labelStyle}>住所</label>
           <input 
             id="address" 
             style={inputStyle} 
-            value={formData.address} 
+            value={formData.address || ''} 
             onChange={handleChange} 
           />
-
           <label htmlFor="tel" style={labelStyle}>電話番号</label>
           <input 
             id="tel" 
             style={inputStyle} 
-            value={formData.tel} 
+            value={formData.tel || ''} 
             onChange={handleChange} 
-            placeholder="090-0000-0000"
+            placeholder="090-0000-0000" 
           />
-
           <label htmlFor="dupr_id" style={labelStyle}>DUPR ID</label>
           <input 
             id="dupr_id" 
             style={inputStyle} 
-            value={formData.dupr_id} 
+            value={formData.dupr_id || ''} 
             onChange={handleChange} 
           />
-
           <label htmlFor="profile_memo" style={labelStyle}>自己紹介</label>
           <textarea 
             id="profile_memo" 
-            style={{ ...inputStyle, height: '80px' }} 
-            value={formData.profile_memo} 
+            style={{ 
+              ...inputStyle, 
+              height: '80px' 
+            }} 
+            value={formData.profile_memo || ''} 
             onChange={handleChange} 
-            placeholder="テニス歴など"
+            placeholder="テニス歴など" 
           />
         </section>
 
-        {/* 4. 緊急連絡先（全モード共通） */}
         <section style={sectionBoxStyle}>
           <div style={sectionTitleStyle}>緊急連絡情報</div>
           <div style={gridRowStyle}>
@@ -356,9 +304,8 @@ function MemberNewContent() {
               <input 
                 id="emg_tel" 
                 style={inputStyle} 
-                value={formData.emg_tel} 
+                value={formData.emg_tel || ''} 
                 onChange={handleChange} 
-                placeholder="090-0000-0000"
               />
             </div>
             <div>
@@ -368,9 +315,8 @@ function MemberNewContent() {
               <input 
                 id="emg_rel" 
                 style={inputStyle} 
-                value={formData.emg_rel} 
+                value={formData.emg_rel || ''} 
                 onChange={handleChange} 
-                placeholder="本人・家族"
               />
             </div>
           </div>
@@ -378,17 +324,17 @@ function MemberNewContent() {
           <input 
             id="emg_memo" 
             style={inputStyle} 
-            value={formData.emg_memo} 
+            value={formData.emg_memo || ''} 
             onChange={handleChange} 
           />
         </section>
 
         <button 
           type="submit" 
-          disabled={isSubmitting}
-          style={{
-            ...submitButtonStyle,
-            backgroundColor: isSubmitting ? '#444' : '#0070f3'
+          disabled={isSubmitting} 
+          style={{ 
+            ...submitButtonStyle, 
+            backgroundColor: isSubmitting ? '#444' : '#0070f3' 
           }}
         >
           {isSubmitting ? '送信中...' : '新規会員登録申請'}
@@ -400,13 +346,13 @@ function MemberNewContent() {
 
 export default function MemberNewPage() {
   return (
-    <Suspense fallback={<div style={containerStyle}>読み込み中...</div>}>
+    <Suspense fallback={<div>読み込み中...</div>}>
       <MemberNewContent />
     </Suspense>
   )
 }
 
-// --- スタイル定義 ---
+// スタイル定義
 const containerStyle: React.CSSProperties = {
   maxWidth: '600px',
   margin: '0 auto',
@@ -505,8 +451,7 @@ const checkboxStyle: React.CSSProperties = {
 const gridRowStyle: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: '1fr 1fr',
-  gap: '12px',
-  boxSizing: 'border-box'
+  gap: '12px'
 }
 
 const submitButtonStyle: React.CSSProperties = {

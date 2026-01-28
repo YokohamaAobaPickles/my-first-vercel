@@ -11,7 +11,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
-import { Member, ApiResponse } from '@/types/member';
+import { Member, MemberInput, ApiResponse } from '@/types/member';
 
 /**
  * 共通エラーハンドラー
@@ -144,6 +144,21 @@ export const updateMemberProfile = async (
     .from('members')
     .update(data)
     .eq('id', id);
+
+  if (error) return handleError(error);
+  return { success: true, data: null, error: null };
+};
+
+/**
+ * 新規会員登録 (API層)
+ * * パスワードや初期ステータスを含む会員データをDBに保存する
+ */
+export const registerMember = async (
+  input: MemberInput
+): Promise<ApiResponse<null>> => {
+  const { error } = await supabase
+    .from('members')
+    .insert(input);
 
   if (error) return handleError(error);
   return { success: true, data: null, error: null };
