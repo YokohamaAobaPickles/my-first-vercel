@@ -1,11 +1,11 @@
 /**
  * Filename: src/app/members/new/page.tsx
- * Version : V1.5.19
+ * Version : V1.5.20
  * Update  : 2026-01-28
  * Remarks : 
- * V1.5.19 - 不具合修正：LINE連携時でも性別・生年月日・公開設定が消えないよう
- * JSXの条件分岐構造を根本から修正
- * V1.5.19 - レイアウト：緊急連絡先の1列2項目表示を維持
+ * V1.5.20 - ロジック刷新：全登録モードで全19項目（＋ゲスト時1項目）を共通化
+ * V1.5.20 - 制御：LINE連携時はメールアドレスとニックネームをReadOnlyに変更
+ * V1.5.20 - 修正：不要な「管理者向け連絡事項」を削除し、必須マークを赤色に復元
  */
 
 'use client'
@@ -51,7 +51,6 @@ function MemberNewContent() {
     emg_tel: '',
     emg_rel: '',
     emg_memo: '',
-    admin_memo: '',
     referrer_name: '',
     is_profile_public: true
   })
@@ -64,6 +63,7 @@ function MemberNewContent() {
       const emailParam = searchParams.get('email')
       if (emailParam && isMounted) setEmail(emailParam)
 
+      // LINE連携時のみニックネームを自動生成
       if (currentLineId && lineNickname && !formData.nickname) {
         let suggestedName = lineNickname
         let isDup = await checkNicknameExists(suggestedName)
@@ -114,21 +114,25 @@ function MemberNewContent() {
     e.preventDefault()
     if (isSubmitting) return
 
+    // 必須チェック（氏名、ローマ字、パスワード、緊急連絡先、続柄）
     if (
       !formData.name || 
       !formData.name_roma || 
       !password || 
-      !formData.emg_tel
+      !formData.emg_tel ||
+      !formData.emg_rel ||
+      (mode === 'guest' && !formData.referrer_name)
     ) {
-      alert('必須項目を入力してください')
+      alert('必須項目（*）をすべて入力してください')
       return
     }
 
     setIsSubmitting(true)
 
     try {
+      // LINE連携時は読み取り専用だが念のためチェック
       const isDup = await checkNicknameExists(formData.nickname)
-      if (isDup) {
+      if (isDup && !currentLineId) {
         alert('このニックネームは既に使用されています。')
         setIsSubmitting(false)
         return
@@ -180,11 +184,12 @@ function MemberNewContent() {
           </button>
         </div>
 
+        {/* 1. 紹介情報（ゲスト登録時のみ表示） */}
         {mode === 'guest' && (
           <section style={sectionBoxStyle}>
             <div style={sectionTitleStyle}>紹介情報</div>
             <label htmlFor="referrer_name" style={labelStyle}>
-              紹介者のニックネーム*
+              紹介者のニックネーム<span style={reqStyle}>*</span>
             </label>
             <input 
               id="referrer_name"
@@ -196,10 +201,13 @@ function MemberNewContent() {
           </section>
         )}
 
+        {/* 2. 基本情報（全モード共通） */}
         <section style={sectionBoxStyle}>
           <div style={sectionTitleStyle}>基本情報</div>
           
-          <label htmlFor="name" style={labelStyle}>氏名（漢字）*</label>
+          <label htmlFor="name" style={labelStyle}>
+            氏名（漢字）<span style={reqStyle}>*</span>
+          </label>
           <input 
             id="name"
             style={inputStyle} 
@@ -209,7 +217,7 @@ function MemberNewContent() {
           />
           
           <label htmlFor="name_roma" style={labelStyle}>
-            氏名（ローマ字）*
+            氏名（ローマ字）<span style={reqStyle}>*</span>
           </label>
           <input 
             id="name_roma"
@@ -242,12 +250,13 @@ function MemberNewContent() {
           />
 
           <label htmlFor="nickname" style={labelStyle}>
-            ニックネーム*
+            ニックネーム<span style={reqStyle}>*</span>
           </label>
           <input 
             id="nickname"
-            style={inputStyle} 
+            style={currentLineId ? readOnlyInputStyle : inputStyle} 
             value={formData.nickname}
+            readOnly={!!currentLineId}
             onChange={handleChange}
             placeholder="たろう"
           />
@@ -263,7 +272,7 @@ function MemberNewContent() {
           />
 
           <label htmlFor="password" style={labelStyle}>
-            パスワード*
+            パスワード<span style={reqStyle}>*</span>
           </label>
           <input 
             id="password"
@@ -275,6 +284,7 @@ function MemberNewContent() {
           />
         </section>
 
+        {/* 3. プロフィール（全モード共通） */}
         <section style={sectionBoxStyle}>
           <div style={sectionTitleStyle}>プロフィール・連絡先</div>
           
@@ -335,12 +345,13 @@ function MemberNewContent() {
           />
         </section>
 
+        {/* 4. 緊急連絡先（全モード共通） */}
         <section style={sectionBoxStyle}>
           <div style={sectionTitleStyle}>緊急連絡情報</div>
           <div style={gridRowStyle}>
             <div>
               <label htmlFor="emg_tel" style={labelStyle}>
-                緊急電話番号*
+                緊急電話番号<span style={reqStyle}>*</span>
               </label>
               <input 
                 id="emg_tel" 
@@ -352,7 +363,7 @@ function MemberNewContent() {
             </div>
             <div>
               <label htmlFor="emg_rel" style={labelStyle}>
-                続柄*
+                続柄<span style={reqStyle}>*</span>
               </label>
               <input 
                 id="emg_rel" 
@@ -368,16 +379,6 @@ function MemberNewContent() {
             id="emg_memo" 
             style={inputStyle} 
             value={formData.emg_memo} 
-            onChange={handleChange} 
-          />
-        </section>
-
-        <section style={sectionBoxStyle}>
-          <label htmlFor="admin_memo" style={labelStyle}>管理者向け連絡事項</label>
-          <textarea 
-            id="admin_memo" 
-            style={{ ...inputStyle, height: '60px' }} 
-            value={formData.admin_memo} 
             onChange={handleChange} 
           />
         </section>
@@ -466,6 +467,11 @@ const labelStyle: React.CSSProperties = {
   marginTop: '12px'
 }
 
+const reqStyle: React.CSSProperties = {
+  color: '#ff4d4f',
+  marginLeft: '4px'
+}
+
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '12px',
@@ -480,7 +486,8 @@ const inputStyle: React.CSSProperties = {
 const readOnlyInputStyle: React.CSSProperties = {
   ...inputStyle,
   backgroundColor: '#1a1a1a',
-  color: '#666'
+  color: '#666',
+  cursor: 'not-allowed'
 }
 
 const checkboxWrapperStyle: React.CSSProperties = {
