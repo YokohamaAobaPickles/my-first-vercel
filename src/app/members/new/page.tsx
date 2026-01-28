@@ -102,6 +102,7 @@ function MemberNewContent() {
 
     const submissionData: MemberInput = {
       ...(formData as MemberInput),
+      birthday: formData.birthday || null,
       password,
       line_id: currentLineId || null,
       member_kind: mode === 'member' ? '正会員' : 'ゲスト',
