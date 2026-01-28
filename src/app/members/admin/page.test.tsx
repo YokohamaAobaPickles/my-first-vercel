@@ -1,9 +1,9 @@
 /**
  * Filename: src/app/members/admin/page.test.tsx
- * Version : V1.3.0
- * Update  : 2026-01-26
+ * Version : V1.3.1
+ * Update  : 2026-01-28
  * 修正内容：
- * - fetchPendingMembers をモック化し、実データ取得フローに対応
+ * - fetchPendingMembers のモック戻り値を ApiResponse 型に修正
  */
 
 import { render, screen } from '@testing-library/react'
@@ -27,7 +27,7 @@ vi.mock('next/navigation', () => ({
   }),
 }))
 
-describe('AdminDashboard - 実データ連携の検証 V1.3.0', () => {
+describe('AdminDashboard - 実データ連携の検証 V1.3.1', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -39,11 +39,20 @@ describe('AdminDashboard - 実データ連携の検証 V1.3.0', () => {
       user: { roles: ROLES.SYSTEM_ADMIN },
     })
 
-    // 2. APIが返すデータをモック
-    const mockData = [
-      { id: 'user-1', name: 'リアルな申請者A', roles: '一般', status: 'registration_request' }
-    ]
-    ;(memberApi.fetchPendingMembers as any).mockResolvedValue(mockData)
+    // 2. APIが返すデータを ApiResponse 形式でモック
+    const mockResponse = {
+      success: true,
+      data: [
+        {
+          id: 'user-1',
+          name: 'リアルな申請者A',
+          roles: '一般',
+          status: 'registration_request'
+        }
+      ],
+      error: null
+    }
+    ;(memberApi.fetchPendingMembers as any).mockResolvedValue(mockResponse)
 
     render(<AdminDashboard />)
 
@@ -57,8 +66,12 @@ describe('AdminDashboard - 実データ連携の検証 V1.3.0', () => {
       user: { roles: ROLES.SYSTEM_ADMIN },
     })
 
-    // APIが空配列を返す場合
-    ;(memberApi.fetchPendingMembers as any).mockResolvedValue([])
+    // APIが空の成功レスポンスを返す場合
+    ;(memberApi.fetchPendingMembers as any).mockResolvedValue({
+      success: true,
+      data: [],
+      error: null
+    })
 
     render(<AdminDashboard />)
 

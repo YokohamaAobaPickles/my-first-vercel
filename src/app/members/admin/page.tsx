@@ -50,8 +50,13 @@ export default function AdminDashboard() {
      */
     const loadData = async () => {
       try {
-        const data = await fetchPendingMembers()
-        setPendingMembers(data as Member[])
+        const res = await fetchPendingMembers() // 変数名を res (response) にすると分かりやすいです
+        if (res.success && res.data) {
+          setPendingMembers(res.data) // ApiResponse の中の data (Member[]) をセット
+        } else {
+          // 必要に応じてエラーハンドリング
+          console.error(res.error?.message)
+        }
       } catch (err) {
         console.error('データ取得に失敗しました:', err)
       } finally {
@@ -78,7 +83,7 @@ export default function AdminDashboard() {
       {/* 承認待ちセクション */}
       <section style={sectionStyle}>
         <h2 style={subTitleStyle}>承認待ち会員</h2>
-        
+
         {pendingMembers.length === 0 ? (
           <p style={emptyMessageStyle}>現在、承認待ちの会員はいません。</p>
         ) : (
@@ -89,8 +94,8 @@ export default function AdminDashboard() {
                   <span style={nameStyle}>{member.name}</span>
                   <span style={roleBadgeStyle}>{member.roles}</span>
                 </div>
-                <Link 
-                  href={`/members/admin/${member.id}`} 
+                <Link
+                  href={`/members/admin/${member.id}`}
                   style={detailButtonStyle}
                 >
                   詳細・承認
