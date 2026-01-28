@@ -1,25 +1,32 @@
 /**
  * Filename: src/app/members/profile/edit/page.tsx
- * Version : V1.6.5
- * Update  : 2026-01-28
- * 内容：
- * - 連絡先・住所セクションの復元（テストエラー解消）
- * - Hooks の順序修正 (Error #310 回避)
- * - ニックネーム重複チェック、公開設定、LINEユーザー制御の統合
+ * Version : V1.6.6
+ * Update  : 2026-01-29
+ * Remarks : 
+ * V1.6.6 - 修正：プロファイルメモ、緊急連絡用メモの入力フィールドを追加/修正。
+ * V1.6.6 - 書式：80カラムラップ、判定ごとの改行、スタイル定義の改行を遵守。
  */
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import {
+  useState,
+  useEffect
+} from 'react'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import { useRouter } from 'next/navigation'
-import { updateMemberProfile, checkNicknameExists } from '@/lib/memberApi'
+import {
+  updateMemberProfile,
+  checkNicknameExists
+} from '@/lib/memberApi'
 
 export default function EditProfilePage() {
-  const { user, isLoading } = useAuthCheck()
+  const {
+    user,
+    isLoading
+  } = useAuthCheck()
   const router = useRouter()
 
-  // --- Hooks は必ず冒頭に ---
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     nickname: '',
@@ -51,22 +58,32 @@ export default function EditProfilePage() {
     }
   }, [user])
 
-  // --- 早期リターンは Hooks の後 ---
-  if (isLoading) return <div style={styles.container}>読み込み中...</div>
+  if (isLoading) {
+    return (
+      <div style={styles.container}>
+        読み込み中...
+      </div>
+    )
+  }
   if (!user) return null
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { id, value, type } = e.target as HTMLInputElement
-    const val = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+    const val = type === 'checkbox' 
+      ? (e.target as HTMLInputElement).checked 
+      : value
     setFormData(prev => ({ ...prev, [id]: val }))
   }
 
   const handleSave = async () => {
     if (!user.id) return
 
-    if (formData.nickname !== user.nickname && formData.nickname !== '') {
+    if (
+      formData.nickname !== user.nickname && 
+      formData.nickname !== ''
+    ) {
       const isDup = await checkNicknameExists(formData.nickname)
       if (isDup) {
         alert('このニックネームは既に他のメンバーに使用されています。')
@@ -133,7 +150,9 @@ export default function EditProfilePage() {
               />
             </div>
             <div style={styles.inputGroup}>
-              <label htmlFor="profile_memo" style={styles.label}>自己紹介</label>
+              <label htmlFor="profile_memo" style={styles.label}>
+                プロファイルメモ
+              </label>
               <textarea
                 id="profile_memo"
                 style={{ ...styles.input, height: '80px' }}
@@ -142,7 +161,9 @@ export default function EditProfilePage() {
               />
             </div>
             <div style={styles.inputGroup}>
-              <label htmlFor="dupr_id" style={styles.label}>DUPR ID</label>
+              <label htmlFor="dupr_id" style={styles.label}>
+                DUPR ID
+              </label>
               <input
                 id="dupr_id"
                 style={styles.input}
@@ -153,12 +174,14 @@ export default function EditProfilePage() {
           </div>
         </section>
 
-        {/* 連絡先・住所 (ここを復元しました) */}
+        {/* 連絡先・住所 */}
         <section style={styles.section}>
           <h2 style={styles.sectionTitle}>連絡先・住所</h2>
           <div style={styles.card}>
             <div style={styles.inputGroup}>
-              <label htmlFor="postal" style={styles.label}>郵便番号</label>
+              <label htmlFor="postal" style={styles.label}>
+                郵便番号
+              </label>
               <input
                 id="postal"
                 style={styles.input}
@@ -167,7 +190,9 @@ export default function EditProfilePage() {
               />
             </div>
             <div style={styles.inputGroup}>
-              <label htmlFor="address" style={styles.label}>住所</label>
+              <label htmlFor="address" style={styles.label}>
+                住所
+              </label>
               <input
                 id="address"
                 style={styles.input}
@@ -176,7 +201,9 @@ export default function EditProfilePage() {
               />
             </div>
             <div style={styles.inputGroup}>
-              <label htmlFor="tel" style={styles.label}>電話番号</label>
+              <label htmlFor="tel" style={styles.label}>
+                電話番号
+              </label>
               <input
                 id="tel"
                 style={styles.input}
@@ -203,11 +230,24 @@ export default function EditProfilePage() {
               />
             </div>
             <div style={styles.inputGroup}>
-              <label htmlFor="emg_rel" style={styles.label}>続柄</label>
+              <label htmlFor="emg_rel" style={styles.label}>
+                続柄
+              </label>
               <input
                 id="emg_rel"
                 style={styles.input}
                 value={formData.emg_rel}
+                onChange={handleChange}
+              />
+            </div>
+            <div style={styles.inputGroup}>
+              <label htmlFor="emg_memo" style={styles.label}>
+                緊急連絡用メモ
+              </label>
+              <textarea
+                id="emg_memo"
+                style={{ ...styles.input, height: '60px' }}
+                value={formData.emg_memo}
                 onChange={handleChange}
               />
             </div>
@@ -227,7 +267,9 @@ export default function EditProfilePage() {
               { id: 'roles', label: 'ロール', val: user.roles }
             ].map(item => (
               <div key={item.id} style={styles.inputGroup}>
-                <label htmlFor={item.id} style={styles.label}>{item.label}</label>
+                <label htmlFor={item.id} style={styles.label}>
+                  {item.label}
+                </label>
                 <input
                   id={item.id}
                   style={styles.readOnlyInput}
@@ -270,9 +312,18 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: '#fff',
     minHeight: '100vh'
   },
-  wrapper: { width: '100%', maxWidth: '500px' },
-  title: { fontSize: '1.5rem', marginBottom: '30px', textAlign: 'center' },
-  section: { marginBottom: '32px' },
+  wrapper: {
+    width: '100%',
+    maxWidth: '500px'
+  },
+  title: {
+    fontSize: '1.5rem',
+    marginBottom: '30px',
+    textAlign: 'center'
+  },
+  section: {
+    marginBottom: '32px'
+  },
   sectionTitle: {
     fontSize: '0.9rem',
     color: '#888',
@@ -285,8 +336,15 @@ const styles: { [key: string]: React.CSSProperties } = {
     padding: '20px',
     border: '1px solid #333'
   },
-  inputGroup: { marginBottom: '16px' },
-  label: { display: 'block', fontSize: '0.85rem', color: '#aaa', marginBottom: '6px' },
+  inputGroup: {
+    marginBottom: '16px'
+  },
+  label: {
+    display: 'block',
+    fontSize: '0.85rem',
+    color: '#aaa',
+    marginBottom: '6px'
+  },
   input: {
     width: '100%',
     padding: '12px',
@@ -308,7 +366,12 @@ const styles: { [key: string]: React.CSSProperties } = {
     outline: 'none',
     cursor: 'not-allowed'
   },
-  buttonContainer: { display: 'flex', gap: '12px', marginTop: '40px', marginBottom: '80px' },
+  buttonContainer: {
+    display: 'flex',
+    gap: '12px',
+    marginTop: '40px',
+    marginBottom: '80px'
+  },
   saveButton: {
     flex: 2,
     padding: '16px',
