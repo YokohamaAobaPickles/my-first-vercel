@@ -1,11 +1,12 @@
 /**
  * Filename: src/app/members/profile/page.tsx
- * Version : V2.1.0
- * Update  : 2026-01-29
+ * Version : V2.2.0
+ * Update  : 2026-01-30
  * Remarks : 
- * V2.1.0 - 修正：userRoles を文字列としてモックに適合させ、エラーを解消。
- * V2.1.0 - 修正：会員番号を4桁ゼロパディング表示に変更。
- * V2.1.0 - 変更：管理者パネルボタンをタイトル右側に移動。
+ * V2.2.0 - 修正：各種ボタンの形状（サイズ・枠線）を統一。
+ * V2.2.0 - 修正：休会申請の文字色をオレンジ (#ffa940) に変更。
+ * V2.2.0 - 変更：DUPR更新ボタンをセクション見出し右側へ移動し、青色で配置。
+ * V2.2.0 - 調整：管理者パネルボタンのスタイルを申請ボタンと統一。
  */
 
 'use client'
@@ -65,7 +66,6 @@ export default function ProfilePage() {
     return labels[status] || status
   }
 
-  // 会員番号を 0001 形式に変換
   const formattedMemberNumber = user.member_number 
     ? String(user.member_number).padStart(4, '0') 
     : '-'
@@ -89,7 +89,7 @@ export default function ProfilePage() {
             <h2 style={styles.sectionTitle}>基本情報</h2>
             <div style={styles.buttonGroup}>
               <button 
-                style={styles.actionButton}
+                style={{ ...styles.actionButton, color: '#ffa940' }}
                 disabled={user.status !== 'active'}
                 onClick={() => setModalConfig({ isOpen: true, type: 'suspend' })}
               >
@@ -132,7 +132,7 @@ export default function ProfilePage() {
             <h2 style={styles.sectionTitle}>プロフィール</h2>
             <button 
               onClick={() => router.push('/members/profile/edit')} 
-              style={styles.editButton}
+              style={styles.actionButton}
               aria-label="編集"
             >
               編集
@@ -146,9 +146,7 @@ export default function ProfilePage() {
               <span style={styles.label}>プロフィールメモ</span>
               <p style={styles.memoText}>{user.profile_memo || '未入力'}</p>
             </div>
-            
             <hr style={styles.hr} />
-            
             <h3 style={styles.subTitle}>緊急連絡先</h3>
             <InfoRow label="緊急連絡先" value={user.emg_tel} />
             <InfoRow label="続柄" value={user.emg_rel} />
@@ -163,16 +161,18 @@ export default function ProfilePage() {
 
         {/* 3. 競技情報セクション */}
         <section style={styles.section}>
-          <h2 style={styles.sectionTitle}>競技情報 (DUPR)</h2>
+          <div style={styles.sectionHeader}>
+            <h2 style={styles.sectionTitle}>競技情報 (DUPR)</h2>
+            <button 
+              style={{ ...styles.actionButton, color: '#0070f3' }} 
+              onClick={() => alert('DUPR連携機能は準備中です')}
+            >
+              DUPR更新
+            </button>
+          </div>
           <div style={styles.card}>
             <InfoRow label="DUPR ID" value={user.dupr_id} />
             <InfoRow label="DUPR Rating" value={user.dupr_rate} />
-            <button 
-              style={styles.syncButton} 
-              onClick={() => alert('DUPR連携機能は準備中です')}
-            >
-              DUPR Rate取得
-            </button>
           </div>
         </section>
 
@@ -240,13 +240,14 @@ const styles: { [key: string]: React.CSSProperties } = {
     marginBottom: '30px'
   },
   adminButton: {
-    backgroundColor: '#1d4ed8',
+    backgroundColor: 'transparent',
     color: '#fff',
     padding: '6px 12px',
-    borderRadius: '8px',
+    borderRadius: '6px',
     fontSize: '0.75rem',
     textDecoration: 'none',
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    border: '1px solid #444'
   },
   title: { fontSize: '1.5rem', margin: 0 },
   section: { marginBottom: '32px' },
@@ -260,20 +261,11 @@ const styles: { [key: string]: React.CSSProperties } = {
   buttonGroup: { display: 'flex', gap: '10px' },
   actionButton: {
     backgroundColor: 'transparent',
-    color: '#888',
+    color: '#fff',
     border: '1px solid #444',
     padding: '6px 12px',
     borderRadius: '6px',
     fontSize: '0.75rem',
-    cursor: 'pointer'
-  },
-  editButton: {
-    backgroundColor: '#333',
-    color: '#fff',
-    border: '1px solid #555',
-    padding: '6px 16px',
-    borderRadius: '6px',
-    fontSize: '0.85rem',
     cursor: 'pointer'
   },
   card: {
@@ -295,17 +287,6 @@ const styles: { [key: string]: React.CSSProperties } = {
   emgMemoText: { fontSize: '0.95rem', marginTop: '8px', color: '#ffb3b3' },
   hr: { border: 'none', borderTop: '1px solid #333', margin: '20px 0' },
   subTitle: { fontSize: '0.9rem', color: '#aaa', marginBottom: '10px' },
-  syncButton: {
-    marginTop: '16px',
-    width: '100%',
-    padding: '10px',
-    borderRadius: '8px',
-    border: '1px solid #0070f3',
-    backgroundColor: 'transparent',
-    color: '#0070f3',
-    cursor: 'pointer',
-    fontSize: '0.85rem'
-  },
   footer: { marginTop: '40px', textAlign: 'center' },
   backLink: { color: '#0070f3', textDecoration: 'none', fontSize: '0.9rem' },
   modalOverlay: {
