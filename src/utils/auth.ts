@@ -35,7 +35,7 @@ export const canLogin = (status: MemberStatus | null): boolean => {
   if (!status) return false;
   const allowedStatuses: MemberStatus[] = [
     'active', 
-    'registration_request', 
+    'new_req', 
     'suspended', 
     'suspend_req', 
     'rejoin_req', 
