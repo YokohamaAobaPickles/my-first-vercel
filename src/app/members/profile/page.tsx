@@ -59,7 +59,7 @@ export default function ProfilePage() {
         if (modalConfig.type === 'withdraw') {
           newStatus = 'withdraw_req'
         }
-        
+
         res = await updateMemberStatus(user.id, newStatus)
       }
 
@@ -88,18 +88,18 @@ export default function ProfilePage() {
     return labels[status] || status
   }
 
-  const formattedMemberNumber = user.member_number 
-    ? String(user.member_number).padStart(4, '0') 
+  const formattedMemberNumber = user.member_number
+    ? String(user.member_number).padStart(4, '0')
     : '-'
 
   const renderActionButtons = () => {
     if (user.status === 'new_req') {
       return (
-        <button 
+        <button
           style={{ ...styles.actionButton, color: '#ff4d4f' }}
-          onClick={() => setModalConfig({ 
-            isOpen: true, 
-            type: 'cancel_join' 
+          onClick={() => setModalConfig({
+            isOpen: true,
+            type: 'cancel_join'
           })}
         >
           入会取消
@@ -110,20 +110,20 @@ export default function ProfilePage() {
     if (user.status === 'suspend_req') {
       return (
         <>
-          <button 
+          <button
             style={{ ...styles.actionButton, color: '#aaa' }}
-            onClick={() => setModalConfig({ 
-              isOpen: true, 
-              type: 'cancel_request' 
+            onClick={() => setModalConfig({
+              isOpen: true,
+              type: 'cancel_request'
             })}
           >
             休会取消
           </button>
-          <button 
+          <button
             style={{ ...styles.actionButton, color: '#ff4d4f' }}
-            onClick={() => setModalConfig({ 
-              isOpen: true, 
-              type: 'withdraw' 
+            onClick={() => setModalConfig({
+              isOpen: true,
+              type: 'withdraw'
             })}
           >
             退会申請
@@ -134,11 +134,11 @@ export default function ProfilePage() {
 
     if (user.status === 'withdraw_req') {
       return (
-        <button 
+        <button
           style={{ ...styles.actionButton, color: '#aaa' }}
-          onClick={() => setModalConfig({ 
-            isOpen: true, 
-            type: 'cancel_request' 
+          onClick={() => setModalConfig({
+            isOpen: true,
+            type: 'cancel_request'
           })}
         >
           退会取消
@@ -149,20 +149,20 @@ export default function ProfilePage() {
     if (user.status === 'active') {
       return (
         <>
-          <button 
+          <button
             style={{ ...styles.actionButton, color: '#ffa940' }}
-            onClick={() => setModalConfig({ 
-              isOpen: true, 
-              type: 'suspend' 
+            onClick={() => setModalConfig({
+              isOpen: true,
+              type: 'suspend'
             })}
           >
             休会申請
           </button>
-          <button 
+          <button
             style={{ ...styles.actionButton, color: '#ff4d4f' }}
-            onClick={() => setModalConfig({ 
-              isOpen: true, 
-              type: 'withdraw' 
+            onClick={() => setModalConfig({
+              isOpen: true,
+              type: 'withdraw'
             })}
           >
             退会申請
@@ -176,7 +176,7 @@ export default function ProfilePage() {
   return (
     <div style={styles.container}>
       <div style={styles.wrapper}>
-        
+
         <div style={styles.headerArea}>
           <h1 style={styles.title}>マイプロフィール</h1>
           {canManageMembers(userRoles) && (
@@ -200,15 +200,15 @@ export default function ProfilePage() {
             <InfoRow label="氏名（ローマ字）" value={user.name_roma} />
             <InfoRow label="性別" value={user.gender} />
             <InfoRow label="生年月日" value={user.birthday} />
-            <InfoRow 
-              label="ステータス" 
-              value={getStatusLabel(user.status)} 
-              isStatus 
+            <InfoRow
+              label="ステータス"
+              value={getStatusLabel(user.status)}
+              isStatus
             />
-            <InfoRow 
-              label="在籍日数" 
-              value={typeof enrollmentDays === 'number' ? 
-                `${enrollmentDays} 日目` : enrollmentDays} 
+            <InfoRow
+              label="在籍日数"
+              value={typeof enrollmentDays === 'number' ?
+                `${enrollmentDays} 日目` : enrollmentDays}
             />
           </div>
         </section>
@@ -216,8 +216,8 @@ export default function ProfilePage() {
         <section style={styles.section}>
           <div style={styles.sectionHeader}>
             <h2 style={styles.sectionTitle}>プロフィール</h2>
-            <button 
-              onClick={() => router.push('/members/profile/edit')} 
+            <button
+              onClick={() => router.push('/members/profile/edit')}
               style={styles.actionButton}
               aria-label="編集"
             >
@@ -248,8 +248,8 @@ export default function ProfilePage() {
         <section style={styles.section}>
           <div style={styles.sectionHeader}>
             <h2 style={styles.sectionTitle}>競技情報 (DUPR)</h2>
-            <button 
-              style={{ ...styles.actionButton, color: '#0070f3' }} 
+            <button
+              style={{ ...styles.actionButton, color: '#0070f3' }}
               onClick={() => alert('DUPR連携機能は準備中です')}
             >
               DUPR更新
@@ -267,17 +267,19 @@ export default function ProfilePage() {
       </div>
 
       {modalConfig.isOpen && (
-        <ConfirmModal 
+        <ConfirmModal
           title={
             modalConfig.type === 'suspend' ? '休会申請' :
-            modalConfig.type === 'withdraw' ? '退会申請' :
-            modalConfig.type === 'cancel_join' ? '入会申請の取消' : '申請の取消'
+              modalConfig.type === 'withdraw' ? '退会申請' :
+                modalConfig.type === 'cancel_join' ? '入会申請の取消' : '申請の取消'
           }
           message={
-            modalConfig.type === 'suspend' 
-              ? '休会申請を送信します。よろしいですか？' 
+            modalConfig.type === 'suspend'
+              ? '休会申請を送信します。よろしいですか？'
               : modalConfig.type === 'withdraw'
               ? '退会申請を送信します。この操作は取り消せません。'
+              : modalConfig.type === 'cancel_join'
+              ? '入会申請を取り消し、登録データを削除します。よろしいですか？'
               : '申請を取り消して有効な状態に戻します。よろしいですか？'
           }
           onConfirm={handleRequest}
@@ -323,9 +325,9 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: '#fff',
     minHeight: '100vh',
   },
-  wrapper: { 
-    width: '100%', 
-    maxWidth: '500px' 
+  wrapper: {
+    width: '100%',
+    maxWidth: '500px'
   },
   headerArea: {
     display: 'flex',
@@ -343,12 +345,12 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontWeight: 'bold',
     border: '1px solid #444'
   },
-  title: { 
-    fontSize: '1.5rem', 
-    margin: 0 
+  title: {
+    fontSize: '1.5rem',
+    margin: 0
   },
-  section: { 
-    marginBottom: '32px' 
+  section: {
+    marginBottom: '32px'
   },
   sectionHeader: {
     display: 'flex',
@@ -356,14 +358,14 @@ const styles: { [key: string]: React.CSSProperties } = {
     alignItems: 'center',
     marginBottom: '12px'
   },
-  sectionTitle: { 
-    fontSize: '1.1rem', 
-    color: '#888', 
-    fontWeight: 'bold' 
+  sectionTitle: {
+    fontSize: '1.1rem',
+    color: '#888',
+    fontWeight: 'bold'
   },
-  buttonGroup: { 
-    display: 'flex', 
-    gap: '10px' 
+  buttonGroup: {
+    display: 'flex',
+    gap: '10px'
   },
   actionButton: {
     backgroundColor: 'transparent',
@@ -386,44 +388,44 @@ const styles: { [key: string]: React.CSSProperties } = {
     padding: '12px 0',
     borderBottom: '1px solid #222'
   },
-  label: { 
-    color: '#888', 
-    fontSize: '0.9rem' 
+  label: {
+    color: '#888',
+    fontSize: '0.9rem'
   },
-  value: { 
-    fontWeight: 500 
+  value: {
+    fontWeight: 500
   },
-  memoRow: { 
-    paddingTop: '12px' 
+  memoRow: {
+    paddingTop: '12px'
   },
-  memoText: { 
-    fontSize: '0.95rem', 
-    marginTop: '8px', 
-    lineHeight: '1.5' 
+  memoText: {
+    fontSize: '0.95rem',
+    marginTop: '8px',
+    lineHeight: '1.5'
   },
-  emgMemoText: { 
-    fontSize: '0.95rem', 
-    marginTop: '8px', 
-    color: '#ffb3b3' 
+  emgMemoText: {
+    fontSize: '0.95rem',
+    marginTop: '8px',
+    color: '#ffb3b3'
   },
-  hr: { 
-    border: 'none', 
-    borderTop: '1px solid #333', 
-    margin: '20px 0' 
+  hr: {
+    border: 'none',
+    borderTop: '1px solid #333',
+    margin: '20px 0'
   },
-  subTitle: { 
-    fontSize: '0.9rem', 
-    color: '#aaa', 
-    marginBottom: '10px' 
+  subTitle: {
+    fontSize: '0.9rem',
+    color: '#aaa',
+    marginBottom: '10px'
   },
-  footer: { 
-    marginTop: '40px', 
-    textAlign: 'center' 
+  footer: {
+    marginTop: '40px',
+    textAlign: 'center'
   },
-  backLink: { 
-    color: '#0070f3', 
-    textDecoration: 'none', 
-    fontSize: '0.9rem' 
+  backLink: {
+    color: '#0070f3',
+    textDecoration: 'none',
+    fontSize: '0.9rem'
   },
   modalOverlay: {
     position: 'fixed',
@@ -446,10 +448,10 @@ const styles: { [key: string]: React.CSSProperties } = {
     maxWidth: '400px',
     textAlign: 'center'
   },
-  modalButtons: { 
-    display: 'flex', 
-    gap: '12px', 
-    marginTop: '24px' 
+  modalButtons: {
+    display: 'flex',
+    gap: '12px',
+    marginTop: '24px'
   },
   modalConfirm: {
     flex: 1,
