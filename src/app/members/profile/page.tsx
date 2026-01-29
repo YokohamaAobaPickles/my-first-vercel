@@ -13,10 +13,10 @@ import { useState } from 'react'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import { canManageMembers } from '@/utils/auth'
 import { calculateEnrollmentDays } from '@/utils/memberHelpers'
-import { 
-  updateMemberStatus, 
-  deleteMember, 
-  syncDuprData 
+import {
+  updateMemberStatus,
+  deleteMember,
+  syncDuprData
 } from '@/lib/memberApi'
 import { MemberStatus } from '@/types/member'
 import Link from 'next/link'
@@ -30,9 +30,9 @@ export default function ProfilePage() {
   const [modalConfig, setModalConfig] = useState<{
     isOpen: boolean;
     type: 'suspend' | 'withdraw' | 'cancel_join' | 'cancel_request' | null;
-  }>({ 
-    isOpen: false, 
-    type: null 
+  }>({
+    isOpen: false,
+    type: null
   })
 
   if (isLoading) {
@@ -51,16 +51,36 @@ export default function ProfilePage() {
   // --- ハンドラー ---
 
   const handleSyncDupr = async () => {
-    if (isSubmitting) return
+    if (
+      isSubmitting
+    ) {
+      return
+    }
+
+    // 修正：DUPR ID が設定されていない場合のガードを追加
+    if (
+      !user?.dupr_id
+    ) {
+      alert('DUPR ID が設定されていないため、同期できません。')
+      return
+    }
+
     setIsSubmitting(true)
-    
+
     try {
-      const res = await syncDuprData(user.id)
-      if (res.success) {
+      // 修正：引数を user.id から user.dupr_id に変更
+      const res = await syncDuprData(
+        user.dupr_id
+      )
+
+      if (
+        res.success
+      ) {
         alert('DUPRデータを更新しました')
         window.location.reload()
       } else {
-        alert(`エラー: ${res.error}`)
+        // エラー詳細を表示するように変更
+        alert(`エラー: ${res.error?.message || '更新に失敗しました'}`)
       }
     } catch (err) {
       alert('通信エラーが発生しました')
@@ -98,9 +118,9 @@ export default function ProfilePage() {
 
       if (res && res.success) {
         alert('処理が完了しました。')
-        setModalConfig({ 
-          isOpen: false, 
-          type: null 
+        setModalConfig({
+          isOpen: false,
+          type: null
         })
         window.location.reload()
       } else {
@@ -136,9 +156,9 @@ export default function ProfilePage() {
     if (user.status === 'new_req') {
       return (
         <button
-          style={{ 
-            ...styles.actionButton, 
-            color: '#ff4d4f' 
+          style={{
+            ...styles.actionButton,
+            color: '#ff4d4f'
           }}
           onClick={() => setModalConfig({
             isOpen: true,
@@ -154,9 +174,9 @@ export default function ProfilePage() {
       return (
         <>
           <button
-            style={{ 
-              ...styles.actionButton, 
-              color: '#aaa' 
+            style={{
+              ...styles.actionButton,
+              color: '#aaa'
             }}
             onClick={() => setModalConfig({
               isOpen: true,
@@ -166,9 +186,9 @@ export default function ProfilePage() {
             休会取消
           </button>
           <button
-            style={{ 
-              ...styles.actionButton, 
-              color: '#ff4d4f' 
+            style={{
+              ...styles.actionButton,
+              color: '#ff4d4f'
             }}
             onClick={() => setModalConfig({
               isOpen: true,
@@ -184,9 +204,9 @@ export default function ProfilePage() {
     if (user.status === 'withdraw_req') {
       return (
         <button
-          style={{ 
-            ...styles.actionButton, 
-            color: '#aaa' 
+          style={{
+            ...styles.actionButton,
+            color: '#aaa'
           }}
           onClick={() => setModalConfig({
             isOpen: true,
@@ -202,9 +222,9 @@ export default function ProfilePage() {
       return (
         <>
           <button
-            style={{ 
-              ...styles.actionButton, 
-              color: '#ffa940' 
+            style={{
+              ...styles.actionButton,
+              color: '#ffa940'
             }}
             onClick={() => setModalConfig({
               isOpen: true,
@@ -214,9 +234,9 @@ export default function ProfilePage() {
             休会申請
           </button>
           <button
-            style={{ 
-              ...styles.actionButton, 
-              color: '#ff4d4f' 
+            style={{
+              ...styles.actionButton,
+              color: '#ff4d4f'
             }}
             onClick={() => setModalConfig({
               isOpen: true,
@@ -238,8 +258,8 @@ export default function ProfilePage() {
         <div style={styles.headerArea}>
           <h1 style={styles.title}>マイプロフィール</h1>
           {canManageMembers(userRoles) && (
-            <Link 
-              href="/members/admin" 
+            <Link
+              href="/members/admin"
               style={styles.adminButton}
             >
               会員管理パネル
@@ -270,8 +290,8 @@ export default function ProfilePage() {
             <InfoRow
               label="在籍日数"
               value={
-                typeof enrollmentDays === 'number' 
-                  ? `${enrollmentDays} 日目` 
+                typeof enrollmentDays === 'number'
+                  ? `${enrollmentDays} 日目`
                   : enrollmentDays
               }
             />
@@ -316,9 +336,9 @@ export default function ProfilePage() {
           <div style={styles.sectionHeader}>
             <h2 style={styles.sectionTitle}>競技情報 (DUPR)</h2>
             <button
-              style={{ 
-                ...styles.actionButton, 
-                color: '#0070f3' 
+              style={{
+                ...styles.actionButton,
+                color: '#0070f3'
               }}
               onClick={handleSyncDupr}
               disabled={isSubmitting}
@@ -328,15 +348,15 @@ export default function ProfilePage() {
           </div>
           <div style={styles.card}>
             <InfoRow label="DUPR ID" value={user.dupr_id} />
-            <InfoRow 
-              label="Doubles Rating" 
-              value={user.dupr_rate} 
-              color="#1890ff" 
+            <InfoRow
+              label="Doubles Rating"
+              value={user.dupr_rate}
+              color="#1890ff"
             />
-            <InfoRow 
-              label="Singles Rating" 
-              value={user.dupr_singles} 
-              color="#722ed1" 
+            <InfoRow
+              label="Singles Rating"
+              value={user.dupr_singles}
+              color="#722ed1"
             />
           </div>
         </section>
@@ -349,27 +369,27 @@ export default function ProfilePage() {
       {modalConfig.isOpen && (
         <ConfirmModal
           title={
-            modalConfig.type === 'suspend' 
+            modalConfig.type === 'suspend'
               ? '休会申請' :
-            modalConfig.type === 'withdraw' 
-              ? '退会申請' :
-            modalConfig.type === 'cancel_join' 
-              ? '入会申請の取消' : 
-            '申請の取消'
+              modalConfig.type === 'withdraw'
+                ? '退会申請' :
+                modalConfig.type === 'cancel_join'
+                  ? '入会申請の取消' :
+                  '申請の取消'
           }
           message={
             modalConfig.type === 'suspend'
               ? '休会申請を送信します。よろしいですか？'
               : modalConfig.type === 'withdraw'
-              ? '退会申請を送信します。この操作は取り消せません。'
-              : modalConfig.type === 'cancel_join'
-              ? '入会申請を取り消し、登録データを削除します。よろしいですか？'
-              : '申請を取り消して有効な状態に戻します。よろしいですか？'
+                ? '退会申請を送信します。この操作は取り消せません。'
+                : modalConfig.type === 'cancel_join'
+                  ? '入会申請を取り消し、登録データを削除します。よろしいですか？'
+                  : '申請を取り消して有効な状態に戻します。よろしいですか？'
           }
           onConfirm={handleRequest}
-          onCancel={() => setModalConfig({ 
-            isOpen: false, 
-            type: null 
+          onCancel={() => setModalConfig({
+            isOpen: false,
+            type: null
           })}
         />
       )}
@@ -381,21 +401,21 @@ const ConfirmModal = ({ title, message, onConfirm, onCancel }: any) => (
   <div style={styles.modalOverlay}>
     <div style={styles.modalContent}>
       <h3 style={{ marginTop: 0 }}>{title}</h3>
-      <p style={{ 
-        color: '#ccc', 
-        fontSize: '0.95rem' 
+      <p style={{
+        color: '#ccc',
+        fontSize: '0.95rem'
       }}>
         {message}
       </p>
       <div style={styles.modalButtons}>
-        <button 
-          onClick={onCancel} 
+        <button
+          onClick={onCancel}
           style={styles.modalCancel}
         >
           キャンセル
         </button>
-        <button 
-          onClick={onConfirm} 
+        <button
+          onClick={onConfirm}
           style={styles.modalConfirm}
         >
           実行する
@@ -410,10 +430,10 @@ const InfoRow = ({ label, value, isStatus = false, color }: any) => (
     <span style={styles.label}>{label}</span>
     <span style={{
       ...styles.value,
-      color: 
+      color:
         color ? color :
-        isStatus && value === '有効' ? '#52c41a' : 
-        '#ffffff'
+          isStatus && value === '有効' ? '#52c41a' :
+            '#ffffff'
     }}>
       {value !== undefined && value !== null ? String(value) : '-'}
     </span>
