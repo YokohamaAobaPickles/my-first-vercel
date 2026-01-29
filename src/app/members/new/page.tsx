@@ -131,7 +131,7 @@ function MemberNewContent() {
       password,
       line_id: currentLineId || null,
       member_kind: mode === 'member' ? '正会員' : 'ゲスト',
-      status: 'registration_request',
+      status: 'new_req',
       roles: 'general'
     }
 

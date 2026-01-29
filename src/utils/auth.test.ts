@@ -81,13 +81,13 @@ describe('権限判定ロジックの詳細テスト V2.0.0', () => {
   describe('GAS設計準拠：ログイン可否判定 (canLogin)', () => {
     it('ACTIVEやNEWなどの許可されたステータスは true', () => {
       expect(canLogin('active')).toBe(true);
-      expect(canLogin('registration_request')).toBe(true);
+      expect(canLogin('new_req')).toBe(true);
       expect(canLogin('suspended')).toBe(true); // 休会中も復帰申請のため許可
     });
 
     it('rejected や retired などの終了ステータスは false', () => {
       expect(canLogin('rejected')).toBe(false);
-      expect(canLogin('retired')).toBe(false);
+      expect(canLogin('withdrawn')).toBe(false);
     });
   });
 
