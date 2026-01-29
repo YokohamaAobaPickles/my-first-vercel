@@ -1,10 +1,10 @@
 /**
  * Filename: src/app/members/profile/edit/page.tsx
- * Version : V2.2.2
+ * Version : V2.2.3
  * Update  : 2026-01-30
  * Remarks : 
+ * V2.2.3 - 修正：DUPR ID (pickleball.com slug) の編集フィールドを追加。
  * V2.2.2 - 修正：緊急連絡先電話と続柄を必須項目に変更。
- * V2.2.2 - 表示：新規登録画面と統一し、必須項目のラベルに赤い「*」を表示。
  */
 
 'use client'
@@ -20,13 +20,21 @@ export default function ProfileEditPage() {
   const [formData, setFormData] = useState<any>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  useEffect(() => {
-    if (user) {
-      setFormData({ ...user })
-    }
-  }, [user])
+  useEffect(
+    () => {
+      if (
+        user
+      ) {
+        setFormData({ ...user })
+      }
+    }, 
+    [user]
+  )
 
-  if (isLoading || !formData) {
+  if (
+    isLoading || 
+    !formData
+  ) {
     return <div style={styles.container}>読み込み中...</div>
   }
 
@@ -34,8 +42,13 @@ export default function ProfileEditPage() {
     e.preventDefault()
     setIsSubmitting(true)
     try {
-      const res = await updateMemberProfile(user.id, formData)
-      if (res.success) {
+      const res = await updateMemberProfile(
+        user.id, 
+        formData
+      )
+      if (
+        res.success
+      ) {
         alert('プロフィールを更新しました')
         router.push('/members/profile')
       } else {
@@ -54,7 +67,9 @@ export default function ProfileEditPage() {
     >
   ) => {
     const { name, value } = e.target
-    setFormData((prev: any) => ({ ...prev, [name]: value }))
+    setFormData(
+      (prev: any) => ({ ...prev, [name]: value })
+    )
   }
 
   return (
@@ -89,6 +104,12 @@ export default function ProfileEditPage() {
               value={formData.nickname}
               onChange={handleChange}
               required
+            />
+            <InputRow
+              label="DUPR ID (pickleball.com slug)"
+              name="dupr_id"
+              value={formData.dupr_id}
+              onChange={handleChange}
             />
             <InputRow
               label="郵便番号"
