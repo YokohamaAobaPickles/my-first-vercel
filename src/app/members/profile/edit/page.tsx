@@ -1,101 +1,42 @@
 /**
  * Filename: src/app/members/profile/edit/page.tsx
- * Version : V1.6.6
- * Update  : 2026-01-29
+ * Version : V2.2.2
+ * Update  : 2026-01-30
  * Remarks : 
- * V1.6.6 - 修正：プロファイルメモ、緊急連絡用メモの入力フィールドを追加/修正。
- * V1.6.6 - 書式：80カラムラップ、判定ごとの改行、スタイル定義の改行を遵守。
+ * V2.2.2 - 修正：緊急連絡先電話と続柄を必須項目に変更。
+ * V2.2.2 - 表示：新規登録画面と統一し、必須項目のラベルに赤い「*」を表示。
  */
 
 'use client'
 
-import {
-  useState,
-  useEffect
-} from 'react'
+import { useState, useEffect } from 'react'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
+import { updateMemberProfile } from '@/lib/memberApi'
 import { useRouter } from 'next/navigation'
-import {
-  updateMemberProfile,
-  checkNicknameExists
-} from '@/lib/memberApi'
 
-export default function EditProfilePage() {
-  const {
-    user,
-    isLoading
-  } = useAuthCheck()
+export default function ProfileEditPage() {
+  const { user, isLoading } = useAuthCheck()
   const router = useRouter()
-
+  const [formData, setFormData] = useState<any>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [formData, setFormData] = useState({
-    nickname: '',
-    postal: '',
-    address: '',
-    tel: '',
-    profile_memo: '',
-    dupr_id: '',
-    emg_tel: '',
-    emg_rel: '',
-    emg_memo: '',
-    is_profile_public: true
-  })
 
   useEffect(() => {
     if (user) {
-      setFormData({
-        nickname: user.nickname || '',
-        postal: user.postal || '',
-        address: user.address || '',
-        tel: user.tel || '',
-        profile_memo: user.profile_memo || '',
-        dupr_id: user.dupr_id || '',
-        emg_tel: user.emg_tel || '',
-        emg_rel: user.emg_rel || '',
-        emg_memo: user.emg_memo || '',
-        is_profile_public: user.is_profile_public ?? true
-      })
+      setFormData({ ...user })
     }
   }, [user])
 
-  if (isLoading) {
-    return (
-      <div style={styles.container}>
-        読み込み中...
-      </div>
-    )
-  }
-  if (!user) return null
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { id, value, type } = e.target as HTMLInputElement
-    const val = type === 'checkbox' 
-      ? (e.target as HTMLInputElement).checked 
-      : value
-    setFormData(prev => ({ ...prev, [id]: val }))
+  if (isLoading || !formData) {
+    return <div style={styles.container}>読み込み中...</div>
   }
 
-  const handleSave = async () => {
-    if (!user.id) return
-
-    if (
-      formData.nickname !== user.nickname && 
-      formData.nickname !== ''
-    ) {
-      const isDup = await checkNicknameExists(formData.nickname)
-      if (isDup) {
-        alert('このニックネームは既に他のメンバーに使用されています。')
-        return
-      }
-    }
-
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     setIsSubmitting(true)
     try {
       const res = await updateMemberProfile(user.id, formData)
       if (res.success) {
-        alert('プロフィールを保存しました')
+        alert('プロフィールを更新しました')
         router.push('/members/profile')
       } else {
         alert(`エラー: ${res.error?.message}`)
@@ -107,200 +48,146 @@ export default function EditProfilePage() {
     }
   }
 
-  const isLineUser = !!user.line_id
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    const { name, value } = e.target
+    setFormData((prev: any) => ({ ...prev, [name]: value }))
+  }
 
   return (
     <div style={styles.container}>
-      <div style={styles.wrapper}>
+      <form onSubmit={handleSubmit} style={styles.wrapper}>
         <h1 style={styles.title}>プロフィール編集</h1>
 
-        {/* 公開設定 */}
         <section style={styles.section}>
-          <h2 style={styles.sectionTitle}>公開設定</h2>
+          <h2 style={styles.sectionTitle}>基本情報 (閲覧のみ)</h2>
           <div style={styles.card}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <input
-                type="checkbox"
-                id="is_profile_public"
-                checked={formData.is_profile_public}
-                onChange={handleChange}
-                style={{ width: '20px', height: '20px' }}
-              />
-              <label htmlFor="is_profile_public" style={styles.label}>
-                プロフィールを他の会員に公開する
-              </label>
-            </div>
+            <ReadOnlyRow 
+              label="会員番号" 
+              value={String(user.member_number).padStart(4, '0')} 
+            />
+            <ReadOnlyRow 
+              label="氏名" 
+              value={user.name} 
+            />
+            <ReadOnlyRow 
+              label="LINE ID" 
+              value={user.line_id || '(未紐付け)'} 
+            />
           </div>
         </section>
 
-        {/* 公開プロフィール */}
         <section style={styles.section}>
-          <h2 style={styles.sectionTitle}>公開プロフィール</h2>
+          <h2 style={styles.sectionTitle}>編集可能項目</h2>
           <div style={styles.card}>
-            <div style={styles.inputGroup}>
-              <label htmlFor="nickname" style={styles.label}>
-                ニックネーム {isLineUser && '(LINE連携中は変更不可)'}
-              </label>
-              <input
-                id="nickname"
-                style={isLineUser ? styles.readOnlyInput : styles.input}
-                value={formData.nickname}
-                onChange={handleChange}
-                readOnly={isLineUser}
-              />
-            </div>
+            <InputRow
+              label="ニックネーム"
+              name="nickname"
+              value={formData.nickname}
+              onChange={handleChange}
+              required
+            />
+            <InputRow
+              label="郵便番号"
+              name="postal"
+              value={formData.postal}
+              onChange={handleChange}
+            />
+            <InputRow
+              label="住所"
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+            />
+            <InputRow
+              label="電話番号"
+              name="tel"
+              value={formData.tel}
+              onChange={handleChange}
+            />
+            
             <div style={styles.inputGroup}>
               <label htmlFor="profile_memo" style={styles.label}>
-                プロファイルメモ
+                プロフィールメモ
               </label>
               <textarea
                 id="profile_memo"
-                style={{ ...styles.input, height: '80px' }}
-                value={formData.profile_memo}
+                name="profile_memo"
+                value={formData.profile_memo || ''}
                 onChange={handleChange}
+                style={styles.textarea}
               />
             </div>
-            <div style={styles.inputGroup}>
-              <label htmlFor="dupr_id" style={styles.label}>
-                DUPR ID
-              </label>
-              <input
-                id="dupr_id"
-                style={styles.input}
-                value={formData.dupr_id}
-                onChange={handleChange}
-              />
-            </div>
+            
+            <hr style={styles.hr} />
+            <h3 style={styles.subTitle}>緊急連絡先</h3>
+            
+            <InputRow
+              label="緊急連絡先電話"
+              name="emg_tel"
+              value={formData.emg_tel}
+              onChange={handleChange}
+              required
+            />
+            <InputRow
+              label="続柄"
+              name="emg_rel"
+              value={formData.emg_rel}
+              onChange={handleChange}
+              required
+            />
           </div>
         </section>
 
-        {/* 連絡先・住所 */}
-        <section style={styles.section}>
-          <h2 style={styles.sectionTitle}>連絡先・住所</h2>
-          <div style={styles.card}>
-            <div style={styles.inputGroup}>
-              <label htmlFor="postal" style={styles.label}>
-                郵便番号
-              </label>
-              <input
-                id="postal"
-                style={styles.input}
-                value={formData.postal}
-                onChange={handleChange}
-              />
-            </div>
-            <div style={styles.inputGroup}>
-              <label htmlFor="address" style={styles.label}>
-                住所
-              </label>
-              <input
-                id="address"
-                style={styles.input}
-                value={formData.address}
-                onChange={handleChange}
-              />
-            </div>
-            <div style={styles.inputGroup}>
-              <label htmlFor="tel" style={styles.label}>
-                電話番号
-              </label>
-              <input
-                id="tel"
-                style={styles.input}
-                value={formData.tel}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* 緊急連絡先 */}
-        <section style={styles.section}>
-          <h2 style={styles.sectionTitle}>緊急連絡先</h2>
-          <div style={styles.card}>
-            <div style={styles.inputGroup}>
-              <label htmlFor="emg_tel" style={styles.label}>
-                緊急連絡先電話番号
-              </label>
-              <input
-                id="emg_tel"
-                style={styles.input}
-                value={formData.emg_tel}
-                onChange={handleChange}
-              />
-            </div>
-            <div style={styles.inputGroup}>
-              <label htmlFor="emg_rel" style={styles.label}>
-                続柄
-              </label>
-              <input
-                id="emg_rel"
-                style={styles.input}
-                value={formData.emg_rel}
-                onChange={handleChange}
-              />
-            </div>
-            <div style={styles.inputGroup}>
-              <label htmlFor="emg_memo" style={styles.label}>
-                緊急連絡用メモ
-              </label>
-              <textarea
-                id="emg_memo"
-                style={{ ...styles.input, height: '60px' }}
-                value={formData.emg_memo}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* 基本情報（変更不可） */}
-        <section style={styles.section}>
-          <h2 style={styles.sectionTitle}>基本情報（変更不可）</h2>
-          <div style={styles.card}>
-            {[
-              { id: 'name', label: '氏名', val: user.name },
-              { id: 'name_roma', label: '氏名（ローマ字）', val: user.name_roma },
-              { id: 'gender', label: '性別', val: user.gender },
-              { id: 'birthday', label: '生年月日', val: user.birthday },
-              { id: 'member_number', label: '会員番号', val: user.member_number },
-              { id: 'roles', label: 'ロール', val: user.roles }
-            ].map(item => (
-              <div key={item.id} style={styles.inputGroup}>
-                <label htmlFor={item.id} style={styles.label}>
-                  {item.label}
-                </label>
-                <input
-                  id={item.id}
-                  style={styles.readOnlyInput}
-                  value={item.val || ''}
-                  readOnly
-                />
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <div style={styles.buttonContainer}>
+        <div style={styles.buttonArea}>
           <button
-            onClick={() => router.push('/members/profile')}
+            type="button"
+            onClick={() => router.back()}
             style={styles.cancelButton}
             disabled={isSubmitting}
           >
             キャンセル
           </button>
           <button
-            onClick={handleSave}
+            type="submit"
             style={styles.saveButton}
             disabled={isSubmitting}
           >
-            {isSubmitting ? '保存中...' : '保存する'}
+            {isSubmitting ? '保存中...' : '変更を保存'}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   )
 }
+
+const ReadOnlyRow = ({ label, value }: any) => (
+  <div style={styles.row}>
+    <span style={styles.label}>{label}</span>
+    <span style={styles.readOnlyValue}>{value}</span>
+  </div>
+)
+
+const InputRow = ({ label, name, value, onChange, required = false }: any) => (
+  <div style={styles.inputGroup}>
+    <label htmlFor={name} style={styles.label}>
+      {label}
+      {required && <span style={styles.requiredBadge}> *</span>}
+    </label>
+    <input
+      id={name}
+      type="text"
+      name={name}
+      value={value || ''}
+      onChange={onChange}
+      required={required}
+      style={styles.input}
+    />
+  </div>
+)
 
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
@@ -310,85 +197,109 @@ const styles: { [key: string]: React.CSSProperties } = {
     padding: '40px 20px',
     backgroundColor: '#000',
     color: '#fff',
-    minHeight: '100vh'
+    minHeight: '100vh',
   },
   wrapper: {
     width: '100%',
-    maxWidth: '500px'
+    maxWidth: '500px',
   },
   title: {
     fontSize: '1.5rem',
     marginBottom: '30px',
-    textAlign: 'center'
+    textAlign: 'center',
   },
   section: {
-    marginBottom: '32px'
+    marginBottom: '32px',
   },
   sectionTitle: {
-    fontSize: '0.9rem',
+    fontSize: '1.1rem',
     color: '#888',
+    fontWeight: 'bold',
     marginBottom: '12px',
-    fontWeight: 'bold'
   },
   card: {
     backgroundColor: '#111',
-    borderRadius: '12px',
+    borderRadius: '16px',
     padding: '20px',
-    border: '1px solid #333'
+    border: '1px solid #333',
+  },
+  row: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    padding: '12px 0',
+    borderBottom: '1px solid #222',
   },
   inputGroup: {
-    marginBottom: '16px'
+    marginBottom: '20px',
   },
   label: {
     display: 'block',
+    color: '#888',
     fontSize: '0.85rem',
-    color: '#aaa',
-    marginBottom: '6px'
+    marginBottom: '8px',
+  },
+  requiredBadge: {
+    color: '#ff4d4f',
+    marginLeft: '4px',
+  },
+  readOnlyValue: {
+    color: '#666',
+    fontWeight: 500,
   },
   input: {
     width: '100%',
     padding: '12px',
     borderRadius: '8px',
-    backgroundColor: '#222',
-    border: '1px solid #444',
+    border: '1px solid #333',
+    backgroundColor: '#1a1a1a',
     color: '#fff',
     fontSize: '1rem',
-    outline: 'none'
   },
-  readOnlyInput: {
+  textarea: {
     width: '100%',
+    height: '100px',
     padding: '12px',
     borderRadius: '8px',
-    backgroundColor: '#1a1a1a',
     border: '1px solid #333',
-    color: '#777',
+    backgroundColor: '#1a1a1a',
+    color: '#fff',
     fontSize: '1rem',
-    outline: 'none',
-    cursor: 'not-allowed'
+    resize: 'none',
   },
-  buttonContainer: {
+  hr: {
+    border: 'none',
+    borderTop: '1px solid #333',
+    margin: '24px 0',
+  },
+  subTitle: {
+    fontSize: '0.9rem',
+    color: '#aaa',
+    marginBottom: '16px',
+  },
+  buttonArea: {
     display: 'flex',
-    gap: '12px',
-    marginTop: '40px',
-    marginBottom: '80px'
+    gap: '16px',
+    marginTop: '20px',
   },
   saveButton: {
     flex: 2,
-    padding: '16px',
-    borderRadius: '8px',
     backgroundColor: '#0070f3',
     color: '#fff',
     border: 'none',
+    padding: '14px',
+    borderRadius: '8px',
+    fontSize: '1rem',
     fontWeight: 'bold',
-    cursor: 'pointer'
+    cursor: 'pointer',
   },
   cancelButton: {
     flex: 1,
-    padding: '16px',
-    borderRadius: '8px',
     backgroundColor: 'transparent',
     color: '#888',
     border: '1px solid #444',
-    cursor: 'pointer'
-  }
+    padding: '14px',
+    borderRadius: '8px',
+    fontSize: '1rem',
+    cursor: 'pointer',
+  },
 }

@@ -130,9 +130,9 @@ function MemberNewContent() {
       birthday: formData.birthday || null,
       password,
       line_id: currentLineId || null,
-      member_kind: mode === 'member' ? '正会員' : 'ゲスト',
+      member_kind: mode === 'member' ? 'general' : 'guest',
       status: 'new_req',
-      roles: 'general'
+      roles: 'member'
     }
 
     const {

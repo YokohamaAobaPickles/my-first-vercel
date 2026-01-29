@@ -53,7 +53,7 @@ export default function MemberDetailPage() {
     <div style={{ padding: '40px', backgroundColor: '#000', color: '#fff', minHeight: '100vh' }}>
       <h1>会員詳細: {member.name}</h1>
       <p>ステータス: {member.status}</p>
-      {member.status === 'registration_request' && (
+      {member.status === 'new_req' && (
         <button onClick={handleApprove} disabled={isProcessing} style={{ padding: '10px 20px', backgroundColor: '#52c41a', color: '#fff', cursor: 'pointer' }}>
           {isProcessing ? '処理中...' : '承認する'}
         </button>

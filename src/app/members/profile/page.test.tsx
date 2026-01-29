@@ -72,7 +72,7 @@ describe('ProfilePage - 総合表示・権限検証 V2.1.3', () => {
       ;(useAuthCheck as any).mockReturnValue({
         isLoading: false,
         user: TEST_USER,
-        userRoles: 'general',
+        userRoles: 'member',
       })
     })
 
@@ -124,7 +124,7 @@ describe('ProfilePage - 総合表示・権限検証 V2.1.3', () => {
       ;(useAuthCheck as any).mockReturnValue({
         isLoading: false,
         user: TEST_USER,
-        userRoles: 'general',
+        userRoles: 'member',
       })
       render(<ProfilePage />)
       expect(screen.getByRole('button', { name: '休会申請' })).toBeTruthy()
@@ -135,7 +135,7 @@ describe('ProfilePage - 総合表示・権限検証 V2.1.3', () => {
       ;(useAuthCheck as any).mockReturnValue({
         isLoading: false,
         user: TEST_USER,
-        userRoles: 'general',
+        userRoles: 'member',
       })
       render(<ProfilePage />)
       // 編集ボタンをロールで特定
@@ -148,7 +148,7 @@ describe('ProfilePage - 総合表示・権限検証 V2.1.3', () => {
       ;(useAuthCheck as any).mockReturnValue({
         isLoading: false,
         user: TEST_USER,
-        userRoles: 'general',
+        userRoles: 'member',
       })
       ;(updateMemberStatus as any).mockResolvedValue({ success: true })
       const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => {})

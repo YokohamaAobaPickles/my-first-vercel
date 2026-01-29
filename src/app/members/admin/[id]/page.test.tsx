@@ -52,7 +52,7 @@ describe('MemberDetailPage - V1.3.3 最終確定テスト', () => {
     (memberApi.fetchMemberById as any).mockResolvedValue({
       id: 'test-user-123',
       name: '本物のテスト次郎',
-      status: 'registration_request',
+      status: 'new_req',
       member_kind: '正会員',
     });
 
@@ -72,7 +72,7 @@ describe('MemberDetailPage - V1.3.3 最終確定テスト', () => {
     (memberApi.fetchMemberById as any).mockResolvedValue({
       id: 'test-user-123',
       name: 'テスト次郎',
-      status: 'registration_request',
+      status: 'new_req',
     });
 
     (memberApi.updateMemberStatus as any).mockResolvedValue({ 

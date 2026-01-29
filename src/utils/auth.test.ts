@@ -73,7 +73,7 @@ describe('権限判定ロジックの詳細テスト V2.0.0', () => {
     });
 
     it('持っていないロールの場合は false を返すこと', () => {
-      const user = { roles: 'general' } as Member;
+      const user = { roles: 'member' } as Member;
       expect(hasRole(user, ROLES.MEMBER_MANAGER)).toBe(false);
     });
   });
