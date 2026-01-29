@@ -24,9 +24,9 @@ export async function GET(
   // ID がない場合のバリデーション
   if (!id) {
     return NextResponse.json(
-      { 
-        success: false, 
-        error: { message: 'IDが指定されていません' } 
+      {
+        success: false,
+        error: { message: 'IDが指定されていません' }
       },
       { status: 400 }
     );
@@ -38,8 +38,11 @@ export async function GET(
   // 取得失敗（見つからない、エラー等）の場合
   if (!result.success) {
     return NextResponse.json(
-      result, 
-      { status: 404 }
+
+      result
+      // デバッグのため404を出さない
+      //      result, 
+      //      { status: 404 }
     );
   }
 
