@@ -1,19 +1,14 @@
 /**
  * Filename: src/lib/duprApi.ts
- * Version : V1.2.1
- * Update  : 2026-01-31
+ * Version : V1.2.4
+ * Update  : 2026-01-30
  * Remarks : 
- * V1.2.1 - 変更：取得元を pickleball.com に変更し、解析ロジックを最適化。
- * V1.1.1 - 修正：接続先を www.dupr.com に変更。解析ロジックの強化。
- * V1.1.0 - 修正：HTML解析による簡易取得方式に変更。
+ * V1.2.4 - 修正：HTMLの改行・空白に対応するため正規表現を緩和。
+ * V1.2.3 - 修正：HTML構造解析を div タグ構成に対応。
  */
 
 import { ApiResponse } from '@/types/member';
 
-/**
- * DUPR情報を pickleball.com のプレイヤーページから解析・取得する
- * @param duprId ユーザーのスラッグ（例: "tomo-yamashita"）
- */
 export const fetchDuprInfo = async (
   duprId: string
 ): Promise<ApiResponse<{
@@ -21,7 +16,6 @@ export const fetchDuprInfo = async (
   dupr_rate_singles: number;
 }>> => {
   try {
-    // データ取得元を pickleball.com に設定
     const targetUrl = `https://pickleball.com/players/${duprId}`;
 
     const response = await fetch(
@@ -31,7 +25,6 @@ export const fetchDuprInfo = async (
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' +
             'AppleWebKit/537.36 (KHTML, like Gecko) ' +
             'Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9',
         },
         cache: 'no-store'
       }
@@ -52,22 +45,16 @@ export const fetchDuprInfo = async (
     const html = await response.text();
 
     /**
-     * Pickleball.com の HTML 構造からレーティングを抽出
-     * ラベルと数値の間の空白やタグを考慮した正規表現を使用
-     */
-/**
-     * 提供されたHTML構造に基づき抽出：
-     * > <div>Doubles</div><div ...>2.262</div>
-     * 数値または "--" をキャプチャします。
+     * 正規表現の修正：
+     * </div> と <div の間のあらゆる空白・改行 [\s\n]* を許容するように変更。
      */
     const doublesMatch = html.match(
-      /Doubles<\/div><div[^>]*>([\d.]+|--)<\/div>/i
+      /Doubles<\/div>[\s\n]*<div[^>]*>([\d.]+|--)<\/div>/i
     );
     const singlesMatch = html.match(
-      /Singles<\/div><div[^>]*>([\d.]+|--)<\/div>/i
+      /Singles<\/div>[\s\n]*<div[^>]*>([\d.]+|--)<\/div>/i
     );
 
-    // 数値でない（--）場合は 0 を代入
     const doubles = (
       doublesMatch && 
       doublesMatch[1] !== '--'
@@ -78,7 +65,6 @@ export const fetchDuprInfo = async (
       singlesMatch[1] !== '--'
     ) ? parseFloat(singlesMatch[1]) : 0;
 
-    // どちらかが取得できていれば成功とする
     if (
       doubles === 0 &&
       singles === 0
