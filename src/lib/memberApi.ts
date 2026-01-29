@@ -202,3 +202,22 @@ export const updateMemberProfile = async (
   }
   return { success: true, data: null, error: null };
 };
+
+/**
+ * DUPRデータの同期（外部APIから最新レートを取得）
+ */
+export async function syncDuprData(memberId: string) {
+  try {
+    const res = await fetch(`/api/members/${memberId}/dupr-sync`, {
+      method: 'POST',
+    });
+    const result = await res.json();
+    return result;
+  } catch (error) {
+    console.error('syncDuprData error:', error);
+    return { 
+      success: false, 
+      error: '通信エラーが発生しました' 
+    };
+  }
+}

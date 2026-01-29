@@ -62,31 +62,33 @@ export interface Member {
   // --- 任意項目 (is_nullable: YES) ---
   member_number?: string | null;
   line_id?: string | null;
+  password?: string | null;
+  gender?: string | null;
+  birthday?: string | null;
   tel?: string | null;
   postal?: string | null;
   address?: string | null;
-  dupr_id?: string | null;
   notes?: string | null;
-  is_profile_public?: boolean | null;
-  last_login_date?: string | null;
-  req_date?: string | null;
-  suspend_date?: string | null;
-  retire_date?: string | null;
-  create_date?: string | null;
-  update_date?: string | null;
-  password?: string | null;
-  dupr_email?: string | null;
-  reset_token?: string | null;
-  reset_token_expires_at?: string | null;
   profile_memo?: string | null;
   emg_memo?: string | null;
   introducer?: string | null;
-  approval_date?: string | null;
-  reject_date?: string | null;
-  dupr_rate?: number | null;
+  dupr_id?: string | null;
+  dupr_email?: string | null;
+  dupr_rate?: number | null;          // 過去互換のため残した
+  dupr_rate_singles?: number | null;
+  dupr_rate_doubles?: number | null;
   dupr_rate_date?: string | null;
-  gender?: string | null;
-  birthday?: string | null;
+  is_profile_public?: boolean | null;
+  last_login_date?: string | null;
+  req_date?: string | null;
+  approval_date?: string | null;
+  suspend_date?: string | null;
+  retire_date?: string | null;
+  reject_date?: string | null;
+  create_date?: string | null;
+  update_date?: string | null;
+  reset_token?: string | null;
+  reset_token_expires_at?: string | null;
 }
 
 /**

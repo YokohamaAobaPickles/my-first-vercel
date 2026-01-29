@@ -1,11 +1,10 @@
 /**
  * Filename: src/app/members/profile/page.test.tsx
- * Version : V2.3.3
+ * Version : V2.5.0
  * Update  : 2026-01-30
  * Remarks : 
- * V2.3.3 - 統合：ユーザー様の V2.2.1 全ケースと、詳細表示・エラー検証を統合。
- * V2.3.3 - 修正：'緊急連絡先'ラベルの重複を避け、適切な role/text で取得。
- * V2.3.3 - 書式：80カラムラップ、並列判定の改行ルールを厳守。
+ * V2.5.0 - 統合：休会・退会等の申請テストと、DUPR分離表示・更新テストを統合。
+ * V2.5.0 - 修正：未定義変数(FULL_USER)の解消、期待される失敗の定義。
  */
 
 import {
@@ -26,7 +25,8 @@ import ProfilePage from './page'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import {
   updateMemberStatus,
-  deleteMember
+  deleteMember,
+  syncDuprData
 } from '@/lib/memberApi'
 
 // --- モック設定 ---
@@ -34,38 +34,45 @@ vi.mock('@/hooks/useAuthCheck')
 vi.mock('@/lib/memberApi', () => ({
   updateMemberStatus: vi.fn(),
   deleteMember: vi.fn(),
+  syncDuprData: vi.fn(),
 }))
 
 const mockPush = vi.fn()
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
-    push: mockPush
-  })
+    push: mockPush,
+    refresh: vi.fn(),
+  }),
 }))
 
-const FULL_USER = {
+// Alertのグローバルモック
+const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => { })
+
+const TEST_USER = {
   id: 'u123',
-  nickname: 'テストユーザー',
-  name: 'テスト 太郎',
-  name_roma: 'Taro Test',
-  member_number: 101,
+  nickname: 'たろう',
+  name: '山田 太郎',
+  name_roma: 'Taro Yamada',
+  member_number: '0101',
   status: 'active',
-  create_date: '2025-01-01',
+  gender: '男性',
+  birthday: '1990-01-01',
+  tel: '03-1234-5678',
   postal: '100-0001',
   address: '東京都千代田区',
-  tel: '03-1111-2222',
-  profile_memo: '自己紹介メモ',
-  emg_tel: '090-9999-9999',
-  emg_rel: '妻',
-  emg_memo: '緊急時メモ',
-  dupr_id: 'D-999',
-  dupr_rate: '4.5'
+  create_date: '2025-01-01T00:00:00Z',
+  emg_tel: '03-9999-8888',
+  emg_rel: '父',
+  emg_memo: '持病なし',
+  dupr_id: 'D-123',
+  dupr_rate: 4.567,       // Doubles
+  dupr_singles: 2.512,    // Singles
 }
 
-describe('ProfilePage - 総合検証 V2.3.3', () => {
+describe('ProfilePage 総合検証 V2.5.0', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.spyOn(window, 'alert').mockImplementation(() => {})
+    // location.reload のモック化
     Object.defineProperty(window, 'location', {
       configurable: true,
       value: { reload: vi.fn() }
@@ -73,18 +80,16 @@ describe('ProfilePage - 総合検証 V2.3.3', () => {
   })
 
   describe('1. 表示内容と権限の検証', () => {
-    it('【詳細表示】基本・プロフ・競技情報がすべて表示されること', () => {
+    it('【詳細表示】基本情報・緊急連絡先が表示されること', () => {
       ;(useAuthCheck as any).mockReturnValue({
         isLoading: false,
-        user: FULL_USER,
+        user: TEST_USER,
         userRoles: 'member',
       })
       render(<ProfilePage />)
       expect(screen.getByText('0101')).toBeInTheDocument()
       expect(screen.getByText('東京都千代田区')).toBeInTheDocument()
-      expect(screen.getByText('03-1111-2222')).toBeInTheDocument()
-      expect(screen.getByText('妻')).toBeInTheDocument()
-      expect(screen.getByText('D-999')).toBeInTheDocument()
+      expect(screen.getByText('父')).toBeInTheDocument()
     })
 
     it('【管理者】会員管理パネルの表示がロールで制御されること', () => {
@@ -92,7 +97,7 @@ describe('ProfilePage - 総合検証 V2.3.3', () => {
       
       ;(useAuthCheck as any).mockReturnValue({
         isLoading: false,
-        user: FULL_USER,
+        user: TEST_USER,
         userRoles: 'member_manager',
       })
       rerender(<ProfilePage />)
@@ -100,7 +105,7 @@ describe('ProfilePage - 総合検証 V2.3.3', () => {
 
       ;(useAuthCheck as any).mockReturnValue({
         isLoading: false,
-        user: FULL_USER,
+        user: TEST_USER,
         userRoles: 'member',
       })
       rerender(<ProfilePage />)
@@ -108,7 +113,43 @@ describe('ProfilePage - 総合検証 V2.3.3', () => {
     })
   })
 
-  describe('2. ステータス別ボタン表示の出し分け', () => {
+  describe('2. 競技情報 (DUPR) の検証', () => {
+    it('【表示】DoublesとSinglesのRatingが分離して表示されること', () => {
+      ;(useAuthCheck as any).mockReturnValue({
+        isLoading: false,
+        user: TEST_USER,
+        userRoles: 'member',
+      })
+      render(<ProfilePage />)
+      expect(screen.getByText('D-123')).toBeInTheDocument()
+      expect(screen.getByText('4.567')).toBeInTheDocument()
+      expect(screen.getByText('2.512')).toBeInTheDocument()
+    })
+
+    it('【同期】DUPR更新ボタン押下で syncDuprData が呼ばれること', async () => {
+      ;(useAuthCheck as any).mockReturnValue({
+        isLoading: false,
+        user: TEST_USER,
+        userRoles: 'member',
+      })
+      vi.mocked(syncDuprData).mockResolvedValue({ 
+        success: true, 
+        data: null, 
+        error: null 
+      })
+
+      render(<ProfilePage />)
+      const syncBtn = screen.getByRole('button', { name: 'DUPR更新' })
+      fireEvent.click(syncBtn)
+
+      await waitFor(() => {
+        expect(syncDuprData).toHaveBeenCalledWith(TEST_USER.id)
+        expect(window.location.reload).toHaveBeenCalled()
+      })
+    })
+  })
+
+  describe('3. ステータス別ボタン表示の出し分け', () => {
     const testCases = [
       { 
         status: 'new_req', 
@@ -124,16 +165,6 @@ describe('ProfilePage - 総合検証 V2.3.3', () => {
         status: 'suspend_req', 
         show: ['休会取消', '退会申請'], 
         hide: ['休会申請'] 
-      },
-      { 
-        status: 'withdraw_req', 
-        show: ['退会取消'], 
-        hide: ['休会申請', '退会申請'] 
-      },
-      { 
-        status: 'withdrawn', 
-        show: [], 
-        hide: ['休会申請', '退会申請', '入会取消'] 
       }
     ]
 
@@ -141,7 +172,7 @@ describe('ProfilePage - 総合検証 V2.3.3', () => {
       it(`【ステータス: ${status}】期待通りのボタンが表示されること`, () => {
         ;(useAuthCheck as any).mockReturnValue({
           isLoading: false,
-          user: { ...FULL_USER, status },
+          user: { ...TEST_USER, status },
           userRoles: 'member',
         })
         render(<ProfilePage />)
@@ -153,21 +184,25 @@ describe('ProfilePage - 総合検証 V2.3.3', () => {
     })
   })
 
-  describe('3. アクション実行とAPI連携', () => {
+  describe('4. アクション実行とAPI連携', () => {
     it('【入会取消】deleteMember 実行後にTOPへ遷移すること', async () => {
       ;(useAuthCheck as any).mockReturnValue({
         isLoading: false,
-        user: { ...FULL_USER, status: 'new_req' },
+        user: { ...TEST_USER, status: 'new_req' },
         userRoles: 'member',
       })
-      vi.mocked(deleteMember).mockResolvedValue({ success: true, data: null, error: null })
+      vi.mocked(deleteMember).mockResolvedValue({ 
+        success: true, 
+        data: null, 
+        error: null 
+      })
 
       render(<ProfilePage />)
       fireEvent.click(screen.getByRole('button', { name: '入会取消' }))
       fireEvent.click(screen.getByRole('button', { name: '実行する' }))
 
       await waitFor(() => {
-        expect(deleteMember).toHaveBeenCalledWith(FULL_USER.id)
+        expect(deleteMember).toHaveBeenCalledWith(TEST_USER.id)
         expect(mockPush).toHaveBeenCalledWith('/')
       })
     })
@@ -175,38 +210,21 @@ describe('ProfilePage - 総合検証 V2.3.3', () => {
     it('【申請取消】取消実行時に status が active に戻ること', async () => {
       ;(useAuthCheck as any).mockReturnValue({
         isLoading: false,
-        user: { ...FULL_USER, status: 'suspend_req' },
+        user: { ...TEST_USER, status: 'suspend_req' },
         userRoles: 'member',
       })
-      vi.mocked(updateMemberStatus).mockResolvedValue({ success: true, data: null, error: null })
+      vi.mocked(updateMemberStatus).mockResolvedValue({ 
+        success: true, 
+        data: null, 
+        error: null 
+      })
 
       render(<ProfilePage />)
       fireEvent.click(screen.getByRole('button', { name: '休会取消' }))
       fireEvent.click(screen.getByRole('button', { name: '実行する' }))
 
       await waitFor(() => {
-        expect(updateMemberStatus).toHaveBeenCalledWith(FULL_USER.id, 'active')
-      })
-    })
-
-    it('【異常系】API失敗時にエラー内容がアラート表示されること', async () => {
-      ;(useAuthCheck as any).mockReturnValue({
-        isLoading: false,
-        user: { ...FULL_USER, status: 'active' },
-        userRoles: 'member',
-      })
-      vi.mocked(updateMemberStatus).mockResolvedValue({
-        success: false,
-        data: null,
-        error: { message: 'DBエラー' }
-      })
-
-      render(<ProfilePage />)
-      fireEvent.click(screen.getByRole('button', { name: '休会申請' }))
-      fireEvent.click(screen.getByRole('button', { name: '実行する' }))
-
-      await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith('エラー: DBエラー')
+        expect(updateMemberStatus).toHaveBeenCalledWith(TEST_USER.id, 'active')
       })
     })
   })

@@ -41,7 +41,8 @@ describe('memberHelpers 総合検証 V5.0.0', () => {
     emg_rel: '妻',
     emg_memo: '緊急連絡時の補足事項',
     dupr_id: null,
-    dupr_rate: null,
+    dupr_rate_singles: null,
+    dupr_rate_doubles: null,
     dupr_rate_date: null
   };
 
