@@ -1,11 +1,11 @@
 /**
  * Filename: src/lib/memberApi.ts
- * Version : V3.0.0
- * Update  : 2026-01-29
+ * Version : V3.1.0
+ * Update  : 2026-01-30
  * Remarks : 
- * V3.0.0 - 修正：ステータス名称変更に対応 (new_req)
- * V3.0.0 - 修正：updateMemberStatus の引数に MemberStatus 型を適用
- * V3.0.0 - 書式：80カラムラップを維持
+ * V3.1.0 - 追加：deleteMember (物理レコード削除) を実装。
+ * V3.0.0 - 修正：ステータス名称変更に対応 (new_req)。
+ * V3.0.0 - 修正：updateMemberStatus の引数に MemberStatus 型を適用。
  */
 
 import { supabase } from '@/lib/supabase';
@@ -40,12 +40,30 @@ export const fetchMembers = async (): Promise<ApiResponse<Member[]>> => {
     .select('*')
     .order('member_number', { ascending: true });
 
-  if (error) return handleError(error);
+  if (error) {
+    return handleError(error);
+  }
   return { success: true, data: data as Member[], error: null };
 };
 
 /**
- * IDによる特定会員の取得
+ * 承認待ち会員 (status: 'new_req') 一覧を取得する
+ */
+export const fetchPendingMembers = async (): Promise<ApiResponse<Member[]>> => {
+  const { data, error } = await supabase
+    .from('members')
+    .select('*')
+    .eq('status', 'new_req')
+    .order('create_date', { ascending: true });
+
+  if (error) {
+    return handleError(error);
+  }
+  return { success: true, data: data as Member[], error: null };
+};
+
+/**
+ * IDを指定して会員情報を取得する
  */
 export const fetchMemberById = async (
   id: string
@@ -56,12 +74,14 @@ export const fetchMemberById = async (
     .eq('id', id)
     .single();
 
-  if (error) return handleError(error);
+  if (error) {
+    return handleError(error);
+  }
   return { success: true, data: data as Member, error: null };
 };
 
 /**
- * メールアドレスによる会員検索
+ * メールアドレスを指定して会員情報を取得する
  */
 export const fetchMemberByEmail = async (
   email: string
@@ -72,26 +92,32 @@ export const fetchMemberByEmail = async (
     .eq('email', email)
     .maybeSingle();
 
-  if (error) return handleError(error);
+  if (error) {
+    return handleError(error);
+  }
   return { success: true, data: data as Member | null, error: null };
 };
 
 /**
- * 承認待ちユーザーの一覧取得 (new_req)
+ * 新規会員登録 (初期ステータスは 'new_req')
  */
-export const fetchPendingMembers = async (): Promise<ApiResponse<Member[]>> => {
+export const registerMember = async (
+  member: MemberInput
+): Promise<ApiResponse<Member>> => {
   const { data, error } = await supabase
     .from('members')
-    .select('*')
-    .eq('status', 'new_req')
-    .order('create_date', { ascending: false });
+    .insert([member])
+    .select()
+    .single();
 
-  if (error) return handleError(error);
-  return { success: true, data: data as Member[], error: null };
+  if (error) {
+    return handleError(error);
+  }
+  return { success: true, data: data as Member, error: null };
 };
 
 /**
- * 会員のステータスを更新する (承認/拒否/休会/退会など)
+ * 会員ステータスの更新
  */
 export const updateMemberStatus = async (
   id: string,
@@ -102,7 +128,26 @@ export const updateMemberStatus = async (
     .update({ status })
     .eq('id', id);
 
-  if (error) return handleError(error);
+  if (error) {
+    return handleError(error);
+  }
+  return { success: true, data: null, error: null };
+};
+
+/**
+ * 会員レコードの削除 (物理削除)
+ */
+export const deleteMember = async (
+  id: string
+): Promise<ApiResponse<null>> => {
+  const { error } = await supabase
+    .from('members')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    return handleError(error);
+  }
   return { success: true, data: null, error: null };
 };
 
@@ -118,7 +163,9 @@ export const linkLineIdToMember = async (
     .update({ line_id: lineId })
     .eq('email', email);
 
-  if (error) return handleError(error);
+  if (error) {
+    return handleError(error);
+  }
   return { success: true, data: null, error: null };
 };
 
@@ -150,22 +197,8 @@ export const updateMemberProfile = async (
     .update(data)
     .eq('id', id);
 
-  if (error) return handleError(error);
+  if (error) {
+    return handleError(error);
+  }
   return { success: true, data: null, error: null };
-};
-
-/**
- * 新規会員登録 (初期ステータスは通常 new_req)
- */
-export const registerMember = async (
-  input: MemberInput
-): Promise<ApiResponse<Member>> => {
-  const { data, error } = await supabase
-    .from('members')
-    .insert(input)
-    .select()
-    .single();
-
-  if (error) return handleError(error);
-  return { success: true, data: data as Member, error: null };
 };
