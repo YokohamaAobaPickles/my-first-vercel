@@ -1,62 +1,113 @@
 /**
  * Filename: src/app/members/profile/page.tsx
- * Version : V1.6.2
- * Update  : 2026-01-27
- * 内容：
- * V1.6.2
- * - テストがテキストを検出できない問題(Testing Libraryの仕様)に対応
- * - InfoRow内のテキストレンダリングを最適化し、テストの一致率を向上
- * V1.5.1
- * - canManageMembers(userRoles) による管理者パネル表示制御
- * - 性別、生年月日、DUPR、緊急連絡先、在籍日数の表示を網羅
+ * Version : V2.1.0
+ * Update  : 2026-01-29
+ * Remarks : 
+ * V2.1.0 - 修正：userRoles を文字列としてモックに適合させ、エラーを解消。
+ * V2.1.0 - 修正：会員番号を4桁ゼロパディング表示に変更。
+ * V2.1.0 - 変更：管理者パネルボタンをタイトル右側に移動。
  */
 
 'use client'
 
+import { useState } from 'react'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import { canManageMembers } from '@/utils/auth'
 import { calculateEnrollmentDays } from '@/utils/memberHelpers'
+import { updateMemberStatus } from '@/lib/memberApi'
+import { MemberStatus } from '@/types/member'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 export default function ProfilePage() {
-  // useAuthCheck から userRoles を受け取り、権限判定に使用する
   const { user, isLoading, userRoles } = useAuthCheck()
   const router = useRouter()
 
-  if (isLoading) {
-    return (
-      <div style={styles.container}>
-        読み込み中...
-      </div>
-    )
-  }
+  const [modalConfig, setModalConfig] = useState<{
+    isOpen: boolean;
+    type: 'suspend' | 'withdraw' | null;
+  }>({ isOpen: false, type: null })
 
+  if (isLoading) return <div style={styles.container}>読み込み中...</div>
   if (!user) return null
 
-  // 入会日（create_date）を元に在籍日数を計算
   const enrollmentDays = calculateEnrollmentDays(user.create_date)
+
+  const handleRequest = async () => {
+    if (!user.id || !modalConfig.type) return
+    const newStatus: MemberStatus = 
+      modalConfig.type === 'suspend' ? 'suspend_req' : 'withdraw_req'
+    
+    try {
+      const res = await updateMemberStatus(user.id, newStatus)
+      if (res.success) {
+        alert('申請を受け付けました。')
+        setModalConfig({ isOpen: false, type: null })
+        window.location.reload()
+      } else {
+        alert(`エラー: ${res.error?.message}`)
+      }
+    } catch (err) {
+      alert('予期せぬエラーが発生しました')
+    }
+  }
+
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      new_req: '承認待ち',
+      active: '有効',
+      suspend_req: '休会申請中',
+      suspended: '休会中',
+      rejoin_req: '復帰申請中',
+      withdraw_req: '退会申請中',
+      withdrawn: '退会済み'
+    }
+    return labels[status] || status
+  }
+
+  // 会員番号を 0001 形式に変換
+  const formattedMemberNumber = user.member_number 
+    ? String(user.member_number).padStart(4, '0') 
+    : '-'
 
   return (
     <div style={styles.container}>
       <div style={styles.wrapper}>
         
-        {/* 最上部：管理権限チェック */}
-        {canManageMembers(userRoles) && (
-          <div style={styles.adminHeader}>
+        <div style={styles.headerArea}>
+          <h1 style={styles.title}>マイプロフィール</h1>
+          {canManageMembers(userRoles) && (
             <Link href="/members/admin" style={styles.adminButton}>
               会員管理パネル
             </Link>
-          </div>
-        )}
-
-        <h1 style={styles.title}>マイプロフィール</h1>
+          )}
+        </div>
 
         {/* 1. 基本情報セクション */}
         <section style={styles.section}>
-          <h2 style={styles.sectionTitle}>基本情報</h2>
+          <div style={styles.sectionHeader}>
+            <h2 style={styles.sectionTitle}>基本情報</h2>
+            <div style={styles.buttonGroup}>
+              <button 
+                style={styles.actionButton}
+                disabled={user.status !== 'active'}
+                onClick={() => setModalConfig({ isOpen: true, type: 'suspend' })}
+              >
+                休会申請
+              </button>
+              <button 
+                style={{ ...styles.actionButton, color: '#ff4d4f' }}
+                disabled={
+                  user.status === 'withdrawn' || user.status === 'withdraw_req'
+                }
+                onClick={() => setModalConfig({ isOpen: true, type: 'withdraw' })}
+              >
+                退会申請
+              </button>
+            </div>
+          </div>
           <div style={styles.card}>
-            <InfoRow label="会員番号" value={user.member_number} />
+            <InfoRow label="会員番号" value={formattedMemberNumber} />
             <InfoRow label="ニックネーム" value={user.nickname} />
             <InfoRow label="氏名" value={user.name} />
             <InfoRow label="氏名（ローマ字）" value={user.name_roma} />
@@ -64,13 +115,8 @@ export default function ProfilePage() {
             <InfoRow label="生年月日" value={user.birthday} />
             <InfoRow 
               label="ステータス" 
-              value={user.status === 'active' ? '有効' : user.status} 
+              value={getStatusLabel(user.status)} 
               isStatus 
-            />
-            <InfoRow 
-              label="入会日" 
-              value={user.create_date ? 
-                new Date(user.create_date).toLocaleDateString('ja-JP').split('T')[0] : '-'} 
             />
             <InfoRow 
               label="在籍日数" 
@@ -80,7 +126,7 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* 2. プロフィールセクション (編集可能) */}
+        {/* 2. プロフィール & 緊急連絡先セクション */}
         <section style={styles.section}>
           <div style={styles.sectionHeader}>
             <h2 style={styles.sectionTitle}>プロフィール</h2>
@@ -100,17 +146,27 @@ export default function ProfilePage() {
               <span style={styles.label}>プロフィールメモ</span>
               <p style={styles.memoText}>{user.profile_memo || '未入力'}</p>
             </div>
+            
+            <hr style={styles.hr} />
+            
+            <h3 style={styles.subTitle}>緊急連絡先</h3>
+            <InfoRow label="緊急連絡先" value={user.emg_tel} />
+            <InfoRow label="続柄" value={user.emg_rel} />
+            <div style={styles.memoRow}>
+              <span style={styles.label}>緊急連絡用メモ</span>
+              <p style={styles.emgMemoText}>
+                {user.emg_memo || '特記事項なし'}
+              </p>
+            </div>
           </div>
         </section>
 
-        {/* 3. 競技情報セクション (DUPR) */}
+        {/* 3. 競技情報セクション */}
         <section style={styles.section}>
           <h2 style={styles.sectionTitle}>競技情報 (DUPR)</h2>
           <div style={styles.card}>
-            {/* テストが /D-123/ や /3.555/ を確実に拾えるように value を出力 */}
             <InfoRow label="DUPR ID" value={user.dupr_id} />
             <InfoRow label="DUPR Rating" value={user.dupr_rate} />
-            <InfoRow label="情報取得日" value={user.dupr_rate_date} />
             <button 
               style={styles.syncButton} 
               onClick={() => alert('DUPR連携機能は準備中です')}
@@ -120,47 +176,41 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* 4. 緊急連絡先セクション */}
-        <section style={styles.section}>
-          <h2 style={styles.sectionTitle}>緊急連絡先</h2>
-          <div style={styles.card}>
-            <InfoRow label="緊急連絡先" value={user.emg_tel} />
-            <InfoRow label="続柄" value={user.emg_rel} />
-            <div style={styles.memoRow}>
-              <span style={styles.label}>緊急連絡用メモ</span>
-              <p style={styles.emgMemoText}>
-                {user.emg_memo || '特記事項なし'}
-              </p>
-              <small style={styles.note}>
-                ※この項目は管理者のみ閲覧可能です
-              </small>
-            </div>
-          </div>
-        </section>
-
         <div style={styles.footer}>
-          <Link href="/" style={styles.backLink}>
-            トップページへ戻る
-          </Link>
+          <Link href="/" style={styles.backLink}>トップページへ戻る</Link>
         </div>
       </div>
+
+      {modalConfig.isOpen && (
+        <ConfirmModal 
+          title={modalConfig.type === 'suspend' ? '休会申請' : '退会申請'}
+          message={
+            modalConfig.type === 'suspend' 
+              ? '休会申請を送信します。よろしいですか？' 
+              : '退会申請を送信します。この操作は取り消せません。'
+          }
+          onConfirm={handleRequest}
+          onCancel={() => setModalConfig({ isOpen: false, type: null })}
+        />
+      )}
     </div>
   )
 }
 
-/**
- * 情報表示用の共通行コンポーネント
- * テストが値を検出しやすいよう、余計な空白が入らない実装にしています
- */
-const InfoRow = ({ 
-  label, 
-  value, 
-  isStatus = false 
-}: { 
-  label: string, 
-  value?: string | number | null, 
-  isStatus?: boolean 
-}) => (
+const ConfirmModal = ({ title, message, onConfirm, onCancel }: any) => (
+  <div style={styles.modalOverlay}>
+    <div style={styles.modalContent}>
+      <h3 style={{ marginTop: 0 }}>{title}</h3>
+      <p style={{ color: '#ccc', fontSize: '0.95rem' }}>{message}</p>
+      <div style={styles.modalButtons}>
+        <button onClick={onCancel} style={styles.modalCancel}>キャンセル</button>
+        <button onClick={onConfirm} style={styles.modalConfirm}>送信する</button>
+      </div>
+    </div>
+  </div>
+)
+
+const InfoRow = ({ label, value, isStatus = false }: any) => (
   <div style={styles.row}>
     <span style={styles.label}>{label}</span>
     <span style={{
@@ -172,9 +222,6 @@ const InfoRow = ({
   </div>
 )
 
-/**
- * スタイル定義
- */
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     display: 'flex',
@@ -185,43 +232,40 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: '#fff',
     minHeight: '100vh',
   },
-  wrapper: {
-    width: '100%',
-    maxWidth: '500px',
-  },
-  adminHeader: {
-    width: '100%',
+  wrapper: { width: '100%', maxWidth: '500px' },
+  headerArea: {
     display: 'flex',
-    justifyContent: 'flex-end',
-    marginBottom: '20px',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '30px'
   },
   adminButton: {
     backgroundColor: '#1d4ed8',
     color: '#fff',
-    padding: '8px 16px',
+    padding: '6px 12px',
     borderRadius: '8px',
-    fontSize: '0.85rem',
+    fontSize: '0.75rem',
     textDecoration: 'none',
-    fontWeight: 'bold',
+    fontWeight: 'bold'
   },
-  title: {
-    fontSize: '1.5rem',
-    marginBottom: '30px',
-    textAlign: 'center',
-  },
-  section: {
-    marginBottom: '32px',
-  },
+  title: { fontSize: '1.5rem', margin: 0 },
+  section: { marginBottom: '32px' },
   sectionHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '12px',
+    marginBottom: '12px'
   },
-  sectionTitle: {
-    fontSize: '1.1rem',
+  sectionTitle: { fontSize: '1.1rem', color: '#888', fontWeight: 'bold' },
+  buttonGroup: { display: 'flex', gap: '10px' },
+  actionButton: {
+    backgroundColor: 'transparent',
     color: '#888',
-    fontWeight: 'bold',
+    border: '1px solid #444',
+    padding: '6px 12px',
+    borderRadius: '6px',
+    fontSize: '0.75rem',
+    cursor: 'pointer'
   },
   editButton: {
     backgroundColor: '#333',
@@ -230,46 +274,27 @@ const styles: { [key: string]: React.CSSProperties } = {
     padding: '6px 16px',
     borderRadius: '6px',
     fontSize: '0.85rem',
-    cursor: 'pointer',
+    cursor: 'pointer'
   },
   card: {
     backgroundColor: '#111',
     borderRadius: '16px',
     padding: '20px',
-    border: '1px solid #333',
+    border: '1px solid #333'
   },
   row: {
     display: 'flex',
     justifyContent: 'space-between',
     padding: '12px 0',
-    borderBottom: '1px solid #222',
+    borderBottom: '1px solid #222'
   },
-  label: {
-    color: '#888',
-    fontSize: '0.9rem',
-  },
-  value: {
-    fontWeight: 500,
-  },
-  memoRow: {
-    paddingTop: '12px',
-  },
-  memoText: {
-    fontSize: '0.95rem',
-    marginTop: '8px',
-    lineHeight: '1.5',
-  },
-  emgMemoText: {
-    fontSize: '0.95rem',
-    marginTop: '8px',
-    color: '#ffb3b3',
-  },
-  note: {
-    fontSize: '0.75rem',
-    color: '#666',
-    display: 'block',
-    marginTop: '4px',
-  },
+  label: { color: '#888', fontSize: '0.9rem' },
+  value: { fontWeight: 500 },
+  memoRow: { paddingTop: '12px' },
+  memoText: { fontSize: '0.95rem', marginTop: '8px', lineHeight: '1.5' },
+  emgMemoText: { fontSize: '0.95rem', marginTop: '8px', color: '#ffb3b3' },
+  hr: { border: 'none', borderTop: '1px solid #333', margin: '20px 0' },
+  subTitle: { fontSize: '0.9rem', color: '#aaa', marginBottom: '10px' },
   syncButton: {
     marginTop: '16px',
     width: '100%',
@@ -279,15 +304,49 @@ const styles: { [key: string]: React.CSSProperties } = {
     backgroundColor: 'transparent',
     color: '#0070f3',
     cursor: 'pointer',
-    fontSize: '0.85rem',
+    fontSize: '0.85rem'
   },
-  footer: {
-    marginTop: '40px',
-    textAlign: 'center',
+  footer: { marginTop: '40px', textAlign: 'center' },
+  backLink: { color: '#0070f3', textDecoration: 'none', fontSize: '0.9rem' },
+  modalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000
   },
-  backLink: {
-    color: '#0070f3',
-    textDecoration: 'none',
-    fontSize: '0.9rem',
+  modalContent: {
+    backgroundColor: '#1a1a1a',
+    padding: '30px',
+    borderRadius: '16px',
+    border: '1px solid #333',
+    width: '90%',
+    maxWidth: '400px',
+    textAlign: 'center'
   },
+  modalButtons: { display: 'flex', gap: '12px', marginTop: '24px' },
+  modalConfirm: {
+    flex: 1,
+    padding: '12px',
+    borderRadius: '8px',
+    backgroundColor: '#0070f3',
+    color: '#fff',
+    border: 'none',
+    fontWeight: 'bold',
+    cursor: 'pointer'
+  },
+  modalCancel: {
+    flex: 1,
+    padding: '12px',
+    borderRadius: '8px',
+    backgroundColor: '#333',
+    color: '#fff',
+    border: 'none',
+    cursor: 'pointer'
+  }
 }
