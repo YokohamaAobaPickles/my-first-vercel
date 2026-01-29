@@ -205,19 +205,27 @@ export const updateMemberProfile = async (
 
 /**
  * DUPRデータの同期（外部APIから最新レートを取得）
+ * @param duprId 会員の DUPR ID (例: WKRV2Q)
  */
-export async function syncDuprData(memberId: string) {
+export async function syncDuprData(duprId: string) {
   try {
-    const res = await fetch(`/api/members/${memberId}/dupr-sync`, {
-      method: 'POST',
+    // 修正：サーバー側の route.ts (GET /api/dupr/[id]) に合わせる
+    // メソッドを GET にし、パスを /api/dupr/ に変更
+    const res = await fetch(`/api/dupr/${duprId}`, {
+      method: 'GET',
     });
+
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+
     const result = await res.json();
     return result;
   } catch (error) {
     console.error('syncDuprData error:', error);
     return { 
       success: false, 
-      error: '通信エラーが発生しました' 
+      error: { message: '通信エラーが発生しました' } 
     };
   }
 }

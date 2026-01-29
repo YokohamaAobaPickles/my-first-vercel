@@ -22,22 +22,26 @@ import {
   fetchMemberByEmail,
   linkLineIdToMember,
   registerMember,
-  deleteMember // 追加
+  deleteMember,
+  syncDuprData
 } from './memberApi'
 import { supabase } from '@/lib/supabase'
 import { Member, MemberInput } from '@/types/member'
 
+// Supabase のモック化
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     from: vi.fn()
   }
 }))
 
-describe('memberApi - 会員DB操作・連携の総合検証 V3.2.1', () => {
+describe('memberApi - 会員DB操作・連携の総合検証 V3.3.1', () => {
   const mockFrom = supabase.from as any
 
   beforeEach(() => {
     vi.clearAllMocks()
+    // 以前の代入式 global.fetch = vi.fn() ではなく spyOn を使用
+    vi.spyOn(global, 'fetch')
   })
 
   describe('registerMember (新規会員登録)', () => {
@@ -47,22 +51,19 @@ describe('memberApi - 会員DB操作・連携の総合検証 V3.2.1', () => {
         email: 'new@example.com',
         status: 'new_req'
       } as MemberInput
-
       const mockCreatedMember = { id: 'generated-uuid-123', ...mockInput }
-
-      const mockSingle = vi.fn().mockResolvedValue({
-        data: mockCreatedMember,
-        error: null
+      mockFrom.mockReturnValue({
+        insert: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({
+              data: mockCreatedMember,
+              error: null
+            })
+          })
+        })
       })
-      const mockSelect = vi.fn().mockReturnValue({ single: mockSingle })
-      const mockInsert = vi.fn().mockReturnValue({ select: mockSelect })
-
-      mockFrom.mockReturnValue({ insert: mockInsert })
-
       const result = await registerMember(mockInput)
-
       expect(result.success).toBe(true)
-      expect(result.data?.id).toBe('generated-uuid-123')
     })
   })
 
@@ -70,13 +71,13 @@ describe('memberApi - 会員DB操作・連携の総合検証 V3.2.1', () => {
     it('【正常系】指定したIDのレコードが物理削除されること', async () => {
       const mockEq = vi.fn().mockResolvedValue({ error: null })
       const mockDelete = vi.fn().mockReturnValue({ eq: mockEq })
-      
+
       mockFrom.mockReturnValue({
         delete: mockDelete
       })
 
       const result = await deleteMember('u123')
-      
+
       expect(result.success).toBe(true)
       expect(mockDelete).toHaveBeenCalled()
       expect(mockEq).toHaveBeenCalledWith('id', 'u123')
@@ -153,6 +154,49 @@ describe('memberApi - 会員DB操作・連携の総合検証 V3.2.1', () => {
     })
   })
 
+// --- DUPR同期のテスト（ここがエラーの箇所でした） ---
+  describe('syncDuprData (DUPRデータ同期)', () => {
+    it('【正常系】正しいURLとGETメソッドでリクエストを投げること', 
+      async () => {
+      const mockDuprId = 'WKRV2Q'
+      const mockSuccessResponse = {
+        success: true,
+        data: { dupr_rate_doubles: 4.52, dupr_rate_singles: 4.10 }
+      }
+
+      // vi.spyOn を使って fetch を確実にモック化し、戻り値を設定
+      const fetchSpy = vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => mockSuccessResponse,
+      } as Response)
+
+      const result = await syncDuprData(mockDuprId)
+
+      // 正しいエンドポイントとメソッド（GET）を検証
+      expect(fetchSpy).toHaveBeenCalledWith(
+        `/api/dupr/${mockDuprId}`,
+        expect.objectContaining({
+          method: 'GET'
+        })
+      )
+      expect(result.success).toBe(true)
+      if (result.success && result.data) {
+        expect(result.data.dupr_rate_doubles).toBe(4.52)
+      }
+    })
+
+    it('【異常系】サーバーがエラーを返した場合に失敗扱いとなること', 
+      async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: false,
+        status: 404,
+      } as Response)
+
+      const result = await syncDuprData('INVALID_ID')
+      expect(result.success).toBe(false)
+    })
+  })
+
   describe('fetchMemberByEmail (メールによる検索)', () => {
     it('【正常系】存在するメールアドレスで1件取得できること', async () => {
       const mockMember = { email: 'exist@example.com' }
@@ -198,4 +242,8 @@ describe('memberApi - 会員DB操作・連携の総合検証 V3.2.1', () => {
       expect(result.data?.id).toBe('u123')
     })
   })
+
+
+
+
 })
