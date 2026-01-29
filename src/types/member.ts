@@ -39,7 +39,7 @@ export const ROLES = {
   AUDITOR: 'auditor',
   ASSET_MANAGER: 'asset_manager',
   ROLE_MANAGER: 'role_manager',
-  GENERAL: 'general',
+  MEMBER: 'member',
 } as const;
 
 /**

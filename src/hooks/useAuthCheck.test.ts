@@ -128,7 +128,7 @@ describe('useAuthCheck (sessionStorage対応検証)', () => {
     ;(usePathname as any).mockReturnValue('/members/profile')
     const MOCK_USER = {
       line_id: TEST_LINE_ID,
-      roles: 'general',
+      roles: 'member',
       name: 'テストユーザー'
     }
     ;(liff.init as any).mockResolvedValue(undefined)

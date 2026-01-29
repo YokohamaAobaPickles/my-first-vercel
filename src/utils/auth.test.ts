@@ -73,7 +73,7 @@ describe('権限判定ロジックの詳細テスト V2.0.0', () => {
     });
 
     it('持っていないロールの場合は false を返すこと', () => {
-      const user = { roles: 'general' } as Member;
+      const user = { roles: 'member' } as Member;
       expect(hasRole(user, ROLES.MEMBER_MANAGER)).toBe(false);
     });
   });
@@ -85,7 +85,7 @@ describe('権限判定ロジックの詳細テスト V2.0.0', () => {
       expect(canLogin('suspended')).toBe(true); // 休会中も復帰申請のため許可
     });
 
-    it('rejected や retired などの終了ステータスは false', () => {
+    it('rejected や withdraw などの終了ステータスは false', () => {
       expect(canLogin('rejected')).toBe(false);
       expect(canLogin('withdrawn')).toBe(false);
     });

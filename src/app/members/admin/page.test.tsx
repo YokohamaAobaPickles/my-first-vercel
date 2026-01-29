@@ -47,7 +47,7 @@ describe('AdminDashboard - 実データ連携の検証 V1.3.1', () => {
           id: 'user-1',
           name: 'リアルな申請者A',
           roles: '一般',
-          status: 'registration_request'
+          status: 'new_req'
         }
       ],
       error: null

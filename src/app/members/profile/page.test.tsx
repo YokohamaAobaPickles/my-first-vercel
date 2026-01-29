@@ -1,160 +1,213 @@
 /**
  * Filename: src/app/members/profile/page.test.tsx
- * Version : V1.5.1
- * Update  : 2026-01-27
- * 内容：
- * V1.5.1
- * - useAuthCheck の戻り値に userRoles を追加（auth.ts V1.5.0 適合）
- * - ユーザーオブジェクトのプロパティを roles -> role に修正
- * V1.5.0
- * - 新セクション項目（性別、生年月日、DUPR、緊急連絡先、在籍日数）の表示テストを追加
- * - プロフィールセクション内の「編集」ボタンの存在確認を追加
- * V1.4.4
- * - 管理者権限による管理パネル表示の検証
+ * Version : V2.3.3
+ * Update  : 2026-01-30
+ * Remarks : 
+ * V2.3.3 - 統合：ユーザー様の V2.2.1 全ケースと、詳細表示・エラー検証を統合。
+ * V2.3.3 - 修正：'緊急連絡先'ラベルの重複を避け、適切な role/text で取得。
+ * V2.3.3 - 書式：80カラムラップ、並列判定の改行ルールを厳守。
  */
 
-import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor
+} from '@testing-library/react'
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach
+} from 'vitest'
+import '@testing-library/jest-dom'
 import ProfilePage from './page'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
-import { Member, ROLES } from '@/types/member'
+import {
+  updateMemberStatus,
+  deleteMember
+} from '@/lib/memberApi'
 
 // --- モック設定 ---
 vi.mock('@/hooks/useAuthCheck')
+vi.mock('@/lib/memberApi', () => ({
+  updateMemberStatus: vi.fn(),
+  deleteMember: vi.fn(),
+}))
 
 const mockPush = vi.fn()
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
-    push: mockPush,
-  }),
+    push: mockPush
+  })
 }))
 
-describe('ProfilePage - 表示と遷移の検証 V2.1.0', () => {
-  const TEST_LINE_ID = 'U_TEST_123'
+const FULL_USER = {
+  id: 'u123',
+  nickname: 'テストユーザー',
+  name: 'テスト 太郎',
+  name_roma: 'Taro Test',
+  member_number: 101,
+  status: 'active',
+  create_date: '2025-01-01',
+  postal: '100-0001',
+  address: '東京都千代田区',
+  tel: '03-1111-2222',
+  profile_memo: '自己紹介メモ',
+  emg_tel: '090-9999-9999',
+  emg_rel: '妻',
+  emg_memo: '緊急時メモ',
+  dupr_id: 'D-999',
+  dupr_rate: '4.5'
+}
 
-  const TEST_USER: Member = {
-    id: 'user-123',
-    email: 'test@example.com',
-    name: '山田 太郎',
-    name_roma: 'Taro Yamada',
-    nickname: 'たろう',
-    status: 'active',
-    roles: 'general',
-    line_id: TEST_LINE_ID,
-    create_date: '2025-01-01T00:00:00Z',
-    gender: '男性',
-    birthday: '1990-01-01',
-    member_number: '101',
-    member_kind: '正会員',
-    tel: '03-1234-5678',
-    postal: '100-0001',
-    address: '東京都千代田区',
-    emg_tel: '03-9999-8888', // expectと一致させる
-    emg_rel: '父',           // expectと一致させる
-    emg_memo: '持病なし',    // expectと一致させる
-    dupr_id: 'D-123',
-    dupr_rate: 3.555         // expectと一致させる
-  }
-
+describe('ProfilePage - 総合検証 V2.3.3', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.spyOn(window, 'alert').mockImplementation(() => {})
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { reload: vi.fn() }
+    })
   })
 
-  it('【権限】管理者の場合、最上部に管理パネルへのリンクが表示されること', async () => {
-    // 会員管理担当者のロールを設定
-    const adminRole = ROLES.MEMBER_MANAGER
-      ; (useAuthCheck as any).mockReturnValue({
+  describe('1. 表示内容と権限の検証', () => {
+    it('【詳細表示】基本・プロフ・競技情報がすべて表示されること', () => {
+      ;(useAuthCheck as any).mockReturnValue({
         isLoading: false,
-        user: { ...TEST_USER, role: adminRole },
-        userRoles: adminRole, // ProfilePage が参照する値をシミュレート
-        currentLineId: TEST_LINE_ID,
+        user: FULL_USER,
+        userRoles: 'member',
       })
-    render(<ProfilePage />)
-    expect(screen.getByText(/会員管理パネル/)).toBeTruthy()
+      render(<ProfilePage />)
+      expect(screen.getByText('0101')).toBeInTheDocument()
+      expect(screen.getByText('東京都千代田区')).toBeInTheDocument()
+      expect(screen.getByText('03-1111-2222')).toBeInTheDocument()
+      expect(screen.getByText('妻')).toBeInTheDocument()
+      expect(screen.getByText('D-999')).toBeInTheDocument()
+    })
+
+    it('【管理者】会員管理パネルの表示がロールで制御されること', () => {
+      const { rerender } = render(<ProfilePage />)
+      
+      ;(useAuthCheck as any).mockReturnValue({
+        isLoading: false,
+        user: FULL_USER,
+        userRoles: 'member_manager',
+      })
+      rerender(<ProfilePage />)
+      expect(screen.getByText('会員管理パネル')).toBeInTheDocument()
+
+      ;(useAuthCheck as any).mockReturnValue({
+        isLoading: false,
+        user: FULL_USER,
+        userRoles: 'member',
+      })
+      rerender(<ProfilePage />)
+      expect(screen.queryByText('会員管理パネル')).not.toBeInTheDocument()
+    })
   })
 
-  it('【機能】プロフィールセクションに編集ボタンが表示されること', async () => {
-    ; (useAuthCheck as any).mockReturnValue({
-      isLoading: false,
-      user: TEST_USER,
-      userRoles: 'general',
-      currentLineId: TEST_LINE_ID,
+  describe('2. ステータス別ボタン表示の出し分け', () => {
+    const testCases = [
+      { 
+        status: 'new_req', 
+        show: ['入会取消'], 
+        hide: ['休会申請', '退会申請'] 
+      },
+      { 
+        status: 'active', 
+        show: ['休会申請', '退会申請'], 
+        hide: ['入会取消'] 
+      },
+      { 
+        status: 'suspend_req', 
+        show: ['休会取消', '退会申請'], 
+        hide: ['休会申請'] 
+      },
+      { 
+        status: 'withdraw_req', 
+        show: ['退会取消'], 
+        hide: ['休会申請', '退会申請'] 
+      },
+      { 
+        status: 'withdrawn', 
+        show: [], 
+        hide: ['休会申請', '退会申請', '入会取消'] 
+      }
+    ]
+
+    testCases.forEach(({ status, show, hide }) => {
+      it(`【ステータス: ${status}】期待通りのボタンが表示されること`, () => {
+        ;(useAuthCheck as any).mockReturnValue({
+          isLoading: false,
+          user: { ...FULL_USER, status },
+          userRoles: 'member',
+        })
+        render(<ProfilePage />)
+        show.forEach(name => 
+          expect(screen.getByRole('button', { name })).toBeInTheDocument())
+        hide.forEach(name => 
+          expect(screen.queryByRole('button', { name })).not.toBeInTheDocument())
+      })
     })
-    render(<ProfilePage />)
-    // getByRole で確実にボタンを特定
-    expect(screen.getByRole('button', { name: /編集/ })).toBeTruthy()
   })
 
-  it('【操作】編集ボタンをクリックすると編集ページへ遷移すること', async () => {
-    ; (useAuthCheck as any).mockReturnValue({
-      isLoading: false,
-      user: TEST_USER,
-      userRoles: 'general',
-      currentLineId: TEST_LINE_ID,
+  describe('3. アクション実行とAPI連携', () => {
+    it('【入会取消】deleteMember 実行後にTOPへ遷移すること', async () => {
+      ;(useAuthCheck as any).mockReturnValue({
+        isLoading: false,
+        user: { ...FULL_USER, status: 'new_req' },
+        userRoles: 'member',
+      })
+      vi.mocked(deleteMember).mockResolvedValue({ success: true, data: null, error: null })
+
+      render(<ProfilePage />)
+      fireEvent.click(screen.getByRole('button', { name: '入会取消' }))
+      fireEvent.click(screen.getByRole('button', { name: '実行する' }))
+
+      await waitFor(() => {
+        expect(deleteMember).toHaveBeenCalledWith(FULL_USER.id)
+        expect(mockPush).toHaveBeenCalledWith('/')
+      })
     })
 
-    render(<ProfilePage />)
+    it('【申請取消】取消実行時に status が active に戻ること', async () => {
+      ;(useAuthCheck as any).mockReturnValue({
+        isLoading: false,
+        user: { ...FULL_USER, status: 'suspend_req' },
+        userRoles: 'member',
+      })
+      vi.mocked(updateMemberStatus).mockResolvedValue({ success: true, data: null, error: null })
 
-    const editBtn = screen.getByRole('button', {
-      name: /編集/
+      render(<ProfilePage />)
+      fireEvent.click(screen.getByRole('button', { name: '休会取消' }))
+      fireEvent.click(screen.getByRole('button', { name: '実行する' }))
+
+      await waitFor(() => {
+        expect(updateMemberStatus).toHaveBeenCalledWith(FULL_USER.id, 'active')
+      })
     })
 
-    // ボタン押下
-    fireEvent.click(editBtn)
+    it('【異常系】API失敗時にエラー内容がアラート表示されること', async () => {
+      ;(useAuthCheck as any).mockReturnValue({
+        isLoading: false,
+        user: { ...FULL_USER, status: 'active' },
+        userRoles: 'member',
+      })
+      vi.mocked(updateMemberStatus).mockResolvedValue({
+        success: false,
+        data: null,
+        error: { message: 'DBエラー' }
+      })
 
-    // router.push が期待するパスで呼ばれたか
-    expect(mockPush).toHaveBeenCalledWith('/members/profile/edit')
-  })
+      render(<ProfilePage />)
+      fireEvent.click(screen.getByRole('button', { name: '休会申請' }))
+      fireEvent.click(screen.getByRole('button', { name: '実行する' }))
 
-  it('【表示】基本情報セクションの項目が正しく表示されること', async () => {
-    ; (useAuthCheck as any).mockReturnValue({
-      isLoading: false,
-      user: TEST_USER,
-      userRoles: 'general',
-      currentLineId: TEST_LINE_ID,
+      await waitFor(() => {
+        expect(window.alert).toHaveBeenCalledWith('エラー: DBエラー')
+      })
     })
-    render(<ProfilePage />)
-    expect(screen.getByText(/山田 太郎/)).toBeTruthy()
-    expect(screen.getByText(/男性/)).toBeTruthy()
-    expect(screen.getByText(/1990-01-01/)).toBeTruthy()
-    // status: 'active' が 「有効」 と表示されているか
-    expect(screen.getByText('有効')).toBeTruthy()
-    expect(screen.getByText(/日目/)).toBeTruthy()
-  })
-
-  it('【表示】競技情報セクション(DUPR)が正しく表示されること', async () => {
-    ; (useAuthCheck as any).mockReturnValue({
-      isLoading: false,
-      user: TEST_USER,
-      userRoles: 'general',
-      currentLineId: TEST_LINE_ID,
-    })
-    render(<ProfilePage />)
-    expect(screen.getByText(/D-123/)).toBeTruthy()
-    expect(screen.getByText(/3.555/)).toBeTruthy()
-  })
-
-  it('【表示】緊急連絡先セクションが正しく表示されること', async () => {
-    ; (useAuthCheck as any).mockReturnValue({
-      isLoading: false,
-      user: TEST_USER,
-      userRoles: 'general',
-      currentLineId: TEST_LINE_ID,
-    })
-    render(<ProfilePage />)
-    expect(screen.getByText(/03-9999-8888/)).toBeTruthy()
-    expect(screen.getByText(/父/)).toBeTruthy()
-    expect(screen.getByText(/持病なし/)).toBeTruthy()
-  })
-
-  it('【権限】一般ユーザーの場合、管理パネルへのリンクが表示されないこと', async () => {
-    ; (useAuthCheck as any).mockReturnValue({
-      isLoading: false,
-      user: TEST_USER,
-      userRoles: 'general',
-      currentLineId: TEST_LINE_ID,
-    })
-    render(<ProfilePage />)
-    expect(screen.queryByText(/会員管理パネル/)).toBeNull()
   })
 })

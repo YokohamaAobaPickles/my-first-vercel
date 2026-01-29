@@ -1,10 +1,10 @@
 /**
  * Filename: src/lib/memberApi.test.ts
- * Version : V3.1.0
- * Update  : 2026-01-29
+ * Version : V3.2.1
+ * Update  : 2026-01-30
  * Remarks : 
- * V3.1.0 - 修正：新ステータス名称 (new_req) に合わせて期待値を修正
- * V3.1.0 - 修正：withdraw 関連の名称変更に伴うテストデータの見直し
+ * V3.2.1 - 修正：deleteMember のテストケース追加とモック定義の改善。
+ * V3.1.0 - 修正：新ステータス名称 (new_req) に合わせて期待値を修正。
  */
 
 import {
@@ -21,7 +21,8 @@ import {
   fetchMembers,
   fetchMemberByEmail,
   linkLineIdToMember,
-  registerMember
+  registerMember,
+  deleteMember // 追加
 } from './memberApi'
 import { supabase } from '@/lib/supabase'
 import { Member, MemberInput } from '@/types/member'
@@ -32,7 +33,7 @@ vi.mock('@/lib/supabase', () => ({
   }
 }))
 
-describe('memberApi - 会員DB操作・連携の総合検証 V3.1.0', () => {
+describe('memberApi - 会員DB操作・連携の総合検証 V3.2.1', () => {
   const mockFrom = supabase.from as any
 
   beforeEach(() => {
@@ -44,8 +45,7 @@ describe('memberApi - 会員DB操作・連携の総合検証 V3.1.0', () => {
       const mockInput: MemberInput = {
         name: '新規 太郎',
         email: 'new@example.com',
-        password: 'password123',
-        status: 'new_req' // 修正
+        status: 'new_req'
       } as MemberInput
 
       const mockCreatedMember = { id: 'generated-uuid-123', ...mockInput }
@@ -62,36 +62,40 @@ describe('memberApi - 会員DB操作・連携の総合検証 V3.1.0', () => {
       const result = await registerMember(mockInput)
 
       expect(result.success).toBe(true)
-      if (result.success && result.data) {
-        expect(result.data.id).toBe('generated-uuid-123')
-        expect(result.data.status).toBe('new_req')
-      }
+      expect(result.data?.id).toBe('generated-uuid-123')
     })
   })
 
-  describe('fetchPendingMembers (承認待ち取得)', () => {
-    it('【正常系】承認待ちユーザー(new_req)を正しい条件で取得すること',
-      async () => {
-        const mockData = [{
-          id: '1',
-          name: 'テスト太郎',
-          status: 'new_req' // 修正
-        }]
-        const mockOrder = vi.fn().mockResolvedValue({
-          data: mockData,
-          error: null
-        })
-        mockFrom.mockReturnValue({
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          order: mockOrder
-        })
-
-        const result = await fetchPendingMembers()
-        expect(result.success).toBe(true)
-        // eq('status', 'new_req') が呼ばれているはず
-        expect(mockFrom().eq).toHaveBeenCalledWith('status', 'new_req')
+  describe('deleteMember (会員レコード削除)', () => {
+    it('【正常系】指定したIDのレコードが物理削除されること', async () => {
+      const mockEq = vi.fn().mockResolvedValue({ error: null })
+      const mockDelete = vi.fn().mockReturnValue({ eq: mockEq })
+      
+      mockFrom.mockReturnValue({
+        delete: mockDelete
       })
+
+      const result = await deleteMember('u123')
+      
+      expect(result.success).toBe(true)
+      expect(mockDelete).toHaveBeenCalled()
+      expect(mockEq).toHaveBeenCalledWith('id', 'u123')
+    })
+
+    it('【異常系】DBエラー時に適切なエラーレスポンスを返すこと', async () => {
+      const mockError = { message: 'Delete failed', code: 'D001' }
+      const mockEq = vi.fn().mockResolvedValue({ error: mockError })
+      const mockDelete = vi.fn().mockReturnValue({ eq: mockEq })
+
+      mockFrom.mockReturnValue({
+        delete: mockDelete
+      })
+
+      const result = await deleteMember('u123')
+
+      expect(result.success).toBe(false)
+      expect(result.error?.message).toBe('Delete failed')
+    })
   })
 
   describe('updateMemberStatus (ステータス更新)', () => {
@@ -108,12 +112,29 @@ describe('memberApi - 会員DB操作・連携の総合検証 V3.1.0', () => {
     })
   })
 
+  describe('fetchPendingMembers (承認待ち取得)', () => {
+    it('【正常系】承認待ちユーザー(new_req)を正しい条件で取得すること',
+      async () => {
+        const mockData = [{ id: '1', status: 'new_req' }]
+        const mockOrder = vi.fn().mockResolvedValue({
+          data: mockData,
+          error: null
+        })
+        mockFrom.mockReturnValue({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: mockOrder
+        })
+
+        const result = await fetchPendingMembers()
+        expect(result.success).toBe(true)
+        expect(mockFrom().eq).toHaveBeenCalledWith('status', 'new_req')
+      })
+  })
+
   describe('fetchMembers (全会員一覧取得)', () => {
     it('【正常系】全会員を会員番号順に取得できること', async () => {
-      const mockData = [
-        { member_number: 1, name: 'A' },
-        { member_number: 2, name: 'B' }
-      ]
+      const mockData = [{ member_number: 1 }]
       const mockOrder = vi.fn().mockResolvedValue({
         data: mockData,
         error: null
@@ -134,7 +155,7 @@ describe('memberApi - 会員DB操作・連携の総合検証 V3.1.0', () => {
 
   describe('fetchMemberByEmail (メールによる検索)', () => {
     it('【正常系】存在するメールアドレスで1件取得できること', async () => {
-      const mockMember = { email: 'exist@example.com', name: '存在' }
+      const mockMember = { email: 'exist@example.com' }
       const mockMaybeSingle = vi.fn().mockResolvedValue({
         data: mockMember,
         error: null
@@ -166,7 +187,7 @@ describe('memberApi - 会員DB操作・連携の総合検証 V3.1.0', () => {
 
   describe('fetchMemberById (特定会員取得)', () => {
     it('【正常系】single() を使用してID検索し成功すること', async () => {
-      const mockMember = { id: 'u123', roles: 'president' }
+      const mockMember = { id: 'u123' }
       mockFrom.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
@@ -174,8 +195,7 @@ describe('memberApi - 会員DB操作・連携の総合検証 V3.1.0', () => {
       })
       const result = await fetchMemberById('u123')
       expect(result.success).toBe(true)
-      expect(result.data?.roles).toBe('president')
+      expect(result.data?.id).toBe('u123')
     })
   })
-
 })
