@@ -1,8 +1,9 @@
 /**
  * Filename: src/app/api/dupr/[id]/route.ts
- * Version : V1.0.0
- * Update  : 2026-01-30
+ * Version : V1.0.1
+ * Update  : 2026-01-31
  * Remarks : 
+ * V1.0.1 - 修正：Next.js 15の非同期 params 仕様に対応。
  * V1.0.0 - 新規：DUPR ID を受け取り情報を返す API エンドポイント。
  */
 
@@ -15,12 +16,12 @@ import { fetchDuprInfo } from '@/lib/duprApi';
  */
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  // パラメータから ID を取得
-  const id = params.id;
+  // Next.js 15 では params は Promise なので await が必要
+  const { id } = await params;
 
-  // ID がない場合のバリデーション（通常ルーティングで弾かれるが念のため）
+  // ID がない場合のバリデーション
   if (!id) {
     return NextResponse.json(
       { 
@@ -36,7 +37,10 @@ export async function GET(
 
   // 取得失敗（見つからない、エラー等）の場合
   if (!result.success) {
-    return NextResponse.json(result, { status: 404 });
+    return NextResponse.json(
+      result, 
+      { status: 404 }
+    );
   }
 
   // 成功時
