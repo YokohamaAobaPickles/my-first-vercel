@@ -1,15 +1,20 @@
 /**
  * Filename: src/lib/memberApi.ts
- * Version : V2.0.1
- * Update  : 2026-01-28
+ * Version : V3.0.0
+ * Update  : 2026-01-29
  * Remarks : 
- * V2.0.1 - registerMember の戻り値を ApiResponse<Member> に変更
- * V2.0.1 - insert 時に .select().single() を追加し、作成されたレコードを返却
- * V2.0.1 - 書式遵守：80カラムラップを適用
+ * V3.0.0 - 修正：ステータス名称変更に対応 (new_req)
+ * V3.0.0 - 修正：updateMemberStatus の引数に MemberStatus 型を適用
+ * V3.0.0 - 書式：80カラムラップを維持
  */
 
 import { supabase } from '@/lib/supabase';
-import { Member, MemberInput, ApiResponse } from '@/types/member';
+import {
+  Member,
+  MemberInput,
+  ApiResponse,
+  MemberStatus
+} from '@/types/member';
 
 /**
  * 共通エラーハンドラー
@@ -57,7 +62,6 @@ export const fetchMemberById = async (
 
 /**
  * メールアドレスによる会員検索
- * * 重複チェックやアカウント連携で使用。データなし(null)を許容する。
  */
 export const fetchMemberByEmail = async (
   email: string
@@ -73,13 +77,13 @@ export const fetchMemberByEmail = async (
 };
 
 /**
- * 承認待ちユーザーの一覧取得
+ * 承認待ちユーザーの一覧取得 (new_req)
  */
 export const fetchPendingMembers = async (): Promise<ApiResponse<Member[]>> => {
   const { data, error } = await supabase
     .from('members')
     .select('*')
-    .eq('status', 'registration_request')
+    .eq('status', 'new_req')
     .order('create_date', { ascending: false });
 
   if (error) return handleError(error);
@@ -87,11 +91,11 @@ export const fetchPendingMembers = async (): Promise<ApiResponse<Member[]>> => {
 };
 
 /**
- * 会員のステータスを更新する (承認/拒否など)
+ * 会員のステータスを更新する (承認/拒否/休会/退会など)
  */
 export const updateMemberStatus = async (
   id: string,
-  status: string
+  status: MemberStatus
 ): Promise<ApiResponse<null>> => {
   const { error } = await supabase
     .from('members')
@@ -103,7 +107,7 @@ export const updateMemberStatus = async (
 };
 
 /**
- * LINE ID の紐付け (アカウント統合用)
+ * LINE ID の紐付け
  */
 export const linkLineIdToMember = async (
   email: string,
@@ -119,7 +123,7 @@ export const linkLineIdToMember = async (
 };
 
 /**
- * ニックネームの重複チェック（存在確認のみ）
+ * ニックネームの重複チェック
  */
 export const checkNicknameExists = async (
   nickname: string
@@ -135,6 +139,7 @@ export const checkNicknameExists = async (
 
 /**
  * プロフィール情報の更新
+ * * 退会時は data に withdraw_date を含めて呼び出す
  */
 export const updateMemberProfile = async (
   id: string,
@@ -150,9 +155,7 @@ export const updateMemberProfile = async (
 };
 
 /**
- * 新規会員登録 (API層)
- * * パスワードや初期ステータスを含む会員データをDBに保存する
- * * 成功時は作成されたレコード(id等を含む)を返す
+ * 新規会員登録 (初期ステータスは通常 new_req)
  */
 export const registerMember = async (
   input: MemberInput

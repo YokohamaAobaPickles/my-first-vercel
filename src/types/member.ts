@@ -16,14 +16,14 @@ export type { ApiResponse };
  * 会員ステータスの定義 (2026-01-27 更新)
  */
 export type MemberStatus =
-  | 'registration_request' // 申請中
-  | 'active'               // 有効
-  | 'suspend_req'          // 休会申請中
-  | 'suspended'            // 休会中
-  | 'rejoin_req'           // 復帰申請中
-  | 'retire_req'           // 退会申請中
-  | 'retired'              // 退会済み
-  | 'rejected';            // 拒絶
+  | 'new_req'              // 申請中
+  | 'active'                // 有効
+  | 'suspend_req'           // 休会申請中
+  | 'suspended'             // 休会中
+  | 'rejoin_req'            // 復帰申請中
+  | 'withdraw_req'          // 退会申請中
+  | 'withdrawn'             // 退会済み
+  | 'rejected';             // 拒絶
 
 /**
  * システムロールの定数
