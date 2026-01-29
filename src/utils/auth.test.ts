@@ -85,9 +85,9 @@ describe('権限判定ロジックの詳細テスト V2.0.0', () => {
       expect(canLogin('suspended')).toBe(true); // 休会中も復帰申請のため許可
     });
 
-    it('rejected や retired などの終了ステータスは false', () => {
+    it('rejected や withdraw などの終了ステータスは false', () => {
       expect(canLogin('rejected')).toBe(false);
-      expect(canLogin('retired')).toBe(false);
+      expect(canLogin('withdrawn')).toBe(false);
     });
   });
 

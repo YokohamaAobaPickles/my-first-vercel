@@ -39,7 +39,7 @@ export const canLogin = (status: MemberStatus | null): boolean => {
     'suspended', 
     'suspend_req', 
     'rejoin_req', 
-    'retire_req'
+    'withdraw_req'
   ];
   return allowedStatuses.includes(status);
 };
