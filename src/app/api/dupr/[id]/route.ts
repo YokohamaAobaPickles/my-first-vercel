@@ -38,14 +38,13 @@ export async function GET(
   // 取得失敗（見つからない、エラー等）の場合
   if (!result.success) {
     return NextResponse.json(
-
-      result
-      // デバッグのため404を出さない
-      //      result, 
-      //      { status: 404 }
+      result,
+      { status: 404 }
     );
   }
 
-  // 成功時
-  return NextResponse.json(result);
+  // 成功時は取得したレート情報を返却
+  return NextResponse.json(
+    result
+  );
 }
