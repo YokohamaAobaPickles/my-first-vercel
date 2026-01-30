@@ -1,11 +1,11 @@
 /**
  * Filename: src/app/members/profile/edit/page.tsx
- * Version : V2.4.0
+ * Version : V2.4.1
  * Update  : 2026-01-31
  * Remarks : 
+ * V2.4.1 - 追加：公開設定(is_profile_public)のチェックボックスを追加。
  * V2.4.0 - 統合：Member型(V2.3.0)に準拠。emg_memo等の最新キー名を使用。
  * V2.4.0 - 修正：氏名(ローマ字)、DUPR ID/レートの編集機能を追加。
- * V2.4.0 - 整理：入力項目の順序を表示画面の構成と完全に一致させた。
  */
 
 'use client'
@@ -68,8 +68,11 @@ export default function ProfileEditPage() {
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    const { name, value } = e.target
-    setFormData((prev: any) => ({ ...prev, [name]: value }))
+    const { name, value, type } = e.target as HTMLInputElement
+    const val = type === 'checkbox' 
+      ? (e.target as HTMLInputElement).checked 
+      : value
+    setFormData((prev: any) => ({ ...prev, [name]: val }))
   }
 
   const formatMemberNumber = (num: string | number | null | undefined) => {
@@ -180,6 +183,21 @@ export default function ProfileEditPage() {
                 onChange={handleChange}
                 style={styles.textarea}
               />
+            </div>
+
+            {/* 公開設定チェックボックス */}
+            <div style={styles.checkboxGroup}>
+              <input
+                id="is_profile_public"
+                type="checkbox"
+                name="is_profile_public"
+                checked={formData.is_profile_public || false}
+                onChange={handleChange}
+                style={styles.checkbox}
+              />
+              <label htmlFor="is_profile_public" style={styles.checkboxLabel}>
+                プロフィールを他会員に公開する
+              </label>
             </div>
 
             <hr style={styles.hr} />
@@ -347,11 +365,29 @@ const styles: Record<string, React.CSSProperties> = {
   inputGroup: {
     marginBottom: '20px',
   },
+  checkboxGroup: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    marginBottom: '20px',
+    padding: '4px 0',
+  },
   label: {
     display: 'block',
     color: '#888',
     fontSize: '0.85rem',
     marginBottom: '8px',
+  },
+  checkboxLabel: {
+    color: '#fff',
+    fontSize: '0.95rem',
+    cursor: 'pointer',
+  },
+  checkbox: {
+    width: '20px',
+    height: '20px',
+    cursor: 'pointer',
+    accentColor: '#0070f3',
   },
   requiredBadge: {
     color: '#ff4d4f',

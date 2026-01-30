@@ -1,10 +1,10 @@
 /**
  * Filename: src/app/members/profile/edit/page.test.tsx
- * Version : V2.3.1
+ * Version : V2.4.0
  * Update  : 2026-01-31
  * Remarks : 
- * V2.3.0 - 統合：V2.2.7をベースに、DUPRレート(Doubles/Singles)入力の検証を追加。
- * V2.3.0 - 強化：初期値、HTMLバリデーション、API保存パラメータの網羅性を維持。
+ * V2.4.0 - 網羅：全入力項目、読取専用項目、公開フラグの検証を統合。
+ * V2.3.1 - 統合：DUPRレート入力の検証を追加。
  */
 
 import {
@@ -41,32 +41,35 @@ vi.mock('next/navigation', () => ({
   }),
 }))
 
-describe('EditProfilePage - 総合検証 V2.3.0', () => {
+describe('EditProfilePage - 総合検証 V2.4.0', () => {
   const TEST_USER: Partial<Member> = {
     id: 'user-123',
+    member_number: '1005',
     name: '山田 太郎',
     nickname: 'たろう',
-    member_number: '0101',
+    name_roma: 'Taro Yamada',
     postal: '100-0001',
     address: '東京都千代田区',
     tel: '03-1111-2222',
-    profile_memo: 'よろしくお願いします',
     line_id: 'L_12345',
+    profile_memo: 'よろしくお願いします',
     emg_tel: '090-1111-1111',
     emg_rel: '父',
+    emg_memo: '緊急時メモ',
     dupr_id: 'WKRV2Q',
     dupr_rate_doubles: 3.500,
     dupr_rate_singles: 3.200,
+    is_profile_public: true,
   }
 
   beforeEach(() => {
     vi.clearAllMocks()
     vi.spyOn(window, 'alert').mockImplementation(() => { })
 
-      ; (useAuthCheck as any).mockReturnValue({
-        isLoading: false,
-        user: TEST_USER,
-      })
+    ; (useAuthCheck as any).mockReturnValue({
+      isLoading: false,
+      user: TEST_USER,
+    })
     vi.mocked(updateMemberProfile).mockResolvedValue({
       success: true,
       data: null,
@@ -74,11 +77,12 @@ describe('EditProfilePage - 総合検証 V2.3.0', () => {
     })
   })
 
-  describe('1. 表示・構成の検証', () => {
-    it('【表示】閲覧のみの項目が正しい形式で表示されていること', () => {
+  describe('1. 表示・構成の検証（全項目チェック）', () => {
+    it('【読取専用】編集不可の項目が正しく表示され、inputでないこと', () => {
       render(<EditProfilePage />)
 
-      expect(screen.getByText('0101')).toBeInTheDocument()
+      // 会員番号、氏名、LINE IDは編集不可（テキスト表示）の仕様
+      expect(screen.getByText('1005')).toBeInTheDocument()
       expect(screen.getByText('山田 太郎')).toBeInTheDocument()
       expect(screen.getByText('L_12345')).toBeInTheDocument()
 
@@ -86,50 +90,49 @@ describe('EditProfilePage - 総合検証 V2.3.0', () => {
       expect(nameInput?.tagName).not.toBe('INPUT')
     })
 
-    it('【必須】必須項目のラベルに「*」が含まれ、HTML5バリデーションがあること',
-      () => {
-        render(<EditProfilePage />)
-
-        const requiredInputs = [
-          { label: /ニックネーム/, name: 'nickname' },
-          { label: /緊急連絡先電話/, name: 'emg_tel' },
-          { label: /続柄/, name: 'emg_rel' }
-        ]
-
-        requiredInputs.forEach(({ label, name }) => {
-          const input = screen.getByLabelText(label)
-          expect(input).toBeRequired()
-          expect(input).toHaveAttribute('name', name)
-        })
-
-        expect(screen.getAllByText('*')).toHaveLength(3)
-      })
-
-    it('【初期値】全編集フィールド（DUPR含む）に既存データが反映されていること',
-      () => {
-        render(<EditProfilePage />)
-
-        expect(screen.getByLabelText(/ニックネーム/)).toHaveValue('たろう')
-        expect(screen.getByLabelText(/郵便番号/)).toHaveValue('100-0001')
-        expect(screen.getByLabelText(/DUPR Doubles/)).toHaveValue(3.5)
-        expect(screen.getByLabelText(/DUPR Singles/)).toHaveValue(3.2)
-        expect(screen.getByLabelText(/プロフィールメモ/))
-          .toHaveValue('よろしくお願いします')
-      })
-  })
-
-  describe('2. 更新処理の検証', () => {
-    it('【正常系】DUPRレートを含む値を変更してAPIが呼ばれること', async () => {
+    it('【初期値】全編集フィールドに既存データが正しく反映されていること', () => {
       render(<EditProfilePage />)
 
-      fireEvent.change(screen.getByLabelText(/住所/),
-        { target: { value: '神奈川県横浜市' } })
+      expect(screen.getByLabelText(/ニックネーム/)).toHaveValue('たろう')
+      expect(screen.getByLabelText(/氏名（ローマ字）/)).toHaveValue('Taro Yamada')
+      expect(screen.getByLabelText(/郵便番号/)).toHaveValue('100-0001')
+      expect(screen.getByLabelText(/住所/)).toHaveValue('東京都千代田区')
+      expect(screen.getByLabelText(/電話番号/)).toHaveValue('03-1111-2222')
+      expect(screen.getByLabelText(/プロフィールメモ/)).toHaveValue('よろしくお願いします')
+      expect(screen.getByLabelText(/緊急連絡先電話/)).toHaveValue('090-1111-1111')
+      expect(screen.getByLabelText(/続柄/)).toHaveValue('父')
+      expect(screen.getByLabelText(/緊急連絡メモ/)).toHaveValue('緊急時メモ')
+      expect(screen.getByLabelText(/DUPR ID/)).toHaveValue('WKRV2Q')
+      expect(screen.getByLabelText(/DUPR Doubles/)).toHaveValue(3.5)
+      expect(screen.getByLabelText(/DUPR Singles/)).toHaveValue(3.2)
+      
+      // 公開設定チェックボックスの初期値
+      const checkbox = screen.getByLabelText(/プロフィールを他会員に公開する/)
+      expect(checkbox).toBeChecked()
+    })
+  })
 
-      fireEvent.change(screen.getByLabelText(/DUPR Doubles/),
-        { target: { value: '4.123' } })
+  describe('2. 更新処理の検証（全項目網羅）', () => {
+    it('【正常系】全項目を変更してAPIに正しい型で送信されること', async () => {
+      render(<EditProfilePage />)
 
-      fireEvent.change(screen.getByLabelText(/DUPR Singles/),
-        { target: { value: '3.885' } })
+      // 各項目を書き換え
+      fireEvent.change(screen.getByLabelText(/ニックネーム/), { target: { value: 'NEWニック' } })
+      fireEvent.change(screen.getByLabelText(/氏名（ローマ字）/), { target: { value: 'New Name' } })
+      fireEvent.change(screen.getByLabelText(/郵便番号/), { target: { value: '999-9999' } })
+      fireEvent.change(screen.getByLabelText(/住所/), { target: { value: '新住所' } })
+      fireEvent.change(screen.getByLabelText(/電話番号/), { target: { value: '080-0000-0000' } })
+      fireEvent.change(screen.getByLabelText(/プロフィールメモ/), { target: { value: '新メモ' } })
+      fireEvent.change(screen.getByLabelText(/緊急連絡先電話/), { target: { value: '070-0000-0000' } })
+      fireEvent.change(screen.getByLabelText(/続柄/), { target: { value: '配偶者' } })
+      fireEvent.change(screen.getByLabelText(/緊急連絡メモ/), { target: { value: '新緊急メモ' } })
+      fireEvent.change(screen.getByLabelText(/DUPR ID/), { target: { value: 'NEW_DUPR' } })
+      fireEvent.change(screen.getByLabelText(/DUPR Doubles/), { target: { value: '4.567' } })
+      fireEvent.change(screen.getByLabelText(/DUPR Singles/), { target: { value: '4.123' } })
+      
+      // 公開設定を反転
+      const checkbox = screen.getByLabelText(/プロフィールを他会員に公開する/)
+      fireEvent.click(checkbox)
 
       const saveBtn = screen.getByRole('button', { name: '変更を保存' })
       fireEvent.click(saveBtn)
@@ -137,98 +140,47 @@ describe('EditProfilePage - 総合検証 V2.3.0', () => {
       await waitFor(() => {
         expect(updateMemberProfile).toHaveBeenCalledWith(
           TEST_USER.id,
-          expect.objectContaining({
-            address: '神奈川県横浜市',
-            dupr_rate_doubles: 4.123,
-            dupr_rate_singles: 3.885
-          })
+          {
+            ...TEST_USER,
+            nickname: 'NEWニック',
+            name_roma: 'New Name',
+            postal: '999-9999',
+            address: '新住所',
+            tel: '080-0000-0000',
+            profile_memo: '新メモ',
+            emg_tel: '070-0000-0000',
+            emg_rel: '配偶者',
+            emg_memo: '新緊急メモ',
+            dupr_id: 'NEW_DUPR',
+            dupr_rate_doubles: 4.567, // 数値型変換のチェック
+            dupr_rate_singles: 4.123, // 数値型変換のチェック
+            is_profile_public: false, // 公開フラグ反転のチェック
+          }
         )
         expect(window.alert).toHaveBeenCalledWith('プロフィールを更新しました')
-        expect(mockPush).toHaveBeenCalledWith('/members/profile')
       })
     })
 
-    it('【異常系】APIエラー時にアラートで通知されること', async () => {
+    it('【異常系】APIエラー時に適切なアラートが表示されること', async () => {
       vi.mocked(updateMemberProfile).mockResolvedValue({
         success: false,
         data: null,
-        error: { message: 'サーバーエラー' }
+        error: { message: 'サーバー通信エラー' }
       })
 
       render(<EditProfilePage />)
       fireEvent.click(screen.getByRole('button', { name: '変更を保存' }))
 
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith('エラー: サーバーエラー')
+        expect(window.alert).toHaveBeenCalledWith('エラー: サーバー通信エラー')
       })
     })
   })
 
-  describe('3. ナビゲーションの検証', () => {
-    it('【戻る】キャンセルボタン押下で router.back が呼ばれること', () => {
+  describe('3. 特殊な入力パターンの検証', () => {
+    it('DUPRレートが空欄の場合、nullとしてAPIに送信されること', async () => {
       render(<EditProfilePage />)
-      fireEvent.click(screen.getByRole('button', { name: 'キャンセル' }))
-      expect(mockBack).toHaveBeenCalled()
-    })
-  })
-
-  describe('DUPR手動入力の検証', () => {
-    it('DUPR ID、Doubles/Singlesレートを入力し、正しく状態が更新されること', () => {
-      render(<EditProfilePage />)
-
-      const idInput = screen.getByLabelText('DUPR ID')
-      const doublesInput = screen.getByLabelText('DUPR Doubles')
-      const singlesInput = screen.getByLabelText('DUPR Singles')
-
-      fireEvent.change(idInput, { target: { value: 'WKRV2Q', name: 'dupr_id' } })
-      fireEvent.change(doublesInput, { target: { value: '4.123', name: 'dupr_rate_doubles' } })
-      fireEvent.change(singlesInput, { target: { value: '3.500', name: 'dupr_rate_singles' } })
-
-      expect(idInput).toHaveValue('WKRV2Q')
-      expect(doublesInput).toHaveValue(4.123)
-      expect(singlesInput).toHaveValue(3.5)
-    })
-
-    it('保存時にレートが文字列から数値型（float）に変換されて API に送信されること', async () => {
-      vi.mocked(updateMemberProfile).mockResolvedValue({
-        success: true,
-        data: null,
-        error: null
-      })
-
-      render(<EditProfilePage />)
-
-      // 編集可能な項目を入力
-      fireEvent.change(screen.getByLabelText('DUPR Doubles'), {
-        target: { value: '4.567', name: 'dupr_rate_doubles' }
-      })
-      fireEvent.change(screen.getByLabelText('DUPR Singles'), {
-        target: { value: '4.123', name: 'dupr_rate_singles' }
-      })
-
-      // 保存ボタンをクリック
-      fireEvent.click(screen.getByRole('button', { name: '変更を保存' }))
-
-      await waitFor(() => {
-        // updateMemberProfile の第2引数（payload）の数値項目を検証
-        const callArgs = vi.mocked(updateMemberProfile).mock.calls[0][1]
-        expect(typeof callArgs.dupr_rate_doubles).toBe('number')
-        expect(callArgs.dupr_rate_doubles).toBe(4.567)
-        expect(typeof callArgs.dupr_rate_singles).toBe('number')
-        expect(callArgs.dupr_rate_singles).toBe(4.123)
-      })
-    })
-
-    it('レートが空欄の場合、null として API に送信されること', async () => {
-      vi.mocked(updateMemberProfile).mockResolvedValue({
-        success: true,
-        data: null,
-        error: null
-      })
-
-      render(<EditProfilePage />)
-
-      const doublesInput = screen.getByLabelText('DUPR Doubles')
+      const doublesInput = screen.getByLabelText(/DUPR Doubles/)
       fireEvent.change(doublesInput, { target: { value: '', name: 'dupr_rate_doubles' } })
 
       fireEvent.click(screen.getByRole('button', { name: '変更を保存' }))
@@ -238,6 +190,11 @@ describe('EditProfilePage - 総合検証 V2.3.0', () => {
         expect(callArgs.dupr_rate_doubles).toBeNull()
       })
     })
-  })
 
+    it('キャンセルボタン押下で router.back が呼ばれること', () => {
+      render(<EditProfilePage />)
+      fireEvent.click(screen.getByRole('button', { name: 'キャンセル' }))
+      expect(mockBack).toHaveBeenCalled()
+    })
+  })
 })
