@@ -1,12 +1,12 @@
 /**
  * Filename: src/app/members/profile/page.tsx
- * Version : V2.7.2
+ * Version : V2.7.3
  * Update  : 2026-01-31
  * Remarks : 
- * V2.7.2 - 修正：テストV2.8.0に合わせ、ボタンのaria-labelやテキスト整合性を確保。
- * V2.7.2 - 復元：プロフィールメモ、緊急連絡メモの表示を追加（デグレ解消）。
- * V2.7.2 - 追加：最下部にログアウト（/members/loginへの遷移）リンクを追加。
- * V2.7.2 - 整理：スタイル定義を判定ごとに改行し視認性を向上。
+ * V2.7.3 - 変更：会員管理パネルの文字色を水色 (#00d1ff) に変更。
+ * V2.7.3 - 変更：休会/退会ボタンの背景を編集ボタンと同じ色 (#111) に統合。
+ * V2.7.3 - 追加：生年月日とステータスの間に「会員種別」を表示。
+ * V2.7.3 - 調整：緊急連絡先電話、続柄、緊急連絡メモの順序を整理。
  */
 
 'use client'
@@ -149,6 +149,7 @@ export default function ProfilePage() {
               { label: '氏名（ローマ字）', value: user.name_roma || '-' },
               { label: '性別', value: user.gender || '-' },
               { label: '生年月日', value: user.birthday || '-' },
+              { label: '会員種別', value: user.member_kind || '一般' },
               { 
                 label: 'ステータス', 
                 value: user.status === 'active' ? '有効' : 
@@ -162,7 +163,7 @@ export default function ProfilePage() {
             ].map((item, idx) => (
               <div 
                 key={idx} 
-                style={idx === 7 ? styles.infoRowLast : styles.infoRow}
+                style={idx === 8 ? styles.infoRowLast : styles.infoRow}
               >
                 <span style={styles.label}>{item.label}</span>
                 <span style={{ 
@@ -206,12 +207,12 @@ export default function ProfilePage() {
               <span style={styles.value}>{user.emg_tel || '-'}</span>
             </div>
             <div style={styles.infoRow}>
-              <span style={styles.label}>緊急連絡メモ</span>
-              <span style={styles.value}>{user.emergency_memo || '-'}</span>
-            </div>
-            <div style={styles.infoRowLast}>
               <span style={styles.label}>続柄</span>
               <span style={styles.value}>{user.emg_rel || '-'}</span>
+            </div>
+            <div style={styles.infoRowLast}>
+              <span style={styles.label}>緊急連絡メモ</span>
+              <span style={styles.value}>{user.emergency_memo || '-'}</span>
             </div>
           </div>
         </section>
@@ -316,7 +317,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   adminButton: {
     backgroundColor: '#111',
-    color: '#fff',
+    color: '#00d1ff',
     padding: '6px 12px',
     borderRadius: '6px',
     textDecoration: 'none',
@@ -376,7 +377,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '10px',
   },
   suspendButton: {
-    backgroundColor: 'transparent',
+    backgroundColor: '#111',
     color: '#ffa940',
     border: '1px solid #333',
     padding: '6px 12px',
@@ -385,7 +386,7 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
   },
   withdrawButton: {
-    backgroundColor: 'transparent',
+    backgroundColor: '#111',
     color: '#ff4d4f',
     border: '1px solid #333',
     padding: '6px 12px',
