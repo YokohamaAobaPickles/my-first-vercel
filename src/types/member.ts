@@ -41,6 +41,7 @@ export const MEMBER_KIND_LABELS: Record<string, string> = {
   general: '一般',
   premium: 'プレミアム',
   family: 'ファミリー',
+  officer: '管理者'
 };
 
 /**
@@ -56,9 +57,21 @@ export const ROLES = {
   ACCOUNTANT: 'accountant',
   AUDITOR: 'auditor',
   ASSET_MANAGER: 'asset_manager',
-  ROLE_MANAGER: 'role_manager',
   MEMBER: 'member',
 } as const;
+
+export const ROLES_LABELS: Record<string, string> = {
+  [ROLES.SYSTEM_ADMIN]: 'システム管理者',
+  [ROLES.PRESIDENT]: '会長',
+  [ROLES.VICE_PRESIDENT]: '副会長',
+  [ROLES.MEMBER_MANAGER]: '会員担当',
+  [ROLES.ANNOUNCEMENT_MANAGER]: 'お知らせ担当',
+  [ROLES.EVENT_MANAGER]: 'イベント担当',
+  [ROLES.ACCOUNTANT]: '会計担当',
+  [ROLES.AUDITOR]: '監査担当',
+  [ROLES.ASSET_MANAGER]: '資産担当',
+  [ROLES.MEMBER]: '', // 役職無し
+};
 
 /**
  * 会員情報のインターフェース

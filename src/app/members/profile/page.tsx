@@ -22,7 +22,8 @@ import {
 import {
   MemberStatus,
   MEMBER_STATUS_LABELS,
-  MEMBER_KIND_LABELS
+  MEMBER_KIND_LABELS,
+  ROLES_LABELS
 } from '@/types/member'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -157,6 +158,10 @@ export default function ProfilePage() {
                 label: '会員種別', value: MEMBER_KIND_LABELS[user.member_kind] ||
                   user.member_kind ||
                   '一般'
+              },
+              { 
+                label: '役職', 
+                value: ROLES_LABELS[user.roles] || user.roles || '-' 
               },
               {
                 label: 'ステータス',
