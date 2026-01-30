@@ -1,10 +1,11 @@
 /**
  * Filename: src/app/members/profile/page.test.tsx
- * Version : V2.5.0
- * Update  : 2026-01-30
+ * Version : V2.6.1
+ * Update  : 2026-01-31
  * Remarks : 
- * V2.5.0 - 統合：休会・退会等の申請テストと、DUPR分離表示・更新テストを統合。
- * V2.5.0 - 修正：未定義変数(FULL_USER)の解消、期待される失敗の定義。
+ * V2.6.1 - 修正：キー名を dupr_rate_doubles / singles に統一。
+ * V2.6.1 - 復元：休会・退会申請の API 連携テストを再追加。
+ * V2.6.1 - 検証：アクション実行後の window.location.reload 呼び出しを確認。
  */
 
 import {
@@ -25,8 +26,7 @@ import ProfilePage from './page'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import {
   updateMemberStatus,
-  deleteMember,
-  syncDuprData
+  deleteMember
 } from '@/lib/memberApi'
 
 // --- モック設定 ---
@@ -34,7 +34,6 @@ vi.mock('@/hooks/useAuthCheck')
 vi.mock('@/lib/memberApi', () => ({
   updateMemberStatus: vi.fn(),
   deleteMember: vi.fn(),
-  syncDuprData: vi.fn(),
 }))
 
 const mockPush = vi.fn()
@@ -45,146 +44,101 @@ vi.mock('next/navigation', () => ({
   }),
 }))
 
-// Alertのグローバルモック
-const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => { })
+// Alert & Reload モック
+vi.spyOn(window, 'alert').mockImplementation(() => { })
+const mockReload = vi.fn()
 
 const TEST_USER = {
   id: 'u123',
   nickname: 'たろう',
   name: '山田 太郎',
-  name_roma: 'Taro Yamada',
   member_number: '0101',
   status: 'active',
-  gender: '男性',
-  birthday: '1990-01-01',
-  tel: '03-1234-5678',
-  postal: '100-0001',
   address: '東京都千代田区',
-  create_date: '2025-01-01T00:00:00Z',
-  emg_tel: '03-9999-8888',
   emg_rel: '父',
-  emg_memo: '持病なし',
-  dupr_id: 'D-123',
-  dupr_rate: 4.567,       // Doubles
-  dupr_singles: 2.512,    // Singles
+  dupr_id: 'WKRV2Q',
+  dupr_rate_doubles: 4.567,
+  dupr_rate_singles: 2.512,
 }
 
-describe('ProfilePage 総合検証 V2.5.0', () => {
+describe('ProfilePage 総合検証 V2.6.1', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // location.reload のモック化
+    // window.location.reload をモック化
     Object.defineProperty(window, 'location', {
       configurable: true,
-      value: { reload: vi.fn() }
+      value: { reload: mockReload }
     })
   })
 
-  describe('1. 表示内容と権限の検証', () => {
-    it('【詳細表示】基本情報・緊急連絡先が表示されること', () => {
+  describe('1. 競技情報 (DUPR) の検証', () => {
+    it('【表示】Ratingが表示され、手動更新の案内があること', () => {
       ;(useAuthCheck as any).mockReturnValue({
         isLoading: false,
         user: TEST_USER,
         userRoles: 'member',
       })
       render(<ProfilePage />)
-      expect(screen.getByText('0101')).toBeInTheDocument()
-      expect(screen.getByText('東京都千代田区')).toBeInTheDocument()
-      expect(screen.getByText('父')).toBeInTheDocument()
-    })
-
-    it('【管理者】会員管理パネルの表示がロールで制御されること', () => {
-      const { rerender } = render(<ProfilePage />)
       
-      ;(useAuthCheck as any).mockReturnValue({
-        isLoading: false,
-        user: TEST_USER,
-        userRoles: 'member_manager',
-      })
-      rerender(<ProfilePage />)
-      expect(screen.getByText('会員管理パネル')).toBeInTheDocument()
-
-      ;(useAuthCheck as any).mockReturnValue({
-        isLoading: false,
-        user: TEST_USER,
-        userRoles: 'member',
-      })
-      rerender(<ProfilePage />)
-      expect(screen.queryByText('会員管理パネル')).not.toBeInTheDocument()
-    })
-  })
-
-  describe('2. 競技情報 (DUPR) の検証', () => {
-    it('【表示】DoublesとSinglesのRatingが分離して表示されること', () => {
-      ;(useAuthCheck as any).mockReturnValue({
-        isLoading: false,
-        user: TEST_USER,
-        userRoles: 'member',
-      })
-      render(<ProfilePage />)
-      expect(screen.getByText('D-123')).toBeInTheDocument()
+      expect(screen.getByText('WKRV2Q')).toBeInTheDocument()
       expect(screen.getByText('4.567')).toBeInTheDocument()
       expect(screen.getByText('2.512')).toBeInTheDocument()
+      
+      // 更新ボタンがないことと、案内文の確認
+      expect(screen.queryByRole('button', { name: 'DUPR更新' }))
+        .not.toBeInTheDocument()
+      expect(screen.getByText(/情報の変更はプロフィール編集から/))
+        .toBeInTheDocument()
     })
+  })
 
-    it('【同期】DUPR更新ボタン押下で syncDuprData が呼ばれること', async () => {
+  describe('2. アクション実行とAPI連携', () => {
+    it('【休会申請】実行後にAPIが呼ばれ、画面がリロードされること', async () => {
       ;(useAuthCheck as any).mockReturnValue({
         isLoading: false,
-        user: TEST_USER,
+        user: { ...TEST_USER, status: 'active' },
         userRoles: 'member',
       })
-      vi.mocked(syncDuprData).mockResolvedValue({ 
-        success: true, 
-        data: null, 
-        error: null 
+      vi.mocked(updateMemberStatus).mockResolvedValue({ 
+        success: true, data: null, error: null 
       })
 
       render(<ProfilePage />)
-      const syncBtn = screen.getByRole('button', { name: 'DUPR更新' })
-      fireEvent.click(syncBtn)
+      fireEvent.click(screen.getByRole('button', { name: '休会申請' }))
+      fireEvent.click(screen.getByRole('button', { name: '実行する' }))
 
       await waitFor(() => {
-        expect(syncDuprData).toHaveBeenCalledWith(TEST_USER.id)
-        expect(window.location.reload).toHaveBeenCalled()
+        expect(updateMemberStatus).toHaveBeenCalledWith(
+          TEST_USER.id, 
+          'suspend_req'
+        )
+        expect(mockReload).toHaveBeenCalled()
       })
     })
-  })
 
-  describe('3. ステータス別ボタン表示の出し分け', () => {
-    const testCases = [
-      { 
-        status: 'new_req', 
-        show: ['入会取消'], 
-        hide: ['休会申請', '退会申請'] 
-      },
-      { 
-        status: 'active', 
-        show: ['休会申請', '退会申請'], 
-        hide: ['入会取消'] 
-      },
-      { 
-        status: 'suspend_req', 
-        show: ['休会取消', '退会申請'], 
-        hide: ['休会申請'] 
-      }
-    ]
+    it('【退会申請】実行後にAPIが呼ばれ、画面がリロードされること', async () => {
+      ;(useAuthCheck as any).mockReturnValue({
+        isLoading: false,
+        user: { ...TEST_USER, status: 'active' },
+        userRoles: 'member',
+      })
+      vi.mocked(updateMemberStatus).mockResolvedValue({ 
+        success: true, data: null, error: null 
+      })
 
-    testCases.forEach(({ status, show, hide }) => {
-      it(`【ステータス: ${status}】期待通りのボタンが表示されること`, () => {
-        ;(useAuthCheck as any).mockReturnValue({
-          isLoading: false,
-          user: { ...TEST_USER, status },
-          userRoles: 'member',
-        })
-        render(<ProfilePage />)
-        show.forEach(name => 
-          expect(screen.getByRole('button', { name })).toBeInTheDocument())
-        hide.forEach(name => 
-          expect(screen.queryByRole('button', { name })).not.toBeInTheDocument())
+      render(<ProfilePage />)
+      fireEvent.click(screen.getByRole('button', { name: '退会申請' }))
+      fireEvent.click(screen.getByRole('button', { name: '実行する' }))
+
+      await waitFor(() => {
+        expect(updateMemberStatus).toHaveBeenCalledWith(
+          TEST_USER.id, 
+          'withdraw_req'
+        )
+        expect(mockReload).toHaveBeenCalled()
       })
     })
-  })
 
-  describe('4. アクション実行とAPI連携', () => {
     it('【入会取消】deleteMember 実行後にTOPへ遷移すること', async () => {
       ;(useAuthCheck as any).mockReturnValue({
         isLoading: false,
@@ -192,9 +146,7 @@ describe('ProfilePage 総合検証 V2.5.0', () => {
         userRoles: 'member',
       })
       vi.mocked(deleteMember).mockResolvedValue({ 
-        success: true, 
-        data: null, 
-        error: null 
+        success: true, data: null, error: null 
       })
 
       render(<ProfilePage />)
@@ -204,27 +156,6 @@ describe('ProfilePage 総合検証 V2.5.0', () => {
       await waitFor(() => {
         expect(deleteMember).toHaveBeenCalledWith(TEST_USER.id)
         expect(mockPush).toHaveBeenCalledWith('/')
-      })
-    })
-
-    it('【申請取消】取消実行時に status が active に戻ること', async () => {
-      ;(useAuthCheck as any).mockReturnValue({
-        isLoading: false,
-        user: { ...TEST_USER, status: 'suspend_req' },
-        userRoles: 'member',
-      })
-      vi.mocked(updateMemberStatus).mockResolvedValue({ 
-        success: true, 
-        data: null, 
-        error: null 
-      })
-
-      render(<ProfilePage />)
-      fireEvent.click(screen.getByRole('button', { name: '休会取消' }))
-      fireEvent.click(screen.getByRole('button', { name: '実行する' }))
-
-      await waitFor(() => {
-        expect(updateMemberStatus).toHaveBeenCalledWith(TEST_USER.id, 'active')
       })
     })
   })

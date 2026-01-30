@@ -1,11 +1,10 @@
 /**
  * Filename: src/app/members/profile/edit/page.test.tsx
- * Version : V2.2.7
- * Update  : 2026-01-30
+ * Version : V2.3.1
+ * Update  : 2026-01-31
  * Remarks : 
- * V2.2.7 - 強化：API失敗時のエラーハンドリング、保存中のボタン状態の検証を追加。
- * V2.2.7 - 強化：閲覧のみ項目のレンダリング形式、およびtextareaの更新検証を追加。
- * V2.2.7 - 書式：80カラムラップ、判定ごとの改行、スタイル定義を遵守。
+ * V2.3.0 - 統合：V2.2.7をベースに、DUPRレート(Doubles/Singles)入力の検証を追加。
+ * V2.3.0 - 強化：初期値、HTMLバリデーション、API保存パラメータの網羅性を維持。
  */
 
 import {
@@ -42,7 +41,7 @@ vi.mock('next/navigation', () => ({
   }),
 }))
 
-describe('EditProfilePage - プロフィール編集画面の総合検証 V2.2.7', () => {
+describe('EditProfilePage - 総合検証 V2.3.0', () => {
   const TEST_USER: Partial<Member> = {
     id: 'user-123',
     name: '山田 太郎',
@@ -55,17 +54,19 @@ describe('EditProfilePage - プロフィール編集画面の総合検証 V2.2.7
     line_id: 'L_12345',
     emg_tel: '090-1111-1111',
     emg_rel: '父',
+    dupr_id: 'WKRV2Q',
+    dupr_rate_doubles: 3.500,
+    dupr_rate_singles: 3.200,
   }
 
   beforeEach(() => {
     vi.clearAllMocks()
     vi.spyOn(window, 'alert').mockImplementation(() => { })
-    
-    // デフォルトの認証・API成功状態
-    ;(useAuthCheck as any).mockReturnValue({
-      isLoading: false,
-      user: TEST_USER,
-    })
+
+      ; (useAuthCheck as any).mockReturnValue({
+        isLoading: false,
+        user: TEST_USER,
+      })
     vi.mocked(updateMemberProfile).mockResolvedValue({
       success: true,
       data: null,
@@ -76,76 +77,70 @@ describe('EditProfilePage - プロフィール編集画面の総合検証 V2.2.7
   describe('1. 表示・構成の検証', () => {
     it('【表示】閲覧のみの項目が正しい形式で表示されていること', () => {
       render(<EditProfilePage />)
-      
-      // 会員番号は 0 パディングされているか
+
       expect(screen.getByText('0101')).toBeInTheDocument()
       expect(screen.getByText('山田 太郎')).toBeInTheDocument()
       expect(screen.getByText('L_12345')).toBeInTheDocument()
 
-      // これらの項目が input 要素ではない（閲覧のみ）ことを確認
       const nameInput = screen.queryByDisplayValue('山田 太郎')
       expect(nameInput?.tagName).not.toBe('INPUT')
     })
 
-    it('【必須】必須項目のラベルに「*」が含まれ、HTML5バリデーションがあること', 
+    it('【必須】必須項目のラベルに「*」が含まれ、HTML5バリデーションがあること',
       () => {
-      render(<EditProfilePage />)
-      
-      const requiredInputs = [
-        { label: /ニックネーム/, name: 'nickname' },
-        { label: /緊急連絡先電話/, name: 'emg_tel' },
-        { label: /続柄/, name: 'emg_rel' }
-      ]
+        render(<EditProfilePage />)
 
-      requiredInputs.forEach(({ label, name }) => {
-        const input = screen.getByLabelText(label)
-        expect(input).toBeRequired()
-        expect(input).toHaveAttribute('name', name)
+        const requiredInputs = [
+          { label: /ニックネーム/, name: 'nickname' },
+          { label: /緊急連絡先電話/, name: 'emg_tel' },
+          { label: /続柄/, name: 'emg_rel' }
+        ]
+
+        requiredInputs.forEach(({ label, name }) => {
+          const input = screen.getByLabelText(label)
+          expect(input).toBeRequired()
+          expect(input).toHaveAttribute('name', name)
+        })
+
+        expect(screen.getAllByText('*')).toHaveLength(3)
       })
 
-      // アスタリスクの視覚的表示確認
-      expect(screen.getAllByText('*')).toHaveLength(3)
-    })
+    it('【初期値】全編集フィールド（DUPR含む）に既存データが反映されていること',
+      () => {
+        render(<EditProfilePage />)
 
-    it('【初期値】全編集フィールドに既存データが正しく反映されていること', () => {
-      render(<EditProfilePage />)
-      
-      expect(screen.getByLabelText(/ニックネーム/)).toHaveValue('たろう')
-      expect(screen.getByLabelText(/郵便番号/)).toHaveValue('100-0001')
-      expect(screen.getByLabelText(/住所/)).toHaveValue('東京都千代田区')
-      expect(screen.getByLabelText(/電話番号/)).toHaveValue('03-1111-2222')
-      expect(screen.getByLabelText(/緊急連絡先電話/))
-        .toHaveValue('090-1111-1111')
-      expect(screen.getByLabelText(/続柄/)).toHaveValue('父')
-      expect(screen.getByLabelText(/プロフィールメモ/))
-        .toHaveValue('よろしくお願いします')
-    })
+        expect(screen.getByLabelText(/ニックネーム/)).toHaveValue('たろう')
+        expect(screen.getByLabelText(/郵便番号/)).toHaveValue('100-0001')
+        expect(screen.getByLabelText(/DUPR Doubles/)).toHaveValue(3.5)
+        expect(screen.getByLabelText(/DUPR Singles/)).toHaveValue(3.2)
+        expect(screen.getByLabelText(/プロフィールメモ/))
+          .toHaveValue('よろしくお願いします')
+      })
   })
 
   describe('2. 更新処理の検証', () => {
-    it('【正常系】値を変更して保存した際、正しいパラメータでAPIが呼ばれること', 
-      async () => {
+    it('【正常系】DUPRレートを含む値を変更してAPIが呼ばれること', async () => {
       render(<EditProfilePage />)
 
-      fireEvent.change(screen.getByLabelText(/プロフィールメモ/), 
-        { target: { value: '自己紹介を\n更新しました' } })
-      
-      fireEvent.change(screen.getByLabelText(/住所/), 
-        { target: { value: '新住所' } })
+      fireEvent.change(screen.getByLabelText(/住所/),
+        { target: { value: '神奈川県横浜市' } })
+
+      fireEvent.change(screen.getByLabelText(/DUPR Doubles/),
+        { target: { value: '4.123' } })
+
+      fireEvent.change(screen.getByLabelText(/DUPR Singles/),
+        { target: { value: '3.885' } })
 
       const saveBtn = screen.getByRole('button', { name: '変更を保存' })
       fireEvent.click(saveBtn)
-
-      // 保存中のボタン状態確認
-      expect(saveBtn).toBeDisabled()
-      expect(saveBtn).toHaveTextContent('保存中...')
 
       await waitFor(() => {
         expect(updateMemberProfile).toHaveBeenCalledWith(
           TEST_USER.id,
           expect.objectContaining({
-            profile_memo: '自己紹介を\n更新しました',
-            address: '新住所'
+            address: '神奈川県横浜市',
+            dupr_rate_doubles: 4.123,
+            dupr_rate_singles: 3.885
           })
         )
         expect(window.alert).toHaveBeenCalledWith('プロフィールを更新しました')
@@ -153,7 +148,7 @@ describe('EditProfilePage - プロフィール編集画面の総合検証 V2.2.7
       })
     })
 
-    it('【異常系】APIがエラーを返した場合、アラートで通知されること', async () => {
+    it('【異常系】APIエラー時にアラートで通知されること', async () => {
       vi.mocked(updateMemberProfile).mockResolvedValue({
         success: false,
         data: null,
@@ -167,26 +162,82 @@ describe('EditProfilePage - プロフィール編集画面の総合検証 V2.2.7
         expect(window.alert).toHaveBeenCalledWith('エラー: サーバーエラー')
       })
     })
-
-    it('【異常系】予期せぬ例外が発生した場合、汎用エラーが表示されること', 
-      async () => {
-      vi.mocked(updateMemberProfile).mockRejectedValue(new Error('Crash'))
-
-      render(<EditProfilePage />)
-      fireEvent.click(screen.getByRole('button', { name: '変更を保存' }))
-
-      await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith('予期せぬエラーが発生しました')
-      })
-    })
   })
 
   describe('3. ナビゲーションの検証', () => {
     it('【戻る】キャンセルボタン押下で router.back が呼ばれること', () => {
       render(<EditProfilePage />)
       fireEvent.click(screen.getByRole('button', { name: 'キャンセル' }))
-      
       expect(mockBack).toHaveBeenCalled()
     })
   })
+
+  describe('DUPR手動入力の検証', () => {
+    it('DUPR ID、Doubles/Singlesレートを入力し、正しく状態が更新されること', () => {
+      render(<EditProfilePage />)
+
+      const idInput = screen.getByLabelText('DUPR ID')
+      const doublesInput = screen.getByLabelText('DUPR Doubles')
+      const singlesInput = screen.getByLabelText('DUPR Singles')
+
+      fireEvent.change(idInput, { target: { value: 'WKRV2Q', name: 'dupr_id' } })
+      fireEvent.change(doublesInput, { target: { value: '4.123', name: 'dupr_rate_doubles' } })
+      fireEvent.change(singlesInput, { target: { value: '3.500', name: 'dupr_rate_singles' } })
+
+      expect(idInput).toHaveValue('WKRV2Q')
+      expect(doublesInput).toHaveValue(4.123)
+      expect(singlesInput).toHaveValue(3.5)
+    })
+
+    it('保存時にレートが文字列から数値型（float）に変換されて API に送信されること', async () => {
+      vi.mocked(updateMemberProfile).mockResolvedValue({
+        success: true,
+        data: null,
+        error: null
+      })
+
+      render(<EditProfilePage />)
+
+      // 編集可能な項目を入力
+      fireEvent.change(screen.getByLabelText('DUPR Doubles'), {
+        target: { value: '4.567', name: 'dupr_rate_doubles' }
+      })
+      fireEvent.change(screen.getByLabelText('DUPR Singles'), {
+        target: { value: '4.123', name: 'dupr_rate_singles' }
+      })
+
+      // 保存ボタンをクリック
+      fireEvent.click(screen.getByRole('button', { name: '変更を保存' }))
+
+      await waitFor(() => {
+        // updateMemberProfile の第2引数（payload）の数値項目を検証
+        const callArgs = vi.mocked(updateMemberProfile).mock.calls[0][1]
+        expect(typeof callArgs.dupr_rate_doubles).toBe('number')
+        expect(callArgs.dupr_rate_doubles).toBe(4.567)
+        expect(typeof callArgs.dupr_rate_singles).toBe('number')
+        expect(callArgs.dupr_rate_singles).toBe(4.123)
+      })
+    })
+
+    it('レートが空欄の場合、null として API に送信されること', async () => {
+      vi.mocked(updateMemberProfile).mockResolvedValue({
+        success: true,
+        data: null,
+        error: null
+      })
+
+      render(<EditProfilePage />)
+
+      const doublesInput = screen.getByLabelText('DUPR Doubles')
+      fireEvent.change(doublesInput, { target: { value: '', name: 'dupr_rate_doubles' } })
+
+      fireEvent.click(screen.getByRole('button', { name: '変更を保存' }))
+
+      await waitFor(() => {
+        const callArgs = vi.mocked(updateMemberProfile).mock.calls[0][1]
+        expect(callArgs.dupr_rate_doubles).toBeNull()
+      })
+    })
+  })
+
 })

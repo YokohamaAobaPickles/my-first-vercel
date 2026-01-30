@@ -1,10 +1,11 @@
 /**
  * Filename: src/app/members/profile/page.tsx
- * Version : V2.5.2
+ * Version : V2.6.0
  * Update  : 2026-01-31
  * Remarks : 
- * V2.5.2 - 修正：正常版(V2.3.1)をベースにDUPR分離表示と更新機能を再統合。
- * V2.3.1 - 整形：1行80カラム制限、判定文・スタイル定義の改行ルールを適用。
+ * V2.6.0 - 変更：自動更新 (syncDuprData) を廃止し、手動入力値の表示に対応。
+ * V2.6.0 - 修正：表示プロパティ名を dupr_rate_doubles / singles に統一。
+ * V2.6.0 - 整形：1行80カラム制限、判定文・スタイル定義の改行ルールを適用。
  */
 
 'use client'
@@ -15,8 +16,7 @@ import { canManageMembers } from '@/utils/auth'
 import { calculateEnrollmentDays } from '@/utils/memberHelpers'
 import { 
   updateMemberStatus, 
-  deleteMember, 
-  syncDuprData 
+  deleteMember 
 } from '@/lib/memberApi'
 import { MemberStatus } from '@/types/member'
 import Link from 'next/link'
@@ -36,277 +36,159 @@ export default function ProfilePage() {
   })
 
   if (isLoading) {
-    return (
-      <div style={styles.container}>
-        読み込み中...
-      </div>
-    )
+    return <div style={styles.container}>読み込み中...</div>
   }
+
   if (!user) {
-    return null
+    return <div style={styles.container}>ユーザー情報が見つかりません。</div>
+  }
+
+  const handleAction = async () => {
+    if (!modalConfig.type) return
+    setIsSubmitting(true)
+
+    try {
+      let res
+      if (modalConfig.type === 'cancel_join') {
+        res = await deleteMember(user.id)
+      } else {
+        const nextStatus: MemberStatus = 
+          modalConfig.type === 'suspend' ? 'suspend_req' :
+          modalConfig.type === 'withdraw' ? 'withdraw_req' : 'active'
+        res = await updateMemberStatus(user.id, nextStatus)
+      }
+
+      if (res.success) {
+        if (modalConfig.type === 'cancel_join') {
+          router.push('/')
+        } else {
+          window.location.reload()
+        }
+      } else {
+        alert(res.error?.message || 'エラーが発生しました')
+      }
+    } finally {
+      setIsSubmitting(false)
+      setModalConfig({ isOpen: false, type: null })
+    }
   }
 
   const enrollmentDays = calculateEnrollmentDays(user.create_date)
 
-  // --- ハンドラー ---
-
-  const handleSyncDupr = async () => {
-    if (isSubmitting) return
-    setIsSubmitting(true)
-    
-    try {
-      const res = await syncDuprData(user.id)
-      if (res.success) {
-        alert('DUPRデータを更新しました')
-        window.location.reload()
-      } else {
-        alert(`エラー: ${res.error}`)
-      }
-    } catch (err) {
-      alert('通信エラーが発生しました')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handleRequest = async () => {
-    if (!user.id || !modalConfig.type) {
-      return
-    }
-
-    setIsSubmitting(true)
-    try {
-      let res;
-      if (modalConfig.type === 'cancel_join') {
-        res = await deleteMember(user.id)
-        if (res.success) {
-          alert('入会申請を取り消しました。')
-          router.push('/')
-          return
-        }
-      } else {
-        let newStatus: MemberStatus = 'active'
-        if (modalConfig.type === 'suspend') {
-          newStatus = 'suspend_req'
-        }
-        if (modalConfig.type === 'withdraw') {
-          newStatus = 'withdraw_req'
-        }
-
-        res = await updateMemberStatus(user.id, newStatus)
-      }
-
-      if (res && res.success) {
-        alert('処理が完了しました。')
-        setModalConfig({ 
-          isOpen: false, 
-          type: null 
-        })
-        window.location.reload()
-      } else {
-        alert(`エラー: ${res?.error?.message}`)
-      }
-    } catch (err) {
-      alert('予期せぬエラーが発生しました')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  // --- 表示補助 ---
-
-  const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      new_req: '入会承認待ち',
-      active: '有効',
-      suspend_req: '休会申請中',
-      suspended: '休会中',
-      rejoin_req: '復帰申請中',
-      withdraw_req: '退会申請中',
-      withdrawn: '退会済み'
-    }
-    return labels[status] || status
-  }
-
-  const formattedMemberNumber = user.member_number
-    ? String(user.member_number).padStart(4, '0')
-    : '-'
-
-  const renderActionButtons = () => {
-    if (user.status === 'new_req') {
-      return (
-        <button
-          style={{ 
-            ...styles.actionButton, 
-            color: '#ff4d4f' 
-          }}
-          onClick={() => setModalConfig({
-            isOpen: true,
-            type: 'cancel_join'
-          })}
-        >
-          入会取消
-        </button>
-      )
-    }
-
-    if (user.status === 'suspend_req') {
-      return (
-        <>
-          <button
-            style={{ 
-              ...styles.actionButton, 
-              color: '#aaa' 
-            }}
-            onClick={() => setModalConfig({
-              isOpen: true,
-              type: 'cancel_request'
-            })}
-          >
-            休会取消
-          </button>
-          <button
-            style={{ 
-              ...styles.actionButton, 
-              color: '#ff4d4f' 
-            }}
-            onClick={() => setModalConfig({
-              isOpen: true,
-              type: 'withdraw'
-            })}
-          >
-            退会申請
-          </button>
-        </>
-      )
-    }
-
-    if (user.status === 'withdraw_req') {
-      return (
-        <button
-          style={{ 
-            ...styles.actionButton, 
-            color: '#aaa' 
-          }}
-          onClick={() => setModalConfig({
-            isOpen: true,
-            type: 'cancel_request'
-          })}
-        >
-          退会取消
-        </button>
-      )
-    }
-
-    if (user.status === 'active') {
-      return (
-        <>
-          <button
-            style={{ 
-              ...styles.actionButton, 
-              color: '#ffa940' 
-            }}
-            onClick={() => setModalConfig({
-              isOpen: true,
-              type: 'suspend'
-            })}
-          >
-            休会申請
-          </button>
-          <button
-            style={{ 
-              ...styles.actionButton, 
-              color: '#ff4d4f' 
-            }}
-            onClick={() => setModalConfig({
-              isOpen: true,
-              type: 'withdraw'
-            })}
-          >
-            退会申請
-          </button>
-        </>
-      )
-    }
-    return null
-  }
-
   return (
     <div style={styles.container}>
-      <div style={styles.wrapper}>
-
-        <div style={styles.headerArea}>
+      <div style={styles.content}>
+        <div style={styles.header}>
           <h1 style={styles.title}>マイプロフィール</h1>
-          {canManageMembers(userRoles) && (
-            <Link 
-              href="/members/admin" 
-              style={styles.adminButton}
-            >
-              会員管理パネル
-            </Link>
-          )}
+          <Link href="/members/profile/edit" style={styles.editButton}>
+            編集
+          </Link>
         </div>
 
-        {/* 基本情報セクション */}
+        {/* 会員管理パネル (管理者用) */}
+        {canManageMembers(userRoles) && (
+          <section style={styles.section}>
+            <h2 style={styles.sectionTitle}>会員管理パネル</h2>
+            <div style={styles.card}>
+              <Link href="/admin/members" style={styles.adminLink}>
+                会員一覧・承認待ち確認へ
+              </Link>
+            </div>
+          </section>
+        )}
+
+        {/* 基本情報 */}
         <section style={styles.section}>
           <div style={styles.sectionHeader}>
             <h2 style={styles.sectionTitle}>基本情報</h2>
-            <div style={styles.buttonGroup}>
-              {renderActionButtons()}
+            <div style={styles.actionButtons}>
+              {user.status === 'new_req' && (
+                <button 
+                  onClick={() => setModalConfig({ 
+                    isOpen: true, 
+                    type: 'cancel_join' 
+                  })}
+                  style={styles.cancelButton}
+                >
+                  入会取消
+                </button>
+              )}
+              {user.status === 'active' && (
+                <>
+                  <button 
+                    onClick={() => setModalConfig({ 
+                      isOpen: true, 
+                      type: 'suspend' 
+                    })}
+                    style={styles.suspendButton}
+                  >
+                    休会申請
+                  </button>
+                  <button 
+                    onClick={() => setModalConfig({ 
+                      isOpen: true, 
+                      type: 'withdraw' 
+                    })}
+                    style={styles.withdrawButton}
+                  >
+                    退会申請
+                  </button>
+                </>
+              )}
+              {(user.status === 'suspend_req' || 
+                user.status === 'withdraw_req') && (
+                <button 
+                  onClick={() => setModalConfig({ 
+                    isOpen: true, 
+                    type: 'cancel_request' 
+                  })}
+                  style={styles.cancelButton}
+                >
+                  申請取消
+                </button>
+              )}
             </div>
           </div>
           <div style={styles.card}>
-            <InfoRow label="会員番号" value={formattedMemberNumber} />
-            <InfoRow label="ニックネーム" value={user.nickname} />
-            <InfoRow label="氏名" value={user.name} />
-            <InfoRow label="氏名（ローマ字）" value={user.name_roma} />
-            <InfoRow label="性別" value={user.gender} />
-            <InfoRow label="生年月日" value={user.birthday} />
-            <InfoRow
-              label="ステータス"
-              value={getStatusLabel(user.status)}
-              isStatus
-            />
-            <InfoRow
-              label="在籍日数"
-              value={
-                typeof enrollmentDays === 'number' 
-                  ? `${enrollmentDays} 日目` 
-                  : enrollmentDays
-              }
-            />
-          </div>
-        </section>
-
-        {/* プロフィールセクション */}
-        <section style={styles.section}>
-          <div style={styles.sectionHeader}>
-            <h2 style={styles.sectionTitle}>プロフィール</h2>
-            <button
-              onClick={() => router.push('/members/profile/edit')}
-              style={styles.actionButton}
-              aria-label="編集"
-            >
-              編集
-            </button>
-          </div>
-          <div style={styles.card}>
-            <InfoRow label="郵便番号" value={user.postal} />
-            <InfoRow label="住所" value={user.address} />
-            <InfoRow label="電話番号" value={user.tel} />
-            <div style={styles.memoRow}>
-              <span style={styles.label}>プロフィールメモ</span>
-              <p style={styles.memoText}>{user.profile_memo || '未入力'}</p>
+            <div style={styles.infoRow}>
+              <span style={styles.label}>会員番号</span>
+              <span style={styles.value}>{user.member_number || '-'}</span>
             </div>
-            <hr style={styles.hr} />
-            <h3 style={styles.subTitle}>緊急連絡先</h3>
-            <InfoRow label="緊急連絡先" value={user.emg_tel} />
-            <InfoRow label="続柄" value={user.emg_rel} />
-            <div style={styles.memoRow}>
-              <span style={styles.label}>緊急連絡用メモ</span>
-              <p style={styles.emgMemoText}>
-                {user.emg_memo || '特記事項なし'}
-              </p>
+            <div style={styles.infoRow}>
+              <span style={styles.label}>ニックネーム</span>
+              <span style={styles.value}>{user.nickname}</span>
+            </div>
+            <div style={styles.infoRow}>
+              <span style={styles.label}>氏名</span>
+              <span style={styles.value}>{user.name}</span>
+            </div>
+            <div style={styles.infoRow}>
+              <span style={styles.label}>氏名（ローマ字）</span>
+              <span style={styles.value}>{user.name_roma || '-'}</span>
+            </div>
+            <div style={styles.infoRow}>
+              <span style={styles.label}>性別</span>
+              <span style={styles.value}>{user.gender || '-'}</span>
+            </div>
+            <div style={styles.infoRow}>
+              <span style={styles.label}>生年月日</span>
+              <span style={styles.value}>{user.birthday || '-'}</span>
+            </div>
+            <div style={styles.infoRow}>
+              <span style={styles.label}>ステータス</span>
+              <span style={{
+                ...styles.value,
+                color: user.status === 'active' ? '#52c41a' : '#faad14'
+              }}>
+                {user.status === 'active' ? '有効' : 
+                 user.status === 'new_req' ? '承認待ち' :
+                 user.status === 'suspend_req' ? '休会申請中' :
+                 user.status === 'withdraw_req' ? '退会申請中' : user.status}
+              </span>
+            </div>
+            <div style={styles.infoRow}>
+              <span style={styles.label}>在籍日数</span>
+              <span style={styles.value}>{enrollmentDays} 日</span>
             </div>
           </div>
         </section>
@@ -315,112 +197,109 @@ export default function ProfilePage() {
         <section style={styles.section}>
           <div style={styles.sectionHeader}>
             <h2 style={styles.sectionTitle}>競技情報 (DUPR)</h2>
-            <button
-              style={{ 
-                ...styles.actionButton, 
-                color: '#0070f3' 
-              }}
-              onClick={handleSyncDupr}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? '更新中...' : 'DUPR更新'}
-            </button>
           </div>
           <div style={styles.card}>
-            <InfoRow label="DUPR ID" value={user.dupr_id} />
-            <InfoRow 
-              label="Doubles Rating" 
-              value={user.dupr_rate} 
-              color="#1890ff" 
-            />
-            <InfoRow 
-              label="Singles Rating" 
-              value={user.dupr_singles} 
-              color="#722ed1" 
-            />
+            <div style={styles.infoRow}>
+              <span style={styles.label}>DUPR ID</span>
+              <span style={styles.value}>{user.dupr_id || '未登録'}</span>
+            </div>
+            <div style={styles.infoRow}>
+              <span style={styles.label}>DUPR Doubles</span>
+              <span style={styles.value}>
+                {user.dupr_rate_doubles?.toFixed(3) || '-'}
+              </span>
+            </div>
+            <div style={styles.infoRow}>
+              <span style={styles.label}>DUPR Singles</span>
+              <span style={styles.value}>
+                {user.dupr_rate_singles?.toFixed(3) || '-'}
+              </span>
+            </div>
+            <div style={{ ...styles.infoRow, borderBottom: 'none' }}>
+              <p style={styles.guideText}>
+                ※情報の変更はプロフィール編集から行えます。
+              </p>
+            </div>
           </div>
         </section>
 
-        <div style={styles.footer}>
-          <Link href="/" style={styles.backLink}>トップページへ戻る</Link>
-        </div>
+        {/* 連絡先情報 */}
+        <section style={styles.section}>
+          <h2 style={styles.sectionTitle}>連絡先・住所</h2>
+          <div style={styles.card}>
+            <div style={styles.infoRow}>
+              <span style={styles.label}>電話番号</span>
+              <span style={styles.value}>{user.tel || '-'}</span>
+            </div>
+            <div style={styles.infoRow}>
+              <span style={styles.label}>郵便番号</span>
+              <span style={styles.value}>{user.postal || '-'}</span>
+            </div>
+            <div style={{ ...styles.infoRow, borderBottom: 'none' }}>
+              <span style={styles.label}>住所</span>
+            </div>
+            <div style={styles.memoText}>{user.address || '-'}</div>
+          </div>
+        </section>
+
+        {/* 緊急連絡先 */}
+        <section style={styles.section}>
+          <h2 style={styles.sectionTitle}>緊急連絡先</h2>
+          <div style={styles.card}>
+            <div style={styles.infoRow}>
+              <span style={styles.label}>緊急連絡先電話</span>
+              <span style={styles.value}>{user.emg_tel}</span>
+            </div>
+            <div style={styles.infoRow}>
+              <span style={styles.label}>続柄</span>
+              <span style={styles.value}>{user.emg_rel}</span>
+            </div>
+            <div style={{ ...styles.infoRow, borderBottom: 'none' }}>
+              <span style={styles.label}>緊急用メモ</span>
+            </div>
+            <div style={styles.emgMemoText}>{user.emg_memo || '-'}</div>
+          </div>
+        </section>
       </div>
 
+      {/* 確認用モーダル */}
       {modalConfig.isOpen && (
-        <ConfirmModal
-          title={
-            modalConfig.type === 'suspend' 
-              ? '休会申請' :
-            modalConfig.type === 'withdraw' 
-              ? '退会申請' :
-            modalConfig.type === 'cancel_join' 
-              ? '入会申請の取消' : 
-            '申請の取消'
-          }
-          message={
-            modalConfig.type === 'suspend'
-              ? '休会申請を送信します。よろしいですか？'
-              : modalConfig.type === 'withdraw'
-              ? '退会申請を送信します。この操作は取り消せません。'
-              : modalConfig.type === 'cancel_join'
-              ? '入会申請を取り消し、登録データを削除します。よろしいですか？'
-              : '申請を取り消して有効な状態に戻します。よろしいですか？'
-          }
-          onConfirm={handleRequest}
-          onCancel={() => setModalConfig({ 
-            isOpen: false, 
-            type: null 
-          })}
-        />
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <h3 style={styles.modalTitle}>
+              {modalConfig.type === 'suspend' ? '休会申請' :
+               modalConfig.type === 'withdraw' ? '退会申請' :
+               modalConfig.type === 'cancel_join' ? '入会取消' : '申請取消'}
+            </h3>
+            <p style={styles.modalText}>
+              {modalConfig.type === 'cancel_join' 
+                ? '登録情報を完全に削除します。よろしいですか？'
+                : 'この操作を実行します。よろしいですか？'}
+            </p>
+            <div style={styles.modalButtons}>
+              <button 
+                onClick={() => setModalConfig({ isOpen: false, type: null })}
+                style={styles.cancelBtn}
+                disabled={isSubmitting}
+              >
+                キャンセル
+              </button>
+              <button 
+                onClick={handleAction}
+                style={styles.confirmBtn}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? '処理中...' : '実行する'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
 }
 
-const ConfirmModal = ({ title, message, onConfirm, onCancel }: any) => (
-  <div style={styles.modalOverlay}>
-    <div style={styles.modalContent}>
-      <h3 style={{ marginTop: 0 }}>{title}</h3>
-      <p style={{ 
-        color: '#ccc', 
-        fontSize: '0.95rem' 
-      }}>
-        {message}
-      </p>
-      <div style={styles.modalButtons}>
-        <button 
-          onClick={onCancel} 
-          style={styles.modalCancel}
-        >
-          キャンセル
-        </button>
-        <button 
-          onClick={onConfirm} 
-          style={styles.modalConfirm}
-        >
-          実行する
-        </button>
-      </div>
-    </div>
-  </div>
-)
-
-const InfoRow = ({ label, value, isStatus = false, color }: any) => (
-  <div style={styles.row}>
-    <span style={styles.label}>{label}</span>
-    <span style={{
-      ...styles.value,
-      color: 
-        color ? color :
-        isStatus && value === '有効' ? '#52c41a' : 
-        '#ffffff'
-    }}>
-      {value !== undefined && value !== null ? String(value) : '-'}
-    </span>
-  </div>
-)
-
-const styles: { [key: string]: React.CSSProperties } = {
+const styles: Record<string, React.CSSProperties> = {
   container: {
     display: 'flex',
     flexDirection: 'column',
@@ -430,107 +309,115 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: '#fff',
     minHeight: '100vh',
   },
-  wrapper: {
+  content: {
     width: '100%',
-    maxWidth: '500px'
+    maxWidth: '500px',
   },
-  headerArea: {
+  header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '30px'
-  },
-  adminButton: {
-    backgroundColor: 'transparent',
-    color: '#fff',
-    padding: '6px 12px',
-    borderRadius: '6px',
-    fontSize: '0.75rem',
-    textDecoration: 'none',
-    fontWeight: 'bold',
-    border: '1px solid #444'
+    marginBottom: '30px',
   },
   title: {
     fontSize: '1.5rem',
-    margin: 0
+    margin: 0,
+  },
+  editButton: {
+    backgroundColor: '#333',
+    color: '#fff',
+    padding: '8px 20px',
+    borderRadius: '8px',
+    textDecoration: 'none',
+    fontSize: '0.9rem',
+    border: '1px solid #444',
   },
   section: {
-    marginBottom: '32px'
+    marginBottom: '32px',
   },
   sectionHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '12px'
+    marginBottom: '12px',
   },
   sectionTitle: {
     fontSize: '1.1rem',
     color: '#888',
-    fontWeight: 'bold'
-  },
-  buttonGroup: {
-    display: 'flex',
-    gap: '10px'
-  },
-  actionButton: {
-    backgroundColor: 'transparent',
-    color: '#fff',
-    border: '1px solid #444',
-    padding: '6px 12px',
-    borderRadius: '6px',
-    fontSize: '0.75rem',
-    cursor: 'pointer'
+    fontWeight: 'bold',
   },
   card: {
     backgroundColor: '#111',
     borderRadius: '16px',
     padding: '20px',
-    border: '1px solid #333'
+    border: '1px solid #333',
   },
-  row: {
+  infoRow: {
     display: 'flex',
     justifyContent: 'space-between',
     padding: '12px 0',
-    borderBottom: '1px solid #222'
+    borderBottom: '1px solid #222',
   },
   label: {
     color: '#888',
-    fontSize: '0.9rem'
+    fontSize: '0.9rem',
   },
   value: {
-    fontWeight: 500
-  },
-  memoRow: {
-    paddingTop: '12px'
+    fontWeight: 500,
+    color: '#fff',
   },
   memoText: {
     fontSize: '0.95rem',
     marginTop: '8px',
-    lineHeight: '1.5'
+    lineHeight: '1.5',
+    color: '#ddd',
   },
   emgMemoText: {
     fontSize: '0.95rem',
     marginTop: '8px',
-    color: '#ffb3b3'
+    color: '#ffb3b3',
   },
-  hr: {
-    border: 'none',
-    borderTop: '1px solid #333',
-    margin: '20px 0'
+  guideText: {
+    fontSize: '0.8rem',
+    color: '#666',
+    margin: 0,
+    paddingTop: '4px',
   },
-  subTitle: {
-    fontSize: '0.9rem',
-    color: '#aaa',
-    marginBottom: '10px'
-  },
-  footer: {
-    marginTop: '40px',
-    textAlign: 'center'
-  },
-  backLink: {
-    color: '#0070f3',
+  adminLink: {
+    color: '#1890ff',
     textDecoration: 'none',
-    fontSize: '0.9rem'
+    fontSize: '1rem',
+  },
+  actionButtons: {
+    display: 'flex',
+    gap: '10px',
+  },
+  suspendButton: {
+    backgroundColor: 'transparent',
+    color: '#ffa940',
+    border: '1px solid #444',
+    padding: '6px 12px',
+    borderRadius: '6px',
+    fontSize: '0.75rem',
+    cursor: 'pointer',
+  },
+  withdrawButton: {
+    backgroundColor: 'transparent',
+    color: '#ff4d4f',
+    border: '1px solid #444',
+    padding: '6px 12px',
+    borderRadius: '6px',
+    fontSize: '0.75rem',
+    cursor: 'pointer',
+  },
+  cancelButton: {
+    backgroundColor: '#444',
+    color: '#fff',
+    border: 'none',
+    padding: '6px 12px',
+    borderRadius: '6px',
+    fontSize: '0.75rem',
+    cursor: 'pointer',
   },
   modalOverlay: {
     position: 'fixed',
@@ -542,39 +429,47 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 1000
+    zIndex: 1000,
   },
   modalContent: {
     backgroundColor: '#1a1a1a',
     padding: '30px',
     borderRadius: '16px',
-    border: '1px solid #333',
     width: '90%',
     maxWidth: '400px',
-    textAlign: 'center'
+    textAlign: 'center',
+    border: '1px solid #333',
+  },
+  modalTitle: {
+    marginTop: 0,
+    fontSize: '1.2rem',
+  },
+  modalText: {
+    color: '#888',
+    marginBottom: '24px',
   },
   modalButtons: {
     display: 'flex',
     gap: '12px',
-    marginTop: '24px'
+    justifyContent: 'center',
   },
-  modalConfirm: {
+  cancelBtn: {
     flex: 1,
     padding: '12px',
     borderRadius: '8px',
-    backgroundColor: '#0070f3',
+    border: '1px solid #333',
+    backgroundColor: 'transparent',
     color: '#fff',
+    cursor: 'pointer',
+  },
+  confirmBtn: {
+    flex: 1,
+    padding: '12px',
+    borderRadius: '8px',
     border: 'none',
+    backgroundColor: '#ff4d4f',
+    color: '#fff',
     fontWeight: 'bold',
-    cursor: 'pointer'
+    cursor: 'pointer',
   },
-  modalCancel: {
-    flex: 1,
-    padding: '12px',
-    borderRadius: '8px',
-    backgroundColor: '#333',
-    color: '#fff',
-    border: 'none',
-    cursor: 'pointer'
-  }
 }
