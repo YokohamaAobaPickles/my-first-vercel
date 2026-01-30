@@ -42,7 +42,7 @@ const TEST_USER = {
   emg_rel: '家族',
   emg_tel: '080-5026-2247',
   profile_memo: 'テニス歴10年です。',
-  emergency_memo: '怪我しがち',
+  emg_memo: '怪我しがち',
   dupr_id: 'WKRV2Q',
   dupr_rate_doubles: 4.567,
   dupr_rate_singles: 2.512,
