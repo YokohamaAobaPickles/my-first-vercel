@@ -1,8 +1,9 @@
 /**
- * Filename: app/members/login/page.tsx
- * Version : V2.0.2
- * Update  : 2026-01-26
- * 修正内容：
+ * Filename: src/app/members/login/page.tsx
+ * Version : V2.0.3
+ * Update  : 2026-01-31
+ * Remarks : 
+ * V2.0.3 - 追加：フッターにシステムバージョンとコピーライトを表示。
  * V2.0.2
  * - テストCase 6に合わせ、パスワードが空の場合もDB照合へ流し「正しくありません」を出せるように変更
  * - isInvalidのガードレールをemailのみに緩和
@@ -93,8 +94,8 @@ export default function MemberLoginPage() {
 
         <form onSubmit={handleAction} style={{ display: 'flex', flexDirection: 'column' }}>
           <p style={{ fontSize: '0.85rem', marginBottom: '15px', color: '#aaa' }}>
-            {currentLineId 
-              ? '登録状況を確認します。メールアドレスを入力してください。' 
+            {currentLineId
+              ? '登録状況を確認します。メールアドレスを入力してください。'
               : 'メールアドレスとパスワードを入力してください。'}
           </p>
 
@@ -135,6 +136,12 @@ export default function MemberLoginPage() {
             </div>
           )}
         </form>
+
+        {/* バージョン情報・コピーライト表示 */}
+        <footer style={footerStyle}>
+          YAPMS V1.0.0 Copyright 2026 Yokohama Aoba Pickles
+        </footer>
+
       </div>
     </div>
   )
@@ -162,4 +169,12 @@ const buttonStyle = {
   fontSize: '1rem',
   marginTop: '10px',
   marginBottom: '20px',
+}
+
+const footerStyle: React.CSSProperties = {
+  textAlign: 'center',
+  marginTop: '40px',
+  fontSize: '0.7rem',
+  color: '#666',
+  letterSpacing: '0.05em',
 }
