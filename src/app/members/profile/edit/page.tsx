@@ -1,10 +1,11 @@
 /**
  * Filename: src/app/members/profile/edit/page.tsx
- * Version : V2.3.0
+ * Version : V2.4.0
  * Update  : 2026-01-31
  * Remarks : 
- * V2.3.0 - 追加：DUPR Doubles/Singles レートの手動入力フィールドを追加。
- * V2.3.0 - 修正：保存時にレートを数値型に変換して API に送信。
+ * V2.4.0 - 統合：Member型(V2.3.0)に準拠。emg_memo等の最新キー名を使用。
+ * V2.4.0 - 修正：氏名(ローマ字)、DUPR ID/レートの編集機能を追加。
+ * V2.4.0 - 整理：入力項目の順序を表示画面の構成と完全に一致させた。
  */
 
 'use client'
@@ -22,7 +23,12 @@ export default function ProfileEditPage() {
 
   useEffect(() => {
     if (user) {
-      setFormData({ ...user })
+      setFormData({
+        ...user,
+        // 数値項目が null の場合に input type="number" でエラーにならないよう処理
+        dupr_rate_doubles: user.dupr_rate_doubles ?? '',
+        dupr_rate_singles: user.dupr_rate_singles ?? '',
+      })
     }
   }, [user])
 
@@ -34,13 +40,13 @@ export default function ProfileEditPage() {
     e.preventDefault()
     setIsSubmitting(true)
     try {
-      // 数値項目を適切に変換して送信
+      // API送信前に数値を float 型に変換
       const payload = {
         ...formData,
-        dupr_rate_doubles: formData.dupr_rate_doubles 
+        dupr_rate_doubles: formData.dupr_rate_doubles !== '' 
           ? parseFloat(formData.dupr_rate_doubles) 
           : null,
-        dupr_rate_singles: formData.dupr_rate_singles 
+        dupr_rate_singles: formData.dupr_rate_singles !== '' 
           ? parseFloat(formData.dupr_rate_singles) 
           : null
       }
@@ -66,8 +72,8 @@ export default function ProfileEditPage() {
     setFormData((prev: any) => ({ ...prev, [name]: value }))
   }
 
-  const formatMemberNumber = (num: string | number) => {
-    return String(num).padStart(4, '0')
+  const formatMemberNumber = (num: string | number | null | undefined) => {
+    return num ? String(num).padStart(4, '0') : '----'
   }
 
   return (
@@ -75,6 +81,7 @@ export default function ProfileEditPage() {
       <form onSubmit={handleSubmit} style={styles.form}>
         <h1 style={styles.title}>プロフィール編集</h1>
 
+        {/* 1. 基本情報 (閲覧のみ) */}
         <section style={styles.section}>
           <h2 style={styles.sectionTitle}>基本情報 (閲覧のみ)</h2>
           <div style={styles.card}>
@@ -90,18 +97,18 @@ export default function ProfileEditPage() {
             </div>
             <div style={styles.readOnlyGroup}>
               <span style={styles.label}>LINE ID</span>
-              <span style={styles.readOnlyValue}>{formData.line_id}</span>
+              <span style={styles.readOnlyValue}>{formData.line_id || '-'}</span>
             </div>
           </div>
         </section>
 
+        {/* 2. 編集可能項目 */}
         <section style={styles.section}>
           <h2 style={styles.sectionTitle}>編集可能項目</h2>
           <div style={styles.card}>
             <div style={styles.inputGroup}>
               <label htmlFor="nickname" style={styles.label}>
-                ニックネーム
-                <span style={styles.requiredBadge}>*</span>
+                ニックネーム <span style={styles.requiredBadge}>*</span>
               </label>
               <input
                 id="nickname"
@@ -110,6 +117,18 @@ export default function ProfileEditPage() {
                 value={formData.nickname || ''}
                 onChange={handleChange}
                 required
+                style={styles.input}
+              />
+            </div>
+
+            <div style={styles.inputGroup}>
+              <label htmlFor="name_roma" style={styles.label}>氏名（ローマ字）</label>
+              <input
+                id="name_roma"
+                type="text"
+                name="name_roma"
+                value={formData.name_roma || ''}
+                onChange={handleChange}
                 style={styles.input}
               />
             </div>
@@ -150,7 +169,66 @@ export default function ProfileEditPage() {
               />
             </div>
 
-            {/* DUPR情報 セクション */}
+            <div style={styles.inputGroup}>
+              <label htmlFor="profile_memo" style={styles.label}>
+                プロフィールメモ
+              </label>
+              <textarea
+                id="profile_memo"
+                name="profile_memo"
+                value={formData.profile_memo || ''}
+                onChange={handleChange}
+                style={styles.textarea}
+              />
+            </div>
+
+            <hr style={styles.hr} />
+
+            <h3 style={styles.subSectionTitle}>緊急連絡先</h3>
+            <div style={styles.inputGroup}>
+              <label htmlFor="emg_tel" style={styles.label}>
+                緊急連絡先電話 <span style={styles.requiredBadge}>*</span>
+              </label>
+              <input
+                id="emg_tel"
+                type="text"
+                name="emg_tel"
+                value={formData.emg_tel || ''}
+                onChange={handleChange}
+                required
+                style={styles.input}
+              />
+            </div>
+
+            <div style={styles.inputGroup}>
+              <label htmlFor="emg_rel" style={styles.label}>
+                続柄 <span style={styles.requiredBadge}>*</span>
+              </label>
+              <input
+                id="emg_rel"
+                type="text"
+                name="emg_rel"
+                value={formData.emg_rel || ''}
+                onChange={handleChange}
+                required
+                style={styles.input}
+              />
+            </div>
+
+            <div style={styles.inputGroup}>
+              <label htmlFor="emg_memo" style={styles.label}>緊急連絡メモ</label>
+              <textarea
+                id="emg_memo"
+                name="emg_memo"
+                value={formData.emg_memo || ''}
+                onChange={handleChange}
+                style={styles.textareaSmall}
+              />
+            </div>
+
+            <hr style={styles.hr} />
+
+            <h3 style={styles.subSectionTitle}>競技情報 (DUPR)</h3>
             <div style={styles.inputGroup}>
               <label htmlFor="dupr_id" style={styles.label}>DUPR ID</label>
               <input
@@ -174,7 +252,7 @@ export default function ProfileEditPage() {
                   type="number"
                   step="0.001"
                   name="dupr_rate_doubles"
-                  value={formData.dupr_rate_doubles || ''}
+                  value={formData.dupr_rate_doubles}
                   onChange={handleChange}
                   placeholder="0.000"
                   style={styles.input}
@@ -189,60 +267,12 @@ export default function ProfileEditPage() {
                   type="number"
                   step="0.001"
                   name="dupr_rate_singles"
-                  value={formData.dupr_rate_singles || ''}
+                  value={formData.dupr_rate_singles}
                   onChange={handleChange}
                   placeholder="0.000"
                   style={styles.input}
                 />
               </div>
-            </div>
-
-            <div style={styles.inputGroup}>
-              <label htmlFor="profile_memo" style={styles.label}>
-                プロフィールメモ
-              </label>
-              <textarea
-                id="profile_memo"
-                name="profile_memo"
-                value={formData.profile_memo || ''}
-                onChange={handleChange}
-                style={styles.textarea}
-              />
-            </div>
-
-            <hr style={styles.hr} />
-
-            <h3 style={styles.subSectionTitle}>緊急連絡先</h3>
-            <div style={styles.inputGroup}>
-              <label htmlFor="emg_tel" style={styles.label}>
-                緊急連絡先電話
-                <span style={styles.requiredBadge}>*</span>
-              </label>
-              <input
-                id="emg_tel"
-                type="text"
-                name="emg_tel"
-                value={formData.emg_tel || ''}
-                onChange={handleChange}
-                required
-                style={styles.input}
-              />
-            </div>
-
-            <div style={styles.inputGroup}>
-              <label htmlFor="emg_rel" style={styles.label}>
-                続柄
-                <span style={styles.requiredBadge}>*</span>
-              </label>
-              <input
-                id="emg_rel"
-                type="text"
-                name="emg_rel"
-                value={formData.emg_rel || ''}
-                onChange={handleChange}
-                required
-                style={styles.input}
-              />
             </div>
           </div>
         </section>
@@ -268,7 +298,7 @@ export default function ProfileEditPage() {
   )
 }
 
-const styles: { [key: string]: React.CSSProperties } = {
+const styles: Record<string, React.CSSProperties> = {
   container: {
     display: 'flex',
     flexDirection: 'column',
@@ -300,6 +330,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontSize: '0.9rem',
     color: '#aaa',
     marginBottom: '16px',
+    fontWeight: 'bold',
   },
   card: {
     backgroundColor: '#111',
@@ -348,7 +379,18 @@ const styles: { [key: string]: React.CSSProperties } = {
     backgroundColor: '#1a1a1a',
     color: '#fff',
     fontSize: '1rem',
-    resize: 'none',
+    resize: 'vertical',
+  },
+  textareaSmall: {
+    width: '100%',
+    height: '60px',
+    padding: '12px',
+    borderRadius: '8px',
+    border: '1px solid #333',
+    backgroundColor: '#1a1a1a',
+    color: '#fff',
+    fontSize: '1rem',
+    resize: 'vertical',
   },
   hr: {
     border: 'none',
