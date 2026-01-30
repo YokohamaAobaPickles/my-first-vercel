@@ -25,6 +25,24 @@ export type MemberStatus =
   | 'withdrawn'             // 退会済み
   | 'rejected';             // 拒絶
 
+// ラベルの定義を集約
+export const MEMBER_STATUS_LABELS: Record<MemberStatus, string> = {
+  new_req: '入会申請中',
+  active: '有効',
+  suspend_req: '休会申請中',
+  suspended: '休会中',
+  rejoin_req: '復帰申請中',
+  withdraw_req: '退会申請中',
+  withdrawn: '退会済',
+  rejected: '拒否'
+};
+
+export const MEMBER_KIND_LABELS: Record<string, string> = {
+  general: '一般',
+  premium: 'プレミアム',
+  family: 'ファミリー',
+};
+
 /**
  * システムロールの定数
  */

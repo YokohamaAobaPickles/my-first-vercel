@@ -15,11 +15,15 @@ import { useState } from 'react'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import { canManageMembers } from '@/utils/auth'
 import { calculateEnrollmentDays } from '@/utils/memberHelpers'
-import { 
-  updateMemberStatus, 
-  deleteMember 
+import {
+  updateMemberStatus,
+  deleteMember
 } from '@/lib/memberApi'
-import { MemberStatus } from '@/types/member'
+import {
+  MemberStatus,
+  MEMBER_STATUS_LABELS,
+  MEMBER_KIND_LABELS
+} from '@/types/member'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -31,9 +35,9 @@ export default function ProfilePage() {
   const [modalConfig, setModalConfig] = useState<{
     isOpen: boolean;
     type: 'suspend' | 'withdraw' | 'cancel_join' | 'cancel_request' | null;
-  }>({ 
-    isOpen: false, 
-    type: null 
+  }>({
+    isOpen: false,
+    type: null
   })
 
   if (isLoading) {
@@ -53,9 +57,9 @@ export default function ProfilePage() {
       if (modalConfig.type === 'cancel_join') {
         res = await deleteMember(user.id)
       } else {
-        const nextStatus: MemberStatus = 
+        const nextStatus: MemberStatus =
           modalConfig.type === 'suspend' ? 'suspend_req' :
-          modalConfig.type === 'withdraw' ? 'withdraw_req' : 'active'
+            modalConfig.type === 'withdraw' ? 'withdraw_req' : 'active'
         res = await updateMemberStatus(user.id, nextStatus)
       }
 
@@ -95,10 +99,10 @@ export default function ProfilePage() {
             <h2 style={styles.sectionTitle}>基本情報</h2>
             <div style={styles.actionButtons}>
               {user.status === 'new_req' && (
-                <button 
-                  onClick={() => setModalConfig({ 
-                    isOpen: true, 
-                    type: 'cancel_join' 
+                <button
+                  onClick={() => setModalConfig({
+                    isOpen: true,
+                    type: 'cancel_join'
                   })}
                   style={styles.cancelButton}
                 >
@@ -107,19 +111,19 @@ export default function ProfilePage() {
               )}
               {user.status === 'active' && (
                 <>
-                  <button 
-                    onClick={() => setModalConfig({ 
-                      isOpen: true, 
-                      type: 'suspend' 
+                  <button
+                    onClick={() => setModalConfig({
+                      isOpen: true,
+                      type: 'suspend'
                     })}
                     style={styles.suspendButton}
                   >
                     休会申請
                   </button>
-                  <button 
-                    onClick={() => setModalConfig({ 
-                      isOpen: true, 
-                      type: 'withdraw' 
+                  <button
+                    onClick={() => setModalConfig({
+                      isOpen: true,
+                      type: 'withdraw'
                     })}
                     style={styles.withdrawButton}
                   >
@@ -127,18 +131,18 @@ export default function ProfilePage() {
                   </button>
                 </>
               )}
-              {(user.status === 'suspend_req' || 
+              {(user.status === 'suspend_req' ||
                 user.status === 'withdraw_req') && (
-                <button 
-                  onClick={() => setModalConfig({ 
-                    isOpen: true, 
-                    type: 'cancel_request' 
-                  })}
-                  style={styles.cancelButton}
-                >
-                  申請取消
-                </button>
-              )}
+                  <button
+                    onClick={() => setModalConfig({
+                      isOpen: true,
+                      type: 'cancel_request'
+                    })}
+                    style={styles.cancelButton}
+                  >
+                    申請取消
+                  </button>
+                )}
             </div>
           </div>
           <div style={styles.card}>
@@ -149,26 +153,27 @@ export default function ProfilePage() {
               { label: '氏名（ローマ字）', value: user.name_roma || '-' },
               { label: '性別', value: user.gender || '-' },
               { label: '生年月日', value: user.birthday || '-' },
-              { label: '会員種別', value: user.member_kind || '一般' },
-              { 
-                label: 'ステータス', 
-                value: user.status === 'active' ? '有効' : 
-                       user.status === 'new_req' ? '入会申請中' :
-                       user.status === 'suspend_req' ? '休会申請中' :
-                       user.status === 'withdraw_req' ? '退会申請中' : 
-                       user.status,
+              {
+                label: '会員種別', value: MEMBER_KIND_LABELS[user.member_kind] ||
+                  user.member_kind ||
+                  '一般'
+              },
+              {
+                label: 'ステータス',
+                value: MEMBER_STATUS_LABELS[user.status as MemberStatus] ||
+                  user.status,
                 color: user.status === 'active' ? '#52c41a' : '#faad14'
               },
               { label: '在籍日数', value: `${enrollmentDays} 日` },
             ].map((item, idx) => (
-              <div 
-                key={idx} 
+              <div
+                key={idx}
                 style={idx === 8 ? styles.infoRowLast : styles.infoRow}
               >
                 <span style={styles.label}>{item.label}</span>
-                <span style={{ 
-                  ...styles.value, 
-                  color: item.color || '#fff' 
+                <span style={{
+                  ...styles.value,
+                  color: item.color || '#fff'
                 }}>
                   {item.value}
                 </span>
@@ -260,23 +265,23 @@ export default function ProfilePage() {
           <div style={styles.modalContent}>
             <h3 style={styles.modalTitle}>
               {modalConfig.type === 'suspend' ? '休会申請' :
-               modalConfig.type === 'withdraw' ? '退会申請' :
-               modalConfig.type === 'cancel_join' ? '入会取消' : '申請取消'}
+                modalConfig.type === 'withdraw' ? '退会申請' :
+                  modalConfig.type === 'cancel_join' ? '入会取消' : '申請取消'}
             </h3>
             <p style={styles.modalText}>
-              {modalConfig.type === 'cancel_join' 
+              {modalConfig.type === 'cancel_join'
                 ? '登録情報を完全に削除します。よろしいですか？'
                 : 'この操作を実行します。よろしいですか？'}
             </p>
             <div style={styles.modalButtons}>
-              <button 
+              <button
                 onClick={() => setModalConfig({ isOpen: false, type: null })}
                 style={styles.cancelBtn}
                 disabled={isSubmitting}
               >
                 キャンセル
               </button>
-              <button 
+              <button
                 onClick={handleAction}
                 style={styles.confirmBtn}
                 disabled={isSubmitting}
