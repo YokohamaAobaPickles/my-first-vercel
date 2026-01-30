@@ -1,11 +1,12 @@
 /**
  * Filename: src/app/members/profile/page.tsx
- * Version : V2.6.0
+ * Version : V2.7.0
  * Update  : 2026-01-31
  * Remarks : 
- * V2.6.0 - 変更：自動更新 (syncDuprData) を廃止し、手動入力値の表示に対応。
- * V2.6.0 - 修正：表示プロパティ名を dupr_rate_doubles / singles に統一。
- * V2.6.0 - 整形：1行80カラム制限、判定文・スタイル定義の改行ルールを適用。
+ * V2.7.0 - 変更：3ブロック構成（基本情報・プロフィール・競技情報）へ刷新。
+ * V2.7.0 - 変更：管理者パネル、申請ボタン、編集ボタンの配置を最適化。
+ * V2.7.0 - 追加：競技情報に「レート登録日 (dupr_updated_at)」の表示を追加。
+ * V2.7.0 - 整形：1行80カラム、判定文・スタイル定義の改行ルールを適用。
  */
 
 'use client'
@@ -78,26 +79,17 @@ export default function ProfilePage() {
   return (
     <div style={styles.container}>
       <div style={styles.content}>
+        {/* ヘッダーエリア */}
         <div style={styles.header}>
           <h1 style={styles.title}>マイプロフィール</h1>
-          <Link href="/members/profile/edit" style={styles.editButton}>
-            編集
-          </Link>
+          {canManageMembers(userRoles) && (
+            <Link href="/admin/members" style={styles.adminButton}>
+              会員管理パネル
+            </Link>
+          )}
         </div>
 
-        {/* 会員管理パネル (管理者用) */}
-        {canManageMembers(userRoles) && (
-          <section style={styles.section}>
-            <h2 style={styles.sectionTitle}>会員管理パネル</h2>
-            <div style={styles.card}>
-              <Link href="/admin/members" style={styles.adminLink}>
-                会員一覧・承認待ち確認へ
-              </Link>
-            </div>
-          </section>
-        )}
-
-        {/* 基本情報 */}
+        {/* 1. 基本情報ブロック */}
         <section style={styles.section}>
           <div style={styles.sectionHeader}>
             <h2 style={styles.sectionTitle}>基本情報</h2>
@@ -150,50 +142,69 @@ export default function ProfilePage() {
             </div>
           </div>
           <div style={styles.card}>
-            <div style={styles.infoRow}>
-              <span style={styles.label}>会員番号</span>
-              <span style={styles.value}>{user.member_number || '-'}</span>
-            </div>
-            <div style={styles.infoRow}>
-              <span style={styles.label}>ニックネーム</span>
-              <span style={styles.value}>{user.nickname}</span>
-            </div>
-            <div style={styles.infoRow}>
-              <span style={styles.label}>氏名</span>
-              <span style={styles.value}>{user.name}</span>
-            </div>
-            <div style={styles.infoRow}>
-              <span style={styles.label}>氏名（ローマ字）</span>
-              <span style={styles.value}>{user.name_roma || '-'}</span>
-            </div>
-            <div style={styles.infoRow}>
-              <span style={styles.label}>性別</span>
-              <span style={styles.value}>{user.gender || '-'}</span>
-            </div>
-            <div style={styles.infoRow}>
-              <span style={styles.label}>生年月日</span>
-              <span style={styles.value}>{user.birthday || '-'}</span>
-            </div>
-            <div style={styles.infoRow}>
-              <span style={styles.label}>ステータス</span>
-              <span style={{
-                ...styles.value,
+            {[
+              { label: '会員番号', value: user.member_number || '-' },
+              { label: 'ニックネーム', value: user.nickname },
+              { label: '氏名', value: user.name },
+              { label: '氏名（ローマ字）', value: user.name_roma || '-' },
+              { label: '性別', value: user.gender || '-' },
+              { label: '生年月日', value: user.birthday || '-' },
+              { 
+                label: 'ステータス', 
+                value: user.status === 'active' ? '有効' : 
+                       user.status === 'new_req' ? '承認待ち' :
+                       user.status === 'suspend_req' ? '休会申請中' :
+                       user.status === 'withdraw_req' ? '退会申請中' : user.status,
                 color: user.status === 'active' ? '#52c41a' : '#faad14'
-              }}>
-                {user.status === 'active' ? '有効' : 
-                 user.status === 'new_req' ? '承認待ち' :
-                 user.status === 'suspend_req' ? '休会申請中' :
-                 user.status === 'withdraw_req' ? '退会申請中' : user.status}
-              </span>
+              },
+              { label: '在籍日数', value: `${enrollmentDays} 日` },
+            ].map((item, idx) => (
+              <div 
+                key={idx} 
+                style={idx === 7 ? styles.infoRowLast : styles.infoRow}
+              >
+                <span style={styles.label}>{item.label}</span>
+                <span style={{ ...styles.value, color: item.color || '#fff' }}>
+                  {item.value}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 2. プロフィールブロック */}
+        <section style={styles.section}>
+          <div style={styles.sectionHeader}>
+            <h2 style={styles.sectionTitle}>プロフィール</h2>
+            <Link href="/members/profile/edit" style={styles.editButtonSmall}>
+              編集
+            </Link>
+          </div>
+          <div style={styles.card}>
+            <div style={styles.infoRow}>
+              <span style={styles.label}>郵便番号</span>
+              <span style={styles.value}>{user.postal || '-'}</span>
             </div>
             <div style={styles.infoRow}>
-              <span style={styles.label}>在籍日数</span>
-              <span style={styles.value}>{enrollmentDays} 日</span>
+              <span style={styles.label}>住所</span>
+              <span style={styles.value}>{user.address || '-'}</span>
+            </div>
+            <div style={styles.infoRow}>
+              <span style={styles.label}>電話番号</span>
+              <span style={styles.value}>{user.tel || '-'}</span>
+            </div>
+            <div style={styles.infoRow}>
+              <span style={styles.label}>緊急連絡先電話</span>
+              <span style={styles.value}>{user.emg_tel || '-'}</span>
+            </div>
+            <div style={styles.infoRowLast}>
+              <span style={styles.label}>続柄</span>
+              <span style={styles.value}>{user.emg_rel || '-'}</span>
             </div>
           </div>
         </section>
 
-        {/* 競技情報 (DUPR) */}
+        {/* 3. 競技情報 (DUPR) ブロック */}
         <section style={styles.section}>
           <div style={styles.sectionHeader}>
             <h2 style={styles.sectionTitle}>競技情報 (DUPR)</h2>
@@ -204,60 +215,21 @@ export default function ProfilePage() {
               <span style={styles.value}>{user.dupr_id || '未登録'}</span>
             </div>
             <div style={styles.infoRow}>
-              <span style={styles.label}>DUPR Doubles</span>
+              <span style={styles.label}>Doubles Rating</span>
               <span style={styles.value}>
                 {user.dupr_rate_doubles?.toFixed(3) || '-'}
               </span>
             </div>
             <div style={styles.infoRow}>
-              <span style={styles.label}>DUPR Singles</span>
+              <span style={styles.label}>Singles Rating</span>
               <span style={styles.value}>
                 {user.dupr_rate_singles?.toFixed(3) || '-'}
               </span>
             </div>
-            <div style={{ ...styles.infoRow, borderBottom: 'none' }}>
-              <p style={styles.guideText}>
-                ※情報の変更はプロフィール編集から行えます。
-              </p>
+            <div style={styles.infoRowLast}>
+              <span style={styles.label}>レート登録日</span>
+              <span style={styles.value}>{user.dupr_updated_at || '-'}</span>
             </div>
-          </div>
-        </section>
-
-        {/* 連絡先情報 */}
-        <section style={styles.section}>
-          <h2 style={styles.sectionTitle}>連絡先・住所</h2>
-          <div style={styles.card}>
-            <div style={styles.infoRow}>
-              <span style={styles.label}>電話番号</span>
-              <span style={styles.value}>{user.tel || '-'}</span>
-            </div>
-            <div style={styles.infoRow}>
-              <span style={styles.label}>郵便番号</span>
-              <span style={styles.value}>{user.postal || '-'}</span>
-            </div>
-            <div style={{ ...styles.infoRow, borderBottom: 'none' }}>
-              <span style={styles.label}>住所</span>
-            </div>
-            <div style={styles.memoText}>{user.address || '-'}</div>
-          </div>
-        </section>
-
-        {/* 緊急連絡先 */}
-        <section style={styles.section}>
-          <h2 style={styles.sectionTitle}>緊急連絡先</h2>
-          <div style={styles.card}>
-            <div style={styles.infoRow}>
-              <span style={styles.label}>緊急連絡先電話</span>
-              <span style={styles.value}>{user.emg_tel}</span>
-            </div>
-            <div style={styles.infoRow}>
-              <span style={styles.label}>続柄</span>
-              <span style={styles.value}>{user.emg_rel}</span>
-            </div>
-            <div style={{ ...styles.infoRow, borderBottom: 'none' }}>
-              <span style={styles.label}>緊急用メモ</span>
-            </div>
-            <div style={styles.emgMemoText}>{user.emg_memo || '-'}</div>
           </div>
         </section>
       </div>
@@ -323,14 +295,23 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '1.5rem',
     margin: 0,
   },
-  editButton: {
-    backgroundColor: '#333',
+  adminButton: {
+    backgroundColor: '#111',
     color: '#fff',
-    padding: '8px 20px',
-    borderRadius: '8px',
+    padding: '6px 12px',
+    borderRadius: '6px',
     textDecoration: 'none',
-    fontSize: '0.9rem',
-    border: '1px solid #444',
+    fontSize: '0.75rem',
+    border: '1px solid #333',
+  },
+  editButtonSmall: {
+    backgroundColor: '#111',
+    color: '#fff',
+    padding: '4px 12px',
+    borderRadius: '6px',
+    textDecoration: 'none',
+    fontSize: '0.75rem',
+    border: '1px solid #333',
   },
   section: {
     marginBottom: '32px',
@@ -358,6 +339,11 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '12px 0',
     borderBottom: '1px solid #222',
   },
+  infoRowLast: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    padding: '12px 0 0 0',
+  },
   label: {
     color: '#888',
     fontSize: '0.9rem',
@@ -366,28 +352,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 500,
     color: '#fff',
   },
-  memoText: {
-    fontSize: '0.95rem',
-    marginTop: '8px',
-    lineHeight: '1.5',
-    color: '#ddd',
-  },
-  emgMemoText: {
-    fontSize: '0.95rem',
-    marginTop: '8px',
-    color: '#ffb3b3',
-  },
-  guideText: {
-    fontSize: '0.8rem',
-    color: '#666',
-    margin: 0,
-    paddingTop: '4px',
-  },
-  adminLink: {
-    color: '#1890ff',
-    textDecoration: 'none',
-    fontSize: '1rem',
-  },
   actionButtons: {
     display: 'flex',
     gap: '10px',
@@ -395,7 +359,7 @@ const styles: Record<string, React.CSSProperties> = {
   suspendButton: {
     backgroundColor: 'transparent',
     color: '#ffa940',
-    border: '1px solid #444',
+    border: '1px solid #333',
     padding: '6px 12px',
     borderRadius: '6px',
     fontSize: '0.75rem',
@@ -404,14 +368,14 @@ const styles: Record<string, React.CSSProperties> = {
   withdrawButton: {
     backgroundColor: 'transparent',
     color: '#ff4d4f',
-    border: '1px solid #444',
+    border: '1px solid #333',
     padding: '6px 12px',
     borderRadius: '6px',
     fontSize: '0.75rem',
     cursor: 'pointer',
   },
   cancelButton: {
-    backgroundColor: '#444',
+    backgroundColor: '#333',
     color: '#fff',
     border: 'none',
     padding: '6px 12px',
