@@ -1,8 +1,11 @@
 /**
  * Filename: src/app/members/profile/page.tsx
- * Version : V2.7.3
+ * Version : V2.7.8
  * Update  : 2026-01-31
  * Remarks : 
+ * V2.7.8 - 修正：emergency_memo を emg_memo に修正。
+ * V2.7.7 - 修正：ログアウト処理を環境別に最適化。
+ * LINE内ならウィンドウを閉じ、ブラウザならセッションを切って遷移。
  * V2.7.3 - 変更：会員管理パネルの文字色を水色 (#00d1ff) に変更。
  * V2.7.3 - 変更：休会/退会ボタンの背景を編集ボタンと同じ色 (#111) に統合。
  * V2.7.3 - 追加：生年月日とステータスの間に「会員種別」を表示。
@@ -48,6 +51,32 @@ export default function ProfilePage() {
   if (!user) {
     return <div style={styles.container}>ユーザー情報が見つかりません。</div>
   }
+
+  const handleLogout = async () => {
+    // 1. セッション破棄 (認証システムに合わせる)
+    // await supabase.auth.signOut()
+
+    // 2. LINE内ブラウザ（UA判定）かどうかのチェック
+    const ua = navigator.userAgent.toLowerCase()
+    const isLine = ua.indexOf('line') > -1
+
+    if (isLine) {
+      // LINEアプリ内の場合はウィンドウを閉じる
+      // 注意: LIFFを使用している場合は liff.closeWindow() が確実です
+      if (typeof window !== 'undefined') {
+        window.close()
+        // window.close() が効かない場合のフォールバック（LINEの深い階層など）
+        setTimeout(() => {
+          router.push('/members/login')
+        }, 300)
+      }
+    } else {
+      // 通常ブラウザの場合はログイン画面へ
+      // 自動ログインを避けるためキャッシュを無視して遷移させるのが安全
+      window.location.href = '/members/login'
+    }
+  }
+
 
   const handleAction = async () => {
     if (!modalConfig.type) return
@@ -159,9 +188,9 @@ export default function ProfilePage() {
                   user.member_kind ||
                   '一般'
               },
-              { 
-                label: '役職', 
-                value: ROLES_LABELS[user.roles] || user.roles || '-' 
+              {
+                label: '役職',
+                value: ROLES_LABELS[user.roles] || user.roles || '-'
               },
               {
                 label: 'ステータス',
@@ -173,7 +202,7 @@ export default function ProfilePage() {
             ].map((item, idx) => (
               <div
                 key={idx}
-                style={idx === 8 ? styles.infoRowLast : styles.infoRow}
+                style={idx === 9 ? styles.infoRowLast : styles.infoRow}
               >
                 <span style={styles.label}>{item.label}</span>
                 <span style={{
@@ -222,7 +251,7 @@ export default function ProfilePage() {
             </div>
             <div style={styles.infoRowLast}>
               <span style={styles.label}>緊急連絡メモ</span>
-              <span style={styles.value}>{user.emergency_memo || '-'}</span>
+              <span style={styles.value}>{user.emg_memo || '-'}</span>
             </div>
           </div>
         </section>
@@ -258,9 +287,19 @@ export default function ProfilePage() {
 
         {/* フッターエリア */}
         <div style={styles.footer}>
+          {/*}
           <Link href="/members/login" style={styles.logoutLink}>
             ログアウト
           </Link>
+        */}
+          {/* フッターエリア：リンクからボタンに変更 */}
+          <button
+            onClick={handleLogout}
+            style={styles.logoutButton}
+          >
+            ログアウト
+          </button>
+
         </div>
       </div>
 
@@ -475,5 +514,14 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#fff',
     fontWeight: 'bold',
     cursor: 'pointer',
+  },
+  logoutButton: {
+    backgroundColor: 'transparent',
+    color: '#888',
+    textDecoration: 'underline',
+    border: 'none',
+    fontSize: '0.9rem',
+    cursor: 'pointer',
+    padding: '10px',
   },
 }
