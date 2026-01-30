@@ -1,12 +1,12 @@
 /**
  * Filename: src/app/members/profile/page.tsx
- * Version : V2.7.0
+ * Version : V2.7.2
  * Update  : 2026-01-31
  * Remarks : 
- * V2.7.0 - 変更：3ブロック構成（基本情報・プロフィール・競技情報）へ刷新。
- * V2.7.0 - 変更：管理者パネル、申請ボタン、編集ボタンの配置を最適化。
- * V2.7.0 - 追加：競技情報に「レート登録日 (dupr_updated_at)」の表示を追加。
- * V2.7.0 - 整形：1行80カラム、判定文・スタイル定義の改行ルールを適用。
+ * V2.7.2 - 修正：テストV2.8.0に合わせ、ボタンのaria-labelやテキスト整合性を確保。
+ * V2.7.2 - 復元：プロフィールメモ、緊急連絡メモの表示を追加（デグレ解消）。
+ * V2.7.2 - 追加：最下部にログアウト（/members/loginへの遷移）リンクを追加。
+ * V2.7.2 - 整理：スタイル定義を判定ごとに改行し視認性を向上。
  */
 
 'use client'
@@ -152,9 +152,10 @@ export default function ProfilePage() {
               { 
                 label: 'ステータス', 
                 value: user.status === 'active' ? '有効' : 
-                       user.status === 'new_req' ? '承認待ち' :
+                       user.status === 'new_req' ? '入会申請中' :
                        user.status === 'suspend_req' ? '休会申請中' :
-                       user.status === 'withdraw_req' ? '退会申請中' : user.status,
+                       user.status === 'withdraw_req' ? '退会申請中' : 
+                       user.status,
                 color: user.status === 'active' ? '#52c41a' : '#faad14'
               },
               { label: '在籍日数', value: `${enrollmentDays} 日` },
@@ -164,7 +165,10 @@ export default function ProfilePage() {
                 style={idx === 7 ? styles.infoRowLast : styles.infoRow}
               >
                 <span style={styles.label}>{item.label}</span>
-                <span style={{ ...styles.value, color: item.color || '#fff' }}>
+                <span style={{ 
+                  ...styles.value, 
+                  color: item.color || '#fff' 
+                }}>
                   {item.value}
                 </span>
               </div>
@@ -194,8 +198,16 @@ export default function ProfilePage() {
               <span style={styles.value}>{user.tel || '-'}</span>
             </div>
             <div style={styles.infoRow}>
+              <span style={styles.label}>プロフィールメモ</span>
+              <span style={styles.value}>{user.profile_memo || '-'}</span>
+            </div>
+            <div style={styles.infoRow}>
               <span style={styles.label}>緊急連絡先電話</span>
               <span style={styles.value}>{user.emg_tel || '-'}</span>
+            </div>
+            <div style={styles.infoRow}>
+              <span style={styles.label}>緊急連絡メモ</span>
+              <span style={styles.value}>{user.emergency_memo || '-'}</span>
             </div>
             <div style={styles.infoRowLast}>
               <span style={styles.label}>続柄</span>
@@ -232,6 +244,13 @@ export default function ProfilePage() {
             </div>
           </div>
         </section>
+
+        {/* フッターエリア */}
+        <div style={styles.footer}>
+          <Link href="/members/login" style={styles.logoutLink}>
+            ログアウト
+          </Link>
+        </div>
       </div>
 
       {/* 確認用モーダル */}
@@ -382,6 +401,16 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '6px',
     fontSize: '0.75rem',
     cursor: 'pointer',
+  },
+  footer: {
+    marginTop: '20px',
+    textAlign: 'center',
+    padding: '20px 0',
+  },
+  logoutLink: {
+    color: '#888',
+    textDecoration: 'underline',
+    fontSize: '0.9rem',
   },
   modalOverlay: {
     position: 'fixed',
