@@ -1,19 +1,20 @@
 /**
  * Filename: src/app/api/dupr/[id]/route.ts
- * Version : V1.0.1
+ * Version : V1.0.2
  * Update  : 2026-01-31
  * Remarks : 
+ * V1.0.2 - 修正：Dynamic Rendering を強制し、Vercel上での404を防止。
  * V1.0.1 - 修正：Next.js 15の非同期 params 仕様に対応。
- * V1.0.0 - 新規：DUPR ID を受け取り情報を返す API エンドポイント。
  */
 
 import { NextResponse } from 'next/server';
 import { fetchDuprInfo } from '@/lib/duprApi';
 
 /**
- * GET ハンドラー
- * フロントエンドからのリクエストを受け、サーバーサイドでDUPR情報を取得して返す
+ * 追加：Next.js に対して、この API ルートを動的に生成することを強制します。
  */
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -21,8 +22,9 @@ export async function GET(
   // Next.js 15 では params は Promise なので await が必要
   const { id } = await params;
 
-  // ID がない場合のバリデーション
-  if (!id) {
+  if (
+    !id
+  ) {
     return NextResponse.json(
       {
         success: false,
@@ -32,19 +34,20 @@ export async function GET(
     );
   }
 
-  // lib 側のロジックを呼び出し
   const result = await fetchDuprInfo(id);
 
-  // 取得失敗（見つからない、エラー等）の場合
-  if (!result.success) {
+  if (
+    !result.success
+  ) {
+    // 404 エラーの場合も JSON でエラー内容を返す
     return NextResponse.json(
       result,
       { status: 404 }
     );
   }
 
-  // 成功時は取得したレート情報を返却
   return NextResponse.json(
-    result
+    result,
+    { status: 200 }
   );
 }

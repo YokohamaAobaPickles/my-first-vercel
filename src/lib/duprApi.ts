@@ -1,10 +1,10 @@
 /**
  * Filename: src/lib/duprApi.ts
- * Version : V1.2.4
- * Update  : 2026-01-30
+ * Version : V1.3.0
+ * Update  : 2026-01-31
  * Remarks : 
+ * V1.3.0 - 修正：より広範なHTML構造に対応するため、正規表現を大幅に強化。
  * V1.2.4 - 修正：HTMLの改行・空白に対応するため正規表現を緩和。
- * V1.2.3 - 修正：HTML構造解析を div タグ構成に対応。
  */
 
 import { ApiResponse } from '@/types/member';
@@ -45,36 +45,38 @@ export const fetchDuprInfo = async (
     const html = await response.text();
 
     /**
-     * 正規表現の修正：
-     * </div> と <div の間のあらゆる空白・改行 [\s\n]* を許容するように変更。
+     * 正規表現の強化：
+     * "Doubles" という文字列の後、次の数値または "--" が現れるまで
+     * のあらゆるタグと空白をスキップしてキャプチャします。
+     * [^>]*> はタグの閉じを、[\\s\\S]*? は改行を含む最小一致を表します。
      */
-    const doublesMatch = html.match(
-      /Doubles<\/div>[\s\n]*<div[^>]*>([\d.]+|--)<\/div>/i
-    );
-    const singlesMatch = html.match(
-      /Singles<\/div>[\s\n]*<div[^>]*>([\d.]+|--)<\/div>/i
-    );
+    const extractRating = (type: string) => {
+      const pattern = new RegExp(
+        `${type}<\\/div>[\\s\\S]*?>([\\d.]+|--|NR)<`, 
+        'i'
+      );
+      const match = html.match(pattern);
+      if (
+        !match || 
+        match[1] === '--' || 
+        match[1] === 'NR'
+      ) {
+        return 0;
+      }
+      return parseFloat(match[1]);
+    };
 
-    const doubles = (
-      doublesMatch && 
-      doublesMatch[1] !== '--'
-    ) ? parseFloat(doublesMatch[1]) : 0;
-
-    const singles = (
-      singlesMatch && 
-      singlesMatch[1] !== '--'
-    ) ? parseFloat(singlesMatch[1]) : 0;
+    const doubles = extractRating('Doubles');
+    const singles = extractRating('Singles');
 
     if (
-      doubles === 0 &&
+      doubles === 0 && 
       singles === 0
     ) {
       return {
         success: false,
         data: null,
-        error: { 
-          message: 'レーティングデータが未登録または見つかりません' 
-        }
+        error: { message: 'レーティングデータが未登録または見つかりません' }
       };
     }
 
@@ -82,7 +84,7 @@ export const fetchDuprInfo = async (
       success: true,
       data: {
         dupr_rate_doubles: doubles,
-        dupr_rate_singles: singles
+        dupr_rate_singles: singles,
       },
       error: null
     };
@@ -91,9 +93,7 @@ export const fetchDuprInfo = async (
     return {
       success: false,
       data: null,
-      error: { 
-        message: '通信エラーが発生しました' 
-      }
+      error: { message: 'DUPR情報の取得中にエラーが発生しました' }
     };
   }
 };

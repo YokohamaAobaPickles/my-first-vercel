@@ -81,7 +81,7 @@ describe('ProfilePage 総合検証 V2.5.0', () => {
 
   describe('1. 表示内容と権限の検証', () => {
     it('【詳細表示】基本情報・緊急連絡先が表示されること', () => {
-      ;(useAuthCheck as any).mockReturnValue({
+      ; (useAuthCheck as any).mockReturnValue({
         isLoading: false,
         user: TEST_USER,
         userRoles: 'member',
@@ -94,20 +94,20 @@ describe('ProfilePage 総合検証 V2.5.0', () => {
 
     it('【管理者】会員管理パネルの表示がロールで制御されること', () => {
       const { rerender } = render(<ProfilePage />)
-      
-      ;(useAuthCheck as any).mockReturnValue({
-        isLoading: false,
-        user: TEST_USER,
-        userRoles: 'member_manager',
-      })
+
+        ; (useAuthCheck as any).mockReturnValue({
+          isLoading: false,
+          user: TEST_USER,
+          userRoles: 'member_manager',
+        })
       rerender(<ProfilePage />)
       expect(screen.getByText('会員管理パネル')).toBeInTheDocument()
 
-      ;(useAuthCheck as any).mockReturnValue({
-        isLoading: false,
-        user: TEST_USER,
-        userRoles: 'member',
-      })
+        ; (useAuthCheck as any).mockReturnValue({
+          isLoading: false,
+          user: TEST_USER,
+          userRoles: 'member',
+        })
       rerender(<ProfilePage />)
       expect(screen.queryByText('会員管理パネル')).not.toBeInTheDocument()
     })
@@ -115,7 +115,7 @@ describe('ProfilePage 総合検証 V2.5.0', () => {
 
   describe('2. 競技情報 (DUPR) の検証', () => {
     it('【表示】DoublesとSinglesのRatingが分離して表示されること', () => {
-      ;(useAuthCheck as any).mockReturnValue({
+      ; (useAuthCheck as any).mockReturnValue({
         isLoading: false,
         user: TEST_USER,
         userRoles: 'member',
@@ -127,15 +127,15 @@ describe('ProfilePage 総合検証 V2.5.0', () => {
     })
 
     it('【同期】DUPR更新ボタン押下で syncDuprData が呼ばれること', async () => {
-      ;(useAuthCheck as any).mockReturnValue({
+      ; (useAuthCheck as any).mockReturnValue({
         isLoading: false,
         user: TEST_USER,
         userRoles: 'member',
       })
-      vi.mocked(syncDuprData).mockResolvedValue({ 
-        success: true, 
-        data: null, 
-        error: null 
+      vi.mocked(syncDuprData).mockResolvedValue({
+        success: true,
+        data: null,
+        error: null
       })
 
       render(<ProfilePage />)
@@ -143,7 +143,8 @@ describe('ProfilePage 総合検証 V2.5.0', () => {
       fireEvent.click(syncBtn)
 
       await waitFor(() => {
-        expect(syncDuprData).toHaveBeenCalledWith(TEST_USER.id)
+        // 修正ポイント：TEST_USER.id ではなく TEST_USER.dupr_id を期待する
+        expect(syncDuprData).toHaveBeenCalledWith(TEST_USER.dupr_id)
         expect(window.location.reload).toHaveBeenCalled()
       })
     })
@@ -151,34 +152,34 @@ describe('ProfilePage 総合検証 V2.5.0', () => {
 
   describe('3. ステータス別ボタン表示の出し分け', () => {
     const testCases = [
-      { 
-        status: 'new_req', 
-        show: ['入会取消'], 
-        hide: ['休会申請', '退会申請'] 
+      {
+        status: 'new_req',
+        show: ['入会取消'],
+        hide: ['休会申請', '退会申請']
       },
-      { 
-        status: 'active', 
-        show: ['休会申請', '退会申請'], 
-        hide: ['入会取消'] 
+      {
+        status: 'active',
+        show: ['休会申請', '退会申請'],
+        hide: ['入会取消']
       },
-      { 
-        status: 'suspend_req', 
-        show: ['休会取消', '退会申請'], 
-        hide: ['休会申請'] 
+      {
+        status: 'suspend_req',
+        show: ['休会取消', '退会申請'],
+        hide: ['休会申請']
       }
     ]
 
     testCases.forEach(({ status, show, hide }) => {
       it(`【ステータス: ${status}】期待通りのボタンが表示されること`, () => {
-        ;(useAuthCheck as any).mockReturnValue({
+        ; (useAuthCheck as any).mockReturnValue({
           isLoading: false,
           user: { ...TEST_USER, status },
           userRoles: 'member',
         })
         render(<ProfilePage />)
-        show.forEach(name => 
+        show.forEach(name =>
           expect(screen.getByRole('button', { name })).toBeInTheDocument())
-        hide.forEach(name => 
+        hide.forEach(name =>
           expect(screen.queryByRole('button', { name })).not.toBeInTheDocument())
       })
     })
@@ -186,15 +187,15 @@ describe('ProfilePage 総合検証 V2.5.0', () => {
 
   describe('4. アクション実行とAPI連携', () => {
     it('【入会取消】deleteMember 実行後にTOPへ遷移すること', async () => {
-      ;(useAuthCheck as any).mockReturnValue({
+      ; (useAuthCheck as any).mockReturnValue({
         isLoading: false,
         user: { ...TEST_USER, status: 'new_req' },
         userRoles: 'member',
       })
-      vi.mocked(deleteMember).mockResolvedValue({ 
-        success: true, 
-        data: null, 
-        error: null 
+      vi.mocked(deleteMember).mockResolvedValue({
+        success: true,
+        data: null,
+        error: null
       })
 
       render(<ProfilePage />)
@@ -208,15 +209,15 @@ describe('ProfilePage 総合検証 V2.5.0', () => {
     })
 
     it('【申請取消】取消実行時に status が active に戻ること', async () => {
-      ;(useAuthCheck as any).mockReturnValue({
+      ; (useAuthCheck as any).mockReturnValue({
         isLoading: false,
         user: { ...TEST_USER, status: 'suspend_req' },
         userRoles: 'member',
       })
-      vi.mocked(updateMemberStatus).mockResolvedValue({ 
-        success: true, 
-        data: null, 
-        error: null 
+      vi.mocked(updateMemberStatus).mockResolvedValue({
+        success: true,
+        data: null,
+        error: null
       })
 
       render(<ProfilePage />)
