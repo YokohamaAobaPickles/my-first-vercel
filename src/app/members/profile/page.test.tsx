@@ -88,7 +88,8 @@ describe('ProfilePage 統合検証 V2.8.0', () => {
     expect(screen.getByText('怪我しがち')).toBeInTheDocument()
     expect(screen.getByText('4.567')).toBeInTheDocument()
     expect(screen.getByText('2026-01-20')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'ログアウト' })).toBeInTheDocument()
+    //expect(screen.getByRole('link', { name: 'ログアウト' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'ログアウト' })).toBeInTheDocument()
   })
 
   /* --------------------
