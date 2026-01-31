@@ -1,11 +1,11 @@
 /**
  * Filename: src/lib/memberApi.ts
- * Version : V3.1.0
- * Update  : 2026-01-30
+ * Version : V3.2.0
+ * Update  : 2026-02-01
  * Remarks : 
+ * V3.2.0 - 追加：管理者用一括更新関数 updateMember を実装。
  * V3.1.0 - 追加：deleteMember (物理レコード削除) を実装。
- * V3.0.0 - 修正：ステータス名称変更に対応 (new_req)。
- * V3.0.0 - 修正：updateMemberStatus の引数に MemberStatus 型を適用。
+ * V3.0.0 - 修正：ステータス名称変更に対応 (new_req) および updateMemberStatus の引数型修正。
  */
 
 import { supabase } from '@/lib/supabase';
@@ -189,6 +189,25 @@ export const checkNicknameExists = async (
  * * 退会時は data に withdraw_date を含めて呼び出す
  */
 export const updateMemberProfile = async (
+  id: string,
+  data: Partial<Member>
+): Promise<ApiResponse<null>> => {
+  const { error } = await supabase
+    .from('members')
+    .update(data)
+    .eq('id', id);
+
+  if (error) {
+    return handleError(error);
+  }
+  return { success: true, data: null, error: null };
+};
+
+/**
+ * 会員情報の更新 (管理者用一括更新)
+ * ステータス、メールアドレス、管理者編集項目などを一括で変更可能。
+ */
+export const updateMember = async (
   id: string,
   data: Partial<Member>
 ): Promise<ApiResponse<null>> => {

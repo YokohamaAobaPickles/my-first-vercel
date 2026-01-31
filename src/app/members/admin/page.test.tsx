@@ -1,10 +1,11 @@
 /**
  * Filename: src/app/members/admin/page.test.tsx
- * Version : V2.1.1
+ * Version : V2.2.1
  * Update  : 2026-02-01
  * Remarks : 
- * V2.1.1 - 修正：クライアントサイドフィルタリングの検証に変更（API再呼び出しの検証を削除）。
- * V2.1.0 - 強化：未認可アクセス、ステータス絞り込み操作、番号フォーマットの検証を追加。
+ * V2.2.1 - 修正：非同期ステート更新待ち(waitFor)を追加。
+ * V2.2.0 - 仕様変更対応：ニックネーム・氏名の表示、削除ボタンの隔離、
+ * エキストラ画面リンクの検証を追加。V2.1.1の認可テストを継承。
  */
 
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
@@ -17,7 +18,6 @@ import * as memberApi from '@/lib/memberApi'
 vi.mock('@/hooks/useAuthCheck')
 vi.mock('@/lib/memberApi', () => ({
   fetchMembers: vi.fn(),
-  fetchPendingMembers: vi.fn(), // 互換性のため維持
 }))
 
 const mockReplace = vi.fn()
@@ -27,26 +27,67 @@ vi.mock('next/navigation', () => ({
   }),
 }))
 
-describe('AdminDashboard - 全会員一覧表示の検証 V2.1.1', () => {
+describe('AdminDashboard - 会員管理パネル新仕様の検証 V2.2.1', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('【認可】管理者権限がない場合、ホームへリダイレクトされること', async () => {
-    vi.mocked(useAuthCheck).mockReturnValue({
-      isLoading: false,
-      user: { roles: ROLES.MEMBER },
-      userRoles: ROLES.MEMBER,
-    } as any)
+  it('【認可】管理者権限がない場合、プロフィールへリダイレクトされること',
+    async () => {
+      vi.mocked(useAuthCheck).mockReturnValue({
+        isLoading: false,
+        user: { roles: ROLES.MEMBER },
+        userRoles: ROLES.MEMBER,
+      } as any)
 
-    render(<AdminDashboard />)
+      render(<AdminDashboard />)
 
-    await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith('/members/profile')
+      await waitFor(() => {
+        expect(mockReplace).toHaveBeenCalledWith('/members/profile')
+      })
     })
-  })
 
-  it('【A-31正常系】会員番号が4桁フォーマットされていること', async () => {
+  it('【表示】番号・ニックネーム・氏名が表示され、削除ボタンがないこと',
+    async () => {
+      vi.mocked(useAuthCheck).mockReturnValue({
+        isLoading: false,
+        user: { roles: ROLES.SYSTEM_ADMIN },
+        userRoles: ROLES.SYSTEM_ADMIN,
+      } as any)
+
+      const mockMembers = [
+        {
+          id: 'u1',
+          member_number: 1,
+          nickname: 'ニック一号',
+          name: '氏名一号',
+          status: 'active'
+        }
+      ]
+
+      vi.mocked(memberApi.fetchMembers).mockResolvedValue({
+        success: true,
+        data: mockMembers as any,
+        error: null
+      })
+
+      render(<AdminDashboard />)
+
+      // 1. 会員番号 4桁フォーマットの確認
+      expect(await screen.findByText('0001')).toBeTruthy()
+
+      // 2. ニックネームと氏名の両方が表示されていることの確認
+      expect(screen.getByText('ニック一号')).toBeTruthy()
+      expect(screen.getByText('氏名一号')).toBeTruthy()
+
+      // 3. 削除ボタンが一覧に存在しないことの確認
+      expect(screen.queryByText('削除')).toBeNull()
+
+      // 4. 詳細リンクが存在することの確認
+      expect(screen.getByText('詳細')).toBeTruthy()
+    })
+
+  it('【操作】ステータスフィルタで表示対象が切り替わること', async () => {
     vi.mocked(useAuthCheck).mockReturnValue({
       isLoading: false,
       user: { roles: ROLES.SYSTEM_ADMIN },
@@ -54,8 +95,8 @@ describe('AdminDashboard - 全会員一覧表示の検証 V2.1.1', () => {
     } as any)
 
     const mockMembers = [
-      { id: 'u1', member_number: 1, name: '会員一号', status: 'active' },
-      { id: 'u2', member_number: 25, name: '会員二五号', status: 'active' }
+      { id: 'u1', name: '有効ユーザー', status: 'active', member_number: 1 },
+      { id: 'u2', name: '申請ユーザー', status: 'new_req', member_number: 2 }
     ]
 
     vi.mocked(memberApi.fetchMembers).mockResolvedValue({
@@ -66,8 +107,43 @@ describe('AdminDashboard - 全会員一覧表示の検証 V2.1.1', () => {
 
     render(<AdminDashboard />)
 
-    expect(await screen.findByText('0001')).toBeTruthy()
-    expect(screen.getByText('0025')).toBeTruthy()
+    expect(await screen.findByText('有効ユーザー')).toBeTruthy()
+    expect(screen.getByText('申請ユーザー')).toBeTruthy()
+
+    // 「申請中」フィルタを選択
+    const select = screen.getByLabelText(/表示フィルタ/i)
+    fireEvent.change(select, { target: { value: 'new_req' } })
+
+    // 変更後のDOM状態をwaitForで待機（act警告対策）
+    await waitFor(() => {
+      expect(screen.queryByText('有効ユーザー')).toBeNull()
+      expect(screen.getByText('申請ユーザー')).toBeTruthy()
+    })
   })
 
+it('【ナビ】エキストラ画面へのリンクが「管理権限を持つユーザー」に表示されること',
+    async () => {
+      vi.mocked(useAuthCheck).mockReturnValue({
+        isLoading: false,
+        user: { roles: 'president' },
+        userRoles: 'president',
+      } as any)
+
+      vi.mocked(memberApi.fetchMembers).mockResolvedValue({
+        success: true,
+        data: [],
+        error: null
+      })
+
+      render(<AdminDashboard />)
+
+      // getByRole ではなく findByRole を使用して非同期の出現を待つ
+      // これにより「読み込み中...」が消えた後のDOMを検証できる
+      const extraLink = await screen.findByRole('link', { 
+        name: /エキストラ/i 
+      })
+
+      expect(extraLink).toBeTruthy()
+      expect(extraLink.getAttribute('href')).toBe('/members/admin/extra')
+    })
 })
