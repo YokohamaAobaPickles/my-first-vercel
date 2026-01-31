@@ -117,7 +117,7 @@ export default function ProfilePage() {
         <div style={styles.header}>
           <h1 style={styles.title}>マイプロフィール</h1>
           {canManageMembers(userRoles) && (
-            <Link href="/admin/members" style={styles.adminButton}>
+            <Link href="/members/admin" style={styles.adminButton}>
               会員管理パネル
             </Link>
           )}
