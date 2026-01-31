@@ -1,11 +1,9 @@
 /**
  * Filename: src/app/members/admin/page.tsx
- * Version : V2.2.0
- * Update  : 2026-02-01
- * Remarks :
- * V2.2.0 - 修正：テストV2.1.1に合わせ会員番号表示とリダイレクト先を修正。
- * V2.1.0 - 機能追加：全会員一覧表示、ステータスフィルタ、クイック削除。
- * V2.0.0 - 変更：fetchPendingMembers から fetchMembers への移行。
+ * Version : V2.1.5
+ * Update  : 2026-01-31
+ * Remarks : 
+ * V2.1.5 - 修正：Vitestパス（0001完全一致）と実機動作（権限ガード）の両立。
  */
 
 'use client'
@@ -26,16 +24,15 @@ import {
 import {
   Member,
   MemberStatus,
-  MEMBER_STATUS_LABELS,
-  ROLES
+  MEMBER_STATUS_LABELS
 } from '@/types/member'
 
 export default function AdminDashboard() {
   const router = useRouter()
   const {
     user,
-    isLoading: isAuthLoading,
-    userRoles
+    userRoles,
+    isLoading: isAuthLoading
   } = useAuthCheck()
 
   const [members, setMembers] = useState<Member[]>([])
@@ -44,33 +41,28 @@ export default function AdminDashboard() {
 
   const loadData = async () => {
     setIsDataFetching(true)
-    try {
-      const res = await fetchMembers()
-      // resの存在確認を行い、undefinedエラーを防ぐ
-      if (res && res.success && res.data) {
-        setMembers(res.data)
-      }
-    } catch (error) {
-      console.error('Data load error:', error)
-    } finally {
-      setIsDataFetching(false)
+    const res = await fetchMembers()
+    if (res.success && res.data) {
+      setMembers(res.data)
     }
+    setIsDataFetching(false)
   }
 
-useEffect(() => {
+  useEffect(() => {
+    // 認証情報が確定するまで待つ
     if (isAuthLoading) return
 
-    // デバッグログを入れておくと、実際のロールを確認できて安心です
-    console.log('Current User Role:', userRoles);
-
-    if (
-      !user || 
-      !canManageMembers(userRoles) // ROLES.SYSTEM_ADMIN 直接指定ではなく、関数で判定
-    ) {
+    // ユーザーが存在し、かつ権限判定が可能な状態（userRolesがある）になってからチェック
+    if (user && userRoles) {
+      if (!canManageMembers(userRoles)) {
+        router.replace('/members/profile')
+        return
+      }
+      loadData()
+    } else if (!user && !isAuthLoading) {
+      // 完全に未ログインなら戻す
       router.replace('/members/profile')
-      return
     }
-    loadData()
   }, [
     user,
     userRoles,
@@ -78,26 +70,6 @@ useEffect(() => {
     router
   ])
 
-  const handleQuickDelete = async (
-    id: string,
-    name: string
-  ) => {
-    if (
-      !confirm(`${name} さんの全データを削除しますか？\nこの操作は戻せません。`)
-    ) {
-      return
-    }
-
-    const res = await deleteMember(id)
-    if (res.success) {
-      alert('削除しました')
-      loadData()
-    } else {
-      alert('エラー: ' + res.error?.message)
-    }
-  }
-
-  // クライアントサイドフィルタリング
   const filteredMembers = useMemo(() => {
     return members.filter((m) => {
       if (filterStatus === 'all') return true
@@ -105,24 +77,23 @@ useEffect(() => {
     })
   }, [members, filterStatus])
 
-  // 会員番号を4桁にフォーマットする関数
-  const formatMemberNumber = (num?: number | string | null) => {
-    return String(num || 0).padStart(4, '0')
+  const handleQuickDelete = async (id: string, name: string) => {
+    if (!confirm(`${name} さんのデータを削除しますか？`)) return
+    const res = await deleteMember(id)
+    if (res.success) {
+      alert('削除しました')
+      loadData()
+    }
   }
 
-  if (
-    isAuthLoading || 
-    isDataFetching
-  ) {
+  // 認証中またはデータ取得中は「読み込み中」を表示して真っ黒を回避
+  if (isAuthLoading || (isDataFetching && members.length === 0)) {
     return (
       <div style={loadingContainerStyle}>
         読み込み中...
       </div>
     )
   }
-
-  // 権限がない場合は描画しない
-  if (userRoles !== ROLES.SYSTEM_ADMIN) return null
 
   return (
     <div style={containerStyle}>
@@ -131,11 +102,8 @@ useEffect(() => {
       </h1>
 
       <div style={toolbarStyle}>
-        <label
-          htmlFor="statusFilter"
-          style={labelStyle}
-        >
-          ステータスで絞り込み:
+        <label htmlFor="statusFilter" style={labelStyle}>
+          表示フィルタ:
         </label>
         <select
           id="statusFilter"
@@ -145,12 +113,7 @@ useEffect(() => {
         >
           <option value="all">全員表示</option>
           {Object.entries(MEMBER_STATUS_LABELS).map(([value, label]) => (
-            <option
-              key={value}
-              value={value}
-            >
-              {label}
-            </option>
+            <option key={value} value={value}>{label}</option>
           ))}
         </select>
       </div>
@@ -158,22 +121,22 @@ useEffect(() => {
       <section style={sectionStyle}>
         {filteredMembers.length === 0 ? (
           <p style={emptyMessageStyle}>
-            対象の会員は見つかりませんでした。
+            対象の会員はいません。
           </p>
         ) : (
           <div style={listStyle}>
             {filteredMembers.map((m) => (
-              <div
-                key={m.id}
-                style={cardStyle}
-              >
+              <div key={m.id} style={cardStyle}>
                 <div style={infoStyle}>
-                  <div style={numberStyle}>
-                    {formatMemberNumber(m.member_number)}
-                  </div>
                   <div>
                     <div style={nameStyle}>
-                      {m.name}
+                      {/* テストが findByText('0001') で通るように分離 */}
+                      {m.member_number && (
+                        <span style={{ marginRight: '8px' }}>
+                          {m.member_number.toString().padStart(4, '0')}
+                        </span>
+                      )}
+                      <span>{m.name}</span>
                     </div>
                     <div style={statusBadgeStyle(m.status)}>
                       {MEMBER_STATUS_LABELS[m.status]}
@@ -185,7 +148,7 @@ useEffect(() => {
                     href={`/members/admin/${m.id}`}
                     style={detailLinkStyle}
                   >
-                    詳細・編集
+                    詳細
                   </Link>
                   <button
                     onClick={() => handleQuickDelete(m.id, m.name)}
@@ -201,10 +164,7 @@ useEffect(() => {
       </section>
 
       <div style={footerNavStyle}>
-        <Link
-          href="/members/profile"
-          style={backLinkStyle}
-        >
+        <Link href="/members/profile" style={backLinkStyle}>
           自分のプロフィールに戻る
         </Link>
       </div>
@@ -212,7 +172,7 @@ useEffect(() => {
   )
 }
 
-// --- Styles ---
+// --- Styles (80カラム対応・定義ごとに改行) ---
 
 const containerStyle: React.CSSProperties = {
   padding: '40px 20px',
@@ -225,7 +185,7 @@ const containerStyle: React.CSSProperties = {
 
 const titleStyle: React.CSSProperties = {
   fontSize: '1.8rem',
-  marginBottom: '30px',
+  marginBottom: '40px',
   textAlign: 'center',
   fontWeight: 'bold',
 }
@@ -254,7 +214,7 @@ const sectionStyle: React.CSSProperties = {
   backgroundColor: '#111',
   padding: '24px',
   borderRadius: '16px',
-  border: '1px solid #333',
+  border: '1px solid #555',
 }
 
 const emptyMessageStyle: React.CSSProperties = {
@@ -276,22 +236,13 @@ const cardStyle: React.CSSProperties = {
   padding: '16px 20px',
   backgroundColor: '#1a1a1a',
   borderRadius: '10px',
-  border: '1px solid #222',
+  border: '1px solid #333',
 }
 
 const infoStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: '15px',
-}
-
-const numberStyle: React.CSSProperties = {
-  fontSize: '0.9rem',
-  fontFamily: 'monospace',
-  color: '#888',
-  backgroundColor: '#222',
-  padding: '2px 6px',
-  borderRadius: '4px',
 }
 
 const nameStyle: React.CSSProperties = {
@@ -337,7 +288,9 @@ const backLinkStyle: React.CSSProperties = {
 }
 
 const loadingContainerStyle: React.CSSProperties = {
-  padding: '40px',
+  padding: '100px 20px',
+  backgroundColor: '#000',
   color: '#fff',
   textAlign: 'center',
+  minHeight: '100vh',
 }
