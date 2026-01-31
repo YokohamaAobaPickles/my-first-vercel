@@ -1,114 +1,207 @@
 /**
  * Filename: src/app/members/admin/page.tsx
- * Version : V1.3.0
- * Update  : 2026-01-26
- * 履歴:
- * V1.3.0 - 永続化対応。fetchPendingMembers API を使用し実データ連携を実装。
- * ローディング状態（isDataFetching）の制御を追加。
- * V1.2.0 - useAuthCheck フックによる管理者権限ガードを実装。
- * V1.1.0 - モックデータによる承認待ち一覧のUIプロトタイプ作成。
- * V1.0.0 - 初回作成。
+ * Version : V2.2.0
+ * Update  : 2026-02-01
+ * Remarks :
+ * V2.2.0 - 修正：テストV2.1.1に合わせ会員番号表示とリダイレクト先を修正。
+ * V2.1.0 - 機能追加：全会員一覧表示、ステータスフィルタ、クイック削除。
+ * V2.0.0 - 変更：fetchPendingMembers から fetchMembers への移行。
  */
 
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, {
+  useEffect,
+  useState,
+  useMemo
+} from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import { canManageMembers } from '@/utils/auth'
-import { fetchPendingMembers } from '@/lib/memberApi'
-
-// 会員の型定義（将来的に types/index.ts 等に移行も検討）
-interface Member {
-  id: string;
-  name: string;
-  roles: string;
-  status: string;
-}
+import {
+  fetchMembers,
+  deleteMember
+} from '@/lib/memberApi'
+import {
+  Member,
+  MemberStatus,
+  MEMBER_STATUS_LABELS,
+  ROLES
+} from '@/types/member'
 
 export default function AdminDashboard() {
   const router = useRouter()
-  const { user, isLoading: isAuthLoading } = useAuthCheck()
+  const {
+    user,
+    isLoading: isAuthLoading,
+    userRoles
+  } = useAuthCheck()
 
-  // 状態管理
-  const [pendingMembers, setPendingMembers] = useState<Member[]>([])
+  const [members, setMembers] = useState<Member[]>([])
+  const [filterStatus, setFilterStatus] = useState<MemberStatus | 'all'>('all')
   const [isDataFetching, setIsDataFetching] = useState(true)
 
-  useEffect(() => {
-    // 認証チェックが終わるまで待機
-    if (isAuthLoading) return
+  const loadData = async () => {
+    setIsDataFetching(true)
+    try {
+      const res = await fetchMembers()
+      // resの存在確認を行い、undefinedエラーを防ぐ
+      if (res && res.success && res.data) {
+        setMembers(res.data)
+      }
+    } catch (error) {
+      console.error('Data load error:', error)
+    } finally {
+      setIsDataFetching(false)
+    }
+  }
 
-    // 権限チェック：会員管理権限がない場合はトップページへ
-    if (!user || !canManageMembers(user.roles)) {
-      router.replace('/')
+  useEffect(() => {
+    if (isAuthLoading) return
+    // テスト期待値に合わせてリダイレクト先を /members/profile に修正
+    if (
+      !user || 
+      userRoles !== ROLES.SYSTEM_ADMIN
+    ) {
+      router.replace('/members/profile')
+      return
+    }
+    loadData()
+  }, [
+    user,
+    userRoles,
+    isAuthLoading,
+    router
+  ])
+
+  const handleQuickDelete = async (
+    id: string,
+    name: string
+  ) => {
+    if (
+      !confirm(`${name} さんの全データを削除しますか？\nこの操作は戻せません。`)
+    ) {
       return
     }
 
-    /**
-     * 実データの取得処理
-     */
-    const loadData = async () => {
-      try {
-        const res = await fetchPendingMembers() // 変数名を res (response) にすると分かりやすいです
-        if (res.success && res.data) {
-          setPendingMembers(res.data) // ApiResponse の中の data (Member[]) をセット
-        } else {
-          // 必要に応じてエラーハンドリング
-          console.error(res.error?.message)
-        }
-      } catch (err) {
-        console.error('データ取得に失敗しました:', err)
-      } finally {
-        setIsDataFetching(false)
-      }
+    const res = await deleteMember(id)
+    if (res.success) {
+      alert('削除しました')
+      loadData()
+    } else {
+      alert('エラー: ' + res.error?.message)
     }
+  }
 
-    loadData()
-  }, [user, isAuthLoading, router])
+  // クライアントサイドフィルタリング
+  const filteredMembers = useMemo(() => {
+    return members.filter((m) => {
+      if (filterStatus === 'all') return true
+      return m.status === filterStatus
+    })
+  }, [members, filterStatus])
 
-  // 読み込み中の表示（認証またはデータ取得）
-  if (isAuthLoading || isDataFetching) {
+  // 会員番号を4桁にフォーマットする関数
+  const formatMemberNumber = (num?: number | string | null) => {
+    return String(num || 0).padStart(4, '0')
+  }
+
+  if (
+    isAuthLoading || 
+    isDataFetching
+  ) {
     return (
-      <div style={containerStyle}>
-        <p>読み込み中...</p>
+      <div style={loadingContainerStyle}>
+        読み込み中...
       </div>
     )
   }
 
+  // 権限がない場合は描画しない
+  if (userRoles !== ROLES.SYSTEM_ADMIN) return null
+
   return (
     <div style={containerStyle}>
-      <h1 style={titleStyle}>会員管理ダッシュボード</h1>
+      <h1 style={titleStyle}>
+        会員管理ダッシュボード
+      </h1>
 
-      {/* 承認待ちセクション */}
+      <div style={toolbarStyle}>
+        <label
+          htmlFor="statusFilter"
+          style={labelStyle}
+        >
+          ステータスで絞り込み:
+        </label>
+        <select
+          id="statusFilter"
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value as any)}
+          style={selectStyle}
+        >
+          <option value="all">全員表示</option>
+          {Object.entries(MEMBER_STATUS_LABELS).map(([value, label]) => (
+            <option
+              key={value}
+              value={value}
+            >
+              {label}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <section style={sectionStyle}>
-        <h2 style={subTitleStyle}>承認待ち会員</h2>
-
-        {pendingMembers.length === 0 ? (
-          <p style={emptyMessageStyle}>現在、承認待ちの会員はいません。</p>
+        {filteredMembers.length === 0 ? (
+          <p style={emptyMessageStyle}>
+            対象の会員は見つかりませんでした。
+          </p>
         ) : (
           <div style={listStyle}>
-            {pendingMembers.map((member) => (
-              <div key={member.id} style={cardStyle}>
+            {filteredMembers.map((m) => (
+              <div
+                key={m.id}
+                style={cardStyle}
+              >
                 <div style={infoStyle}>
-                  <span style={nameStyle}>{member.name}</span>
-                  <span style={roleBadgeStyle}>{member.roles}</span>
+                  <div style={numberStyle}>
+                    {formatMemberNumber(m.member_number)}
+                  </div>
+                  <div>
+                    <div style={nameStyle}>
+                      {m.name}
+                    </div>
+                    <div style={statusBadgeStyle(m.status)}>
+                      {MEMBER_STATUS_LABELS[m.status]}
+                    </div>
+                  </div>
                 </div>
-                <Link
-                  href={`/members/admin/${member.id}`}
-                  style={detailButtonStyle}
-                >
-                  詳細・承認
-                </Link>
+                <div style={actionAreaStyle}>
+                  <Link
+                    href={`/members/admin/${m.id}`}
+                    style={detailLinkStyle}
+                  >
+                    詳細・編集
+                  </Link>
+                  <button
+                    onClick={() => handleQuickDelete(m.id, m.name)}
+                    style={deleteBtnStyle}
+                  >
+                    削除
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         )}
       </section>
 
-      {/* ナビゲーション */}
-      <div style={{ textAlign: 'center', marginTop: '40px' }}>
-        <Link href="/members/profile" style={backLinkStyle}>
+      <div style={footerNavStyle}>
+        <Link
+          href="/members/profile"
+          style={backLinkStyle}
+        >
           自分のプロフィールに戻る
         </Link>
       </div>
@@ -116,48 +209,61 @@ export default function AdminDashboard() {
   )
 }
 
-// --- スタイル定義（ワードラップを考慮し整理） ---
+// --- Styles ---
+
 const containerStyle: React.CSSProperties = {
   padding: '40px 20px',
   backgroundColor: '#000',
   color: '#fff',
   minHeight: '100vh',
   maxWidth: '800px',
-  margin: '0 auto'
+  margin: '0 auto',
 }
 
 const titleStyle: React.CSSProperties = {
   fontSize: '1.8rem',
-  marginBottom: '40px',
+  marginBottom: '30px',
   textAlign: 'center',
-  fontWeight: 'bold'
+  fontWeight: 'bold',
+}
+
+const toolbarStyle: React.CSSProperties = {
+  marginBottom: '20px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '10px',
+}
+
+const labelStyle: React.CSSProperties = {
+  fontSize: '0.9rem',
+  color: '#aaa',
+}
+
+const selectStyle: React.CSSProperties = {
+  backgroundColor: '#111',
+  color: '#fff',
+  border: '1px solid #333',
+  padding: '8px',
+  borderRadius: '6px',
 }
 
 const sectionStyle: React.CSSProperties = {
   backgroundColor: '#111',
   padding: '24px',
   borderRadius: '16px',
-  border: '1px solid #333'
-}
-
-const subTitleStyle: React.CSSProperties = {
-  fontSize: '1.2rem',
-  marginBottom: '20px',
-  borderLeft: '4px solid #ff4d4f',
-  paddingLeft: '15px',
-  color: '#ff4d4f'
+  border: '1px solid #333',
 }
 
 const emptyMessageStyle: React.CSSProperties = {
   color: '#888',
   textAlign: 'center',
-  padding: '40px 0'
+  padding: '40px 0',
 }
 
 const listStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
-  gap: '12px'
+  gap: '12px',
 }
 
 const cardStyle: React.CSSProperties = {
@@ -167,40 +273,68 @@ const cardStyle: React.CSSProperties = {
   padding: '16px 20px',
   backgroundColor: '#1a1a1a',
   borderRadius: '10px',
-  border: '1px solid #222'
+  border: '1px solid #222',
 }
 
 const infoStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
-  gap: '15px'
+  gap: '15px',
+}
+
+const numberStyle: React.CSSProperties = {
+  fontSize: '0.9rem',
+  fontFamily: 'monospace',
+  color: '#888',
+  backgroundColor: '#222',
+  padding: '2px 6px',
+  borderRadius: '4px',
 }
 
 const nameStyle: React.CSSProperties = {
+  fontSize: '1.05rem',
   fontWeight: 'bold',
-  fontSize: '1.05rem'
 }
 
-const roleBadgeStyle: React.CSSProperties = {
+const statusBadgeStyle = (status: string): React.CSSProperties => ({
   fontSize: '0.75rem',
-  backgroundColor: '#333',
-  padding: '2px 8px',
-  borderRadius: '4px',
-  color: '#aaa'
+  marginTop: '4px',
+  color: status === 'active' ? '#4caf50' : 
+         status === 'new_req' ? '#ff4d4f' : '#888',
+})
+
+const actionAreaStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: '15px',
 }
 
-const detailButtonStyle: React.CSSProperties = {
-  padding: '8px 16px',
-  backgroundColor: '#fff',
-  color: '#000',
+const detailLinkStyle: React.CSSProperties = {
+  color: '#00d1ff',
   textDecoration: 'none',
-  borderRadius: '6px',
-  fontSize: '0.85rem',
-  fontWeight: 'bold'
+  fontSize: '0.9rem',
+}
+
+const deleteBtnStyle: React.CSSProperties = {
+  backgroundColor: 'transparent',
+  border: 'none',
+  color: '#ff4d4f',
+  cursor: 'pointer',
+  fontSize: '0.9rem',
+}
+
+const footerNavStyle: React.CSSProperties = {
+  marginTop: '40px',
+  textAlign: 'center',
 }
 
 const backLinkStyle: React.CSSProperties = {
   color: '#888',
   textDecoration: 'none',
-  fontSize: '0.9rem'
+  fontSize: '0.9rem',
+}
+
+const loadingContainerStyle: React.CSSProperties = {
+  padding: '40px',
+  color: '#fff',
+  textAlign: 'center',
 }
