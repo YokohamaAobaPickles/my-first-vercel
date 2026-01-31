@@ -57,12 +57,15 @@ export default function AdminDashboard() {
     }
   }
 
-  useEffect(() => {
+useEffect(() => {
     if (isAuthLoading) return
-    // テスト期待値に合わせてリダイレクト先を /members/profile に修正
+
+    // デバッグログを入れておくと、実際のロールを確認できて安心です
+    console.log('Current User Role:', userRoles);
+
     if (
       !user || 
-      userRoles !== ROLES.SYSTEM_ADMIN
+      !canManageMembers(userRoles) // ROLES.SYSTEM_ADMIN 直接指定ではなく、関数で判定
     ) {
       router.replace('/members/profile')
       return
