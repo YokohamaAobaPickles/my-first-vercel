@@ -452,7 +452,7 @@ export default function ProfileEditPage() {
                 name="dupr_id"
                 value={formData.dupr_id || ''}
                 onChange={handleChange}
-                placeholder="例: WKRV2Q"
+                placeholder="例: ABCDE"
                 style={styles.input}
               />
             </div>
