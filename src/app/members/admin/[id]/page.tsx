@@ -1,11 +1,10 @@
 /**
  * Filename: src/app/members/admin/[id]/page.tsx
- * Version : V2.4.4
+ * Version : V2.5.5
  * Update  : 2026-02-01
  * Remarks : 
- * V2.4.4 - 修正：canManage の引数型を string | null | undefined に拡張し、
- * TS2345 エラーを解消。
- * V2.4.3 - 修正：認可ロジックの厳密化。
+ * V2.5.5 - 修正：プロフィール編集(V2.4.1)の安定パターンを適用。
+ * 非同期データ取得とステータス管理を整理し、テストの安定性を向上。
  */
 
 'use client'
@@ -26,25 +25,28 @@ import {
   Member,
   MEMBER_STATUS_LABELS,
   MEMBER_KIND_LABELS,
-  ROLES
+  ROLES,
+  ROLES_LABELS,
+  MemberStatus
 } from '@/types/member'
 
-export default function MemberDetailPage(
+const STATUS_OPTIONS = Object.entries(MEMBER_STATUS_LABELS) as [MemberStatus, string][]
+
+export default function MemberDetailAdmin(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const router = useRouter()
   const { id } = use(params)
   const {
-    user,
+    user: currentUser,
     isLoading: authLoading,
-    userRoles
+    userRoles: currentUserRole
   } = useAuthCheck()
 
-  const [member, setMember] = useState<Member | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
+  const [formData, setFormData] = useState<any>(null)
+  const [originalMember, setOriginalMember] = useState<Member | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // 引数の型を string | null | undefined に修正
   const canManage = useCallback((role: string | null | undefined) => {
     return (
       role === ROLES.SYSTEM_ADMIN ||
@@ -57,10 +59,7 @@ export default function MemberDetailPage(
   useEffect(() => {
     if (authLoading) return
 
-    if (
-      !user ||
-      !canManage(userRoles)
-    ) {
+    if (!currentUser || !canManage(currentUserRole)) {
       router.replace('/members/profile')
       return
     }
@@ -68,283 +67,388 @@ export default function MemberDetailPage(
     async function load() {
       try {
         const res = await fetchMemberById(id)
-        if (
-          res.success &&
-          res.data
-        ) {
-          setMember(res.data)
+        if (res.success && res.data) {
+          setOriginalMember(res.data)
+          setFormData({
+            ...res.data,
+            // 数値項目が null の場合に input type="number" でエラーにならないよう処理
+            dupr_rate_doubles: res.data.dupr_rate_doubles ?? '',
+            dupr_rate_singles: res.data.dupr_rate_singles ?? '',
+          })
         }
       } catch (error) {
         console.error('Failed to load member:', error)
-      } finally {
-        setLoading(false)
       }
     }
     load()
-  }, [
-    id,
-    authLoading,
-    user,
-    userRoles,
-    router,
-    canManage
-  ])
+  }, [id, authLoading, currentUser, currentUserRole, router, canManage])
 
-  const handleSave = async (updatedFields: Partial<Member>) => {
-    if (!member) return
-    setSaving(true)
-    const res = await updateMember(member.id, updatedFields)
-    if (res.success) {
-      const updated = await fetchMemberById(id)
-      if (updated.data) {
-        setMember(updated.data)
-      }
-      alert('更新しました')
-    }
-    setSaving(false)
-  }
-
-  const handleApproveWithdrawal = async () => {
-    if (!member) return
-    const today = new Date().toISOString().split('T')[0].replace(/-/g, '')
-    const newEmail = `${member.email}_withdrawn_${today}`
-    await handleSave({
-      status: 'withdrawn',
-      email: newEmail,
-      retire_date: new Date().toISOString()
-    })
-  }
-
-  const handleReject = async () => {
-    if (
-      !member ||
-      !confirm('本当に拒否/強制退会させますか？')
-    ) {
-      return
-    }
-    await handleSave({
-      status: 'rejected',
-      reject_date: new Date().toISOString()
-    })
-  }
-
-  if (
-    authLoading ||
-    loading
-  ) {
+  // 実績のあるガード条件
+  if (authLoading || !formData) {
     return (
-      <div style={loadingStyle}>
-        Loading...
+      <div style={styles.container} data-testid="loading-state">
+        読み込み中...
       </div>
     )
   }
 
-  if (
-    !canManage(userRoles) ||
-    !member
-  ) {
-    return null
+  const handleSave = async () => {
+    if (!formData || !originalMember) return
+
+    // 役職変更の認可階層ルール
+    if (formData.roles !== originalMember.roles) {
+      if (currentUserRole === ROLES.VICE_PRESIDENT) {
+        if (formData.roles === ROLES.PRESIDENT) {
+          alert('権限がありません：副会長は会長権限を付与できません。')
+          return
+        }
+        if (originalMember.roles === ROLES.PRESIDENT) {
+          alert('権限がありません：会長の役職は変更できません。')
+          return
+        }
+      }
+
+      if (currentUserRole === ROLES.MEMBER_MANAGER) {
+        if (
+          formData.roles === ROLES.PRESIDENT ||
+          formData.roles === ROLES.VICE_PRESIDENT
+        ) {
+          alert('権限がありません：会長・副会長権限は付与できません。')
+          return
+        }
+        if (
+          originalMember.roles === ROLES.PRESIDENT ||
+          originalMember.roles === ROLES.VICE_PRESIDENT
+        ) {
+          alert('権限がありません：会長・副会長の役職は変更できません。')
+          return
+        }
+      }
+    }
+
+    setIsSubmitting(true)
+    try {
+      const submitData = {
+        ...formData,
+        dupr_rate_doubles: formData.dupr_rate_doubles === '' 
+          ? null 
+          : parseFloat(formData.dupr_rate_doubles),
+        dupr_rate_singles: formData.dupr_rate_singles === '' 
+          ? null 
+          : parseFloat(formData.dupr_rate_singles),
+      }
+
+      const res = await updateMember(id, submitData)
+      if (res.success) {
+        alert('更新しました')
+        setOriginalMember(submitData)
+      } else {
+        alert(res.error?.message || '更新に失敗しました')
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleQuickStatusChange = async (
+    nextStatus: MemberStatus,
+    email?: string
+  ) => {
+    if (!formData) return
+    const updateData: any = { status: nextStatus }
+    if (email) updateData.email = email
+    if (nextStatus === 'withdrawn') {
+      updateData.retire_date = new Date().toISOString()
+    }
+    if (nextStatus === 'rejected') {
+      updateData.reject_date = new Date().toISOString()
+    }
+
+    setFormData({ ...formData, ...updateData })
+    // ステート更新後に保存処理をキック
+    setTimeout(() => handleSave(), 100)
   }
 
   return (
-    <div style={containerStyle}>
-      <h1 style={titleStyle}>
-        会員詳細: {member.name}
-      </h1>
-      <p style={statusTextStyle}>
-        ステータス: {MEMBER_STATUS_LABELS[member.status]}
-      </p>
+    <div style={styles.container}>
+      <div style={styles.content}>
+        <h1 style={styles.title}>会員詳細編集 (管理者)</h1>
 
-      <div style={formWrapperStyle}>
-        <label style={labelStyle}>
-          氏名（漢字）:
-          <input
-            type="text"
-            defaultValue={member.name}
-            aria-label="氏名（漢字）"
-            onChange={(e) => setMember({
-              ...member,
-              name: e.target.value
-            })}
-            style={inputStyle}
-          />
-        </label>
-
-        <label style={labelStyle}>
-          ローマ字:
-          <input
-            type="text"
-            defaultValue={member.name_roma}
-            aria-label="ローマ字"
-            onChange={(e) => setMember({
-              ...member,
-              name_roma: e.target.value
-            })}
-            style={inputStyle}
-          />
-        </label>
-
-        <label style={labelStyle}>
-          生年月日:
-          <input
-            type="date"
-            defaultValue={member.birthday || ''}
-            aria-label="生年月日"
-            onChange={(e) => setMember({
-              ...member,
-              birthday: e.target.value
-            })}
-            style={inputStyle}
-          />
-        </label>
-
-        <label style={labelStyle}>
-          会員種別:
-          <select
-            defaultValue={member.member_kind}
-            aria-label="会員種別"
-            onChange={(e) => setMember({
-              ...member,
-              member_kind: e.target.value
-            })}
-            style={inputStyle}
-          >
-            {Object.entries(MEMBER_KIND_LABELS).map(([k, v]) => (
-              <option
-                key={k}
-                value={k}
+        <section style={styles.section}>
+          <h2 style={styles.sectionTitle}>基本・管理情報</h2>
+          <div style={styles.card}>
+            <div style={styles.field}>
+              <label style={styles.label} htmlFor="member_number">
+                会員番号
+              </label>
+              <input
+                id="member_number"
+                type="text"
+                value={formData.member_number || ''}
+                onChange={(e) => 
+                  setFormData({ ...formData, member_number: e.target.value })
+                }
+                style={styles.input}
+              />
+            </div>
+            <div style={styles.field}>
+              <label style={styles.label} htmlFor="name">
+                氏名（漢字）
+              </label>
+              <input
+                id="name"
+                type="text"
+                value={formData.name || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                style={styles.input}
+              />
+            </div>
+            <div style={styles.field}>
+              <label style={styles.label} htmlFor="name_roma">
+                氏名（ローマ字）
+              </label>
+              <input
+                id="name_roma"
+                type="text"
+                value={formData.name_roma || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, name_roma: e.target.value })
+                }
+                style={styles.input}
+              />
+            </div>
+            <div style={styles.field}>
+              <label style={styles.label} htmlFor="nickname">
+                ニックネーム
+              </label>
+              <input
+                id="nickname"
+                type="text"
+                value={formData.nickname || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, nickname: e.target.value })
+                }
+                style={styles.input}
+              />
+            </div>
+            <div style={styles.field}>
+              <label style={styles.label} htmlFor="email">
+                メールアドレス
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={formData.email || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                style={styles.input}
+              />
+            </div>
+            <div style={styles.field}>
+              <label style={styles.label} htmlFor="member_kind">
+                会員種別
+              </label>
+              <select
+                id="member_kind"
+                value={formData.member_kind || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, member_kind: e.target.value })
+                }
+                style={styles.input}
               >
-                {v}
-              </option>
-            ))}
-          </select>
-        </label>
+                {Object.entries(MEMBER_KIND_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+            </div>
+            <div style={styles.field}>
+              <label style={styles.label} htmlFor="roles">
+                役職（システム権限）
+              </label>
+              <select
+                id="roles"
+                value={formData.roles}
+                onChange={(e) =>
+                  setFormData({ ...formData, roles: e.target.value })
+                }
+                style={styles.input}
+              >
+                {Object.entries(ROLES_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+            </div>
+            <div style={styles.field}>
+              <label style={styles.label} htmlFor="status">
+                ステータス
+              </label>
+              <select
+                id="status"
+                value={formData.status}
+                onChange={(e) =>
+                  setFormData({ ...formData, status: e.target.value as MemberStatus })
+                }
+                style={styles.input}
+              >
+                {STATUS_OPTIONS.map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </section>
 
-        <button
-          onClick={() => handleSave(member)}
-          disabled={saving}
-          style={saveButtonStyle}
-        >
-          {saving ? '保存中...' : '保存'}
-        </button>
-      </div>
-
-      <hr style={hrStyle} />
-
-      <div style={actionAreaStyle}>
-        {member.status === 'withdraw_req' && (
+        <div style={styles.actionArea}>
           <button
-            onClick={handleApproveWithdrawal}
-            style={approveButtonStyle}
+            onClick={handleSave}
+            disabled={isSubmitting}
+            style={styles.saveButton}
           >
-            退会を承認
+            {isSubmitting ? '保存中...' : '保存する'}
           </button>
-        )}
 
-        <button
-          onClick={handleReject}
-          style={rejectButtonStyle}
-        >
-          強制退会
-        </button>
+          <div style={styles.quickActions}>
+            {originalMember && originalMember.status === 'withdraw_req' && (
+              <button
+                onClick={() => {
+                  const today = new Date().toISOString()
+                    .split('T')[0].replace(/-/g, '')
+                  handleQuickStatusChange(
+                    'withdrawn', 
+                    `${originalMember.email}_withdrawn_${today}`
+                  )
+                }}
+                style={styles.approveButton}
+              >
+                退会を承認
+              </button>
+            )}
+            <button
+              onClick={() => {
+                if (confirm('本当に拒否/強制退会させますか？')) {
+                  handleQuickStatusChange('rejected')
+                }
+              }}
+              style={styles.rejectButton}
+            >
+              強制退会
+            </button>
+          </div>
+
+          <button onClick={() => router.back()} style={styles.backButton}>
+            戻る
+          </button>
+        </div>
       </div>
-
-      <button
-        onClick={() => router.back()}
-        style={backButtonStyle}
-      >
-        戻る
-      </button>
     </div>
   )
 }
 
-const containerStyle: React.CSSProperties = {
-  padding: '40px',
-  color: 'white',
-  backgroundColor: 'black',
-  minHeight: '100vh'
-}
-
-const loadingStyle: React.CSSProperties = {
-  color: 'white',
-  padding: '40px'
-}
-
-const titleStyle: React.CSSProperties = {
-  fontSize: '1.5rem',
-  marginBottom: '10px'
-}
-
-const statusTextStyle: React.CSSProperties = {
-  marginBottom: '20px',
-  color: '#ccc'
-}
-
-const formWrapperStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '15px'
-}
-
-const labelStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '5px'
-}
-
-const inputStyle: React.CSSProperties = {
-  padding: '8px',
-  color: 'black',
-  borderRadius: '4px',
-  border: '1px solid #ccc',
-  maxWidth: '300px'
-}
-
-const saveButtonStyle: React.CSSProperties = {
-  width: '120px',
-  marginTop: '10px',
-  padding: '10px',
-  backgroundColor: '#0070f3',
-  color: 'white',
-  border: 'none',
-  borderRadius: '4px',
-  cursor: 'pointer'
-}
-
-const hrStyle: React.CSSProperties = {
-  margin: '40px 0',
-  borderColor: '#333'
-}
-
-const actionAreaStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: '10px'
-}
-
-const approveButtonStyle: React.CSSProperties = {
-  backgroundColor: 'orange',
-  color: 'white',
-  border: 'none',
-  padding: '10px 20px',
-  borderRadius: '4px',
-  cursor: 'pointer'
-}
-
-const rejectButtonStyle: React.CSSProperties = {
-  backgroundColor: 'red',
-  color: 'white',
-  border: 'none',
-  padding: '10px 20px',
-  borderRadius: '4px',
-  cursor: 'pointer'
-}
-
-const backButtonStyle: React.CSSProperties = {
-  display: 'block',
-  marginTop: '40px',
-  color: '#888',
-  background: 'none',
-  border: 'none',
-  cursor: 'pointer'
+const styles: Record<string, React.CSSProperties> = {
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: '40px 20px',
+    backgroundColor: '#000',
+    color: '#fff',
+    minHeight: '100vh',
+  },
+  content: {
+    width: '100%',
+    maxWidth: '500px',
+  },
+  title: {
+    fontSize: '1.5rem',
+    marginBottom: '30px',
+    textAlign: 'center',
+  },
+  section: {
+    marginBottom: '32px',
+  },
+  sectionTitle: {
+    fontSize: '1.1rem',
+    color: '#888',
+    fontWeight: 'bold',
+    marginBottom: '12px',
+  },
+  card: {
+    backgroundColor: '#111',
+    borderRadius: '16px',
+    padding: '20px',
+    border: '1px solid #333',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '15px',
+  },
+  field: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  label: {
+    fontSize: '0.85rem',
+    color: '#888',
+  },
+  input: {
+    width: '100%',
+    padding: '12px',
+    borderRadius: '8px',
+    border: '1px solid #333',
+    backgroundColor: '#1a1a1a',
+    color: '#fff',
+    fontSize: '1rem',
+  },
+  actionArea: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px',
+    marginTop: '40px',
+    paddingBottom: '80px',
+  },
+  saveButton: {
+    width: '100%',
+    padding: '16px',
+    backgroundColor: '#0070f3',
+    color: 'white',
+    border: 'none',
+    borderRadius: '12px',
+    fontSize: '1.1rem',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+  },
+  quickActions: {
+    display: 'flex',
+    gap: '10px',
+  },
+  approveButton: {
+    flex: 1,
+    padding: '12px',
+    backgroundColor: 'orange',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontWeight: 'bold',
+  },
+  rejectButton: {
+    flex: 1,
+    padding: '12px',
+    backgroundColor: '#333',
+    color: '#ff4d4f',
+    border: '1px solid #444',
+    borderRadius: '8px',
+    cursor: 'pointer',
+  },
+  backButton: {
+    backgroundColor: 'transparent',
+    color: '#888',
+    border: 'none',
+    textDecoration: 'underline',
+    cursor: 'pointer',
+    padding: '10px',
+  }
 }
