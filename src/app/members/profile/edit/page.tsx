@@ -1,8 +1,9 @@
 /**
  * Filename: src/app/members/profile/edit/page.tsx
- * Version : V2.4.1
- * Update  : 2026-01-31
+ * Version : V2.5.0
+ * Update  : 2026-02-01
  * Remarks : 
+ * V2.5.0 - 追加：メールアドレス欄、パスワード変更欄（現在・新・確認）、表示切替ボタン。
  * V2.4.1 - 追加：公開設定(is_profile_public)のチェックボックスを追加。
  * V2.4.0 - 統合：Member型(V2.3.0)に準拠。emg_memo等の最新キー名を使用。
  * V2.4.0 - 修正：氏名(ローマ字)、DUPR ID/レートの編集機能を追加。
@@ -12,7 +13,10 @@
 
 import { useState, useEffect } from 'react'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
-import { updateMemberProfile } from '@/lib/memberApi'
+import {
+  updateMemberProfile,
+  updateMemberPassword
+} from '@/lib/memberApi'
 import { useRouter } from 'next/navigation'
 
 export default function ProfileEditPage() {
@@ -20,6 +24,12 @@ export default function ProfileEditPage() {
   const router = useRouter()
   const [formData, setFormData] = useState<any>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('')
+  const [showCurrentPw, setShowCurrentPw] = useState(false)
+  const [showNewPw, setShowNewPw] = useState(false)
+  const [showNewPwConfirm, setShowNewPwConfirm] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -38,19 +48,46 @@ export default function ProfileEditPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const willChangePassword =
+      currentPassword.trim() || newPassword.trim() || newPasswordConfirm.trim()
+
+    if (willChangePassword) {
+      if (newPassword !== newPasswordConfirm) {
+        alert('新パスワードと確認用が一致しません。')
+        return
+      }
+      if (!currentPassword.trim()) {
+        alert('パスワードを変更するには現在のパスワードを入力してください。')
+        return
+      }
+      if (!newPassword.trim()) {
+        alert('新しいパスワードを入力してください。')
+        return
+      }
+      const pwRes = await updateMemberPassword(
+        user.id,
+        currentPassword,
+        newPassword
+      )
+      if (!pwRes.success) {
+        alert(pwRes.error?.message || 'パスワードの変更に失敗しました。')
+        return
+      }
+    }
+
     setIsSubmitting(true)
     try {
-      // API送信前に数値を float 型に変換
+      const { password: _pw, ...rest } = formData
       const payload = {
-        ...formData,
-        dupr_rate_doubles: formData.dupr_rate_doubles !== '' 
-          ? parseFloat(formData.dupr_rate_doubles) 
+        ...rest,
+        dupr_rate_doubles: formData.dupr_rate_doubles !== ''
+          ? parseFloat(formData.dupr_rate_doubles)
           : null,
-        dupr_rate_singles: formData.dupr_rate_singles !== '' 
-          ? parseFloat(formData.dupr_rate_singles) 
-          : null
+        dupr_rate_singles: formData.dupr_rate_singles !== ''
+          ? parseFloat(formData.dupr_rate_singles)
+          : null,
       }
-      
+
       const res = await updateMemberProfile(user.id, payload)
       if (res.success) {
         alert('プロフィールを更新しました')
@@ -102,6 +139,90 @@ export default function ProfileEditPage() {
               <span style={styles.label}>LINE ID</span>
               <span style={styles.readOnlyValue}>{formData.line_id || '-'}</span>
             </div>
+            <div style={styles.readOnlyGroup}>
+              <span style={styles.label}>生年月日</span>
+              <span style={styles.readOnlyValue}>
+                {formData.birthday
+                  ? new Date(formData.birthday).toLocaleDateString('ja-JP')
+                  : '-'}
+              </span>
+            </div>
+          </div>
+        </section>
+
+        {/* 1.5 パスワード変更（基本情報ブロックの生年月日の下） */}
+        <section style={styles.section}>
+          <h2 style={styles.sectionTitle}>パスワード変更</h2>
+          <div style={styles.card}>
+            <div style={styles.inputGroup}>
+              <label htmlFor="current_password" style={styles.label}>
+                現在のパスワード
+              </label>
+              <div style={styles.passwordInputWrapper}>
+                <input
+                  id="current_password"
+                  type={showCurrentPw ? 'text' : 'password'}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  style={styles.passwordInput}
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPw(!showCurrentPw)}
+                  style={styles.visibilityButton}
+                  aria-label={showCurrentPw ? 'パスワードを隠す' : 'パスワードを表示'}
+                >
+                  {showCurrentPw ? '🙈' : '👁'}
+                </button>
+              </div>
+            </div>
+            <div style={styles.inputGroup}>
+              <label htmlFor="new_password" style={styles.label}>
+                新パスワード
+              </label>
+              <div style={styles.passwordInputWrapper}>
+                <input
+                  id="new_password"
+                  type={showNewPw ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  style={styles.passwordInput}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPw(!showNewPw)}
+                  style={styles.visibilityButton}
+                  aria-label={showNewPw ? 'パスワードを隠す' : 'パスワードを表示'}
+                >
+                  {showNewPw ? '🙈' : '👁'}
+                </button>
+              </div>
+            </div>
+            <div style={styles.inputGroup}>
+              <label htmlFor="new_password_confirm" style={styles.label}>
+                新パスワード（確認）
+              </label>
+              <div style={styles.passwordInputWrapper}>
+                <input
+                  id="new_password_confirm"
+                  type={showNewPwConfirm ? 'text' : 'password'}
+                  value={newPasswordConfirm}
+                  onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                  style={styles.passwordInput}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPwConfirm(!showNewPwConfirm)}
+                  style={styles.visibilityButton}
+                  aria-label={showNewPwConfirm ? 'パスワードを隠す' : 'パスワードを表示'}
+                >
+                  {showNewPwConfirm ? '🙈' : '👁'}
+                </button>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -120,6 +241,20 @@ export default function ProfileEditPage() {
                 value={formData.nickname || ''}
                 onChange={handleChange}
                 required
+                style={styles.input}
+              />
+            </div>
+
+            <div style={styles.inputGroup}>
+              <label htmlFor="email" style={styles.label}>
+                メールアドレス
+              </label>
+              <input
+                id="email"
+                type="email"
+                name="email"
+                value={formData.email || ''}
+                onChange={handleChange}
                 style={styles.input}
               />
             </div>
@@ -405,6 +540,29 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: '#1a1a1a',
     color: '#fff',
     fontSize: '1rem',
+  },
+  passwordInputWrapper: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  passwordInput: {
+    flex: 1,
+    padding: '12px',
+    borderRadius: '8px',
+    border: '1px solid #333',
+    backgroundColor: '#1a1a1a',
+    color: '#fff',
+    fontSize: '1rem',
+  },
+  visibilityButton: {
+    padding: '8px 12px',
+    backgroundColor: 'transparent',
+    border: '1px solid #444',
+    borderRadius: '8px',
+    color: '#888',
+    cursor: 'pointer',
+    fontSize: '1.1rem',
   },
   textarea: {
     width: '100%',

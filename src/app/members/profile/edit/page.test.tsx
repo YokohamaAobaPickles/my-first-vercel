@@ -1,8 +1,9 @@
 /**
  * Filename: src/app/members/profile/edit/page.test.tsx
- * Version : V2.4.0
- * Update  : 2026-01-31
+ * Version : V2.5.0
+ * Update  : 2026-02-01
  * Remarks : 
+ * V2.5.0 - 追加：メールアドレス、パスワード変更（一致確認・現在パスワード照合）の検証。
  * V2.4.0 - 網羅：全入力項目、読取専用項目、公開フラグの検証を統合。
  * V2.3.1 - 統合：DUPRレート入力の検証を追加。
  */
@@ -24,12 +25,13 @@ import '@testing-library/jest-dom'
 import { Member } from '@/types/member'
 import EditProfilePage from './page'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
-import { updateMemberProfile } from '@/lib/memberApi'
+import { updateMemberProfile, updateMemberPassword } from '@/lib/memberApi'
 
 // --- モック設定 ---
 vi.mock('@/hooks/useAuthCheck')
 vi.mock('@/lib/memberApi', () => ({
   updateMemberProfile: vi.fn(),
+  updateMemberPassword: vi.fn(),
 }))
 
 const mockPush = vi.fn()
@@ -44,6 +46,7 @@ vi.mock('next/navigation', () => ({
 describe('EditProfilePage - 総合検証 V2.4.0', () => {
   const TEST_USER: Partial<Member> = {
     id: 'user-123',
+    email: 'test@example.com',
     member_number: '1005',
     name: '山田 太郎',
     nickname: 'たろう',
@@ -94,6 +97,7 @@ describe('EditProfilePage - 総合検証 V2.4.0', () => {
       render(<EditProfilePage />)
 
       expect(screen.getByLabelText(/ニックネーム/)).toHaveValue('たろう')
+      expect(screen.getByLabelText(/メールアドレス/)).toHaveValue('test@example.com')
       expect(screen.getByLabelText(/氏名（ローマ字）/)).toHaveValue('Taro Yamada')
       expect(screen.getByLabelText(/郵便番号/)).toHaveValue('100-0001')
       expect(screen.getByLabelText(/住所/)).toHaveValue('東京都千代田区')
@@ -195,6 +199,92 @@ describe('EditProfilePage - 総合検証 V2.4.0', () => {
       render(<EditProfilePage />)
       fireEvent.click(screen.getByRole('button', { name: 'キャンセル' }))
       expect(mockBack).toHaveBeenCalled()
+    })
+  })
+
+  describe('4. パスワード変更の検証', () => {
+    it('新パスワードと確認用が一致しないときエラーメッセージを表示し更新しない', async () => {
+      render(<EditProfilePage />)
+      fireEvent.change(screen.getByLabelText(/現在のパスワード/), {
+        target: { value: 'oldpass' },
+      })
+      fireEvent.change(screen.getByLabelText(/^新パスワード$/), {
+        target: { value: 'newpass' },
+      })
+      fireEvent.change(screen.getByLabelText(/新パスワード（確認）/), {
+        target: { value: 'different' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: '変更を保存' }))
+
+      await waitFor(() => {
+        expect(window.alert).toHaveBeenCalledWith(
+          '新パスワードと確認用が一致しません。'
+        )
+      })
+      expect(updateMemberPassword).not.toHaveBeenCalled()
+      expect(updateMemberProfile).not.toHaveBeenCalled()
+    })
+
+    it('現在のパスワードが間違っているときエラーメッセージを表示し更新しない', async () => {
+      vi.mocked(updateMemberPassword).mockResolvedValue({
+        success: false,
+        data: null,
+        error: { message: '現在のパスワードが正しくありません' },
+      })
+
+      render(<EditProfilePage />)
+      fireEvent.change(screen.getByLabelText(/現在のパスワード/), {
+        target: { value: 'wrongpass' },
+      })
+      fireEvent.change(screen.getByLabelText(/^新パスワード$/), {
+        target: { value: 'newpass' },
+      })
+      fireEvent.change(screen.getByLabelText(/新パスワード（確認）/), {
+        target: { value: 'newpass' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: '変更を保存' }))
+
+      await waitFor(() => {
+        expect(window.alert).toHaveBeenCalledWith(
+          '現在のパスワードが正しくありません'
+        )
+      })
+      expect(updateMemberPassword).toHaveBeenCalledWith(
+        TEST_USER.id,
+        'wrongpass',
+        'newpass'
+      )
+      expect(updateMemberProfile).not.toHaveBeenCalled()
+    })
+
+    it('パスワード変更成功時はプロフィールも更新される', async () => {
+      vi.mocked(updateMemberPassword).mockResolvedValue({
+        success: true,
+        data: null,
+        error: null,
+      })
+
+      render(<EditProfilePage />)
+      fireEvent.change(screen.getByLabelText(/現在のパスワード/), {
+        target: { value: 'oldpass' },
+      })
+      fireEvent.change(screen.getByLabelText(/^新パスワード$/), {
+        target: { value: 'newpass' },
+      })
+      fireEvent.change(screen.getByLabelText(/新パスワード（確認）/), {
+        target: { value: 'newpass' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: '変更を保存' }))
+
+      await waitFor(() => {
+        expect(updateMemberPassword).toHaveBeenCalledWith(
+          TEST_USER.id,
+          'oldpass',
+          'newpass'
+        )
+        expect(updateMemberProfile).toHaveBeenCalled()
+        expect(window.alert).toHaveBeenCalledWith('プロフィールを更新しました')
+      })
     })
   })
 })

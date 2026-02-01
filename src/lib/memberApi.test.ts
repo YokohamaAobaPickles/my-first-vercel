@@ -1,8 +1,9 @@
 /**
  * Filename: src/lib/memberApi.test.ts
- * Version : V3.2.1
- * Update  : 2026-01-30
+ * Version : V3.7.0
+ * Update  : 2026-02-01
  * Remarks : 
+ * V3.7.0 - 追加：updateMemberPassword のテスト（正常系・異常系）。
  * V3.2.1 - 修正：deleteMember のテストケース追加とモック定義の改善。
  * V3.1.0 - 修正：新ステータス名称 (new_req) に合わせて期待値を修正。
  */
@@ -25,6 +26,7 @@ import {
   registerMember,
   deleteMember,
   checkMemberReferenced,
+  updateMemberPassword,
 } from './memberApi'
 import { supabase } from '@/lib/supabase'
 import { Member, MemberInput } from '@/types/member'
@@ -243,6 +245,50 @@ describe('memberApi - 会員DB操作・連携の総合検証 V3.2.1', () => {
       expect(result.data).toBeNull()
       expect(result.error?.code).toBe('DUPLICATE_DUPR_ID')
       expect(result.error?.message).toContain('同一のDUPR IDが複数会員に登録されています')
+    })
+  })
+
+  describe('updateMemberPassword (パスワード変更)', () => {
+    it('【正常系】現在のパスワードが一致するとき新パスワードで更新されること', async () => {
+      const mockUpdateEq = vi.fn().mockResolvedValue({ error: null })
+      const mockUpdate = vi.fn().mockReturnValue({ eq: mockUpdateEq })
+      const mockSelectChain: any = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: { password: 'oldpass' },
+          error: null,
+        }),
+      }
+      let callCount = 0
+      mockFrom.mockImplementation(() => {
+        callCount++
+        return callCount === 1
+          ? mockSelectChain
+          : { update: mockUpdate }
+      })
+
+      const result = await updateMemberPassword('u123', 'oldpass', 'newpass')
+
+      expect(result.success).toBe(true)
+      expect(mockUpdate).toHaveBeenCalledWith({ password: 'newpass' })
+    })
+
+    it('【異常系】現在のパスワードが一致しないときエラーを返すこと', async () => {
+      mockFrom.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: { password: 'realpass' },
+          error: null,
+        }),
+      })
+
+      const result = await updateMemberPassword('u123', 'wrongpass', 'newpass')
+
+      expect(result.success).toBe(false)
+      expect(result.error?.message).toBe('現在のパスワードが正しくありません')
+      expect(result.error?.code).toBe('WRONG_PASSWORD')
     })
   })
 

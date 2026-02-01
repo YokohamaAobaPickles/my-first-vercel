@@ -1,8 +1,9 @@
 /**
  * Filename: src/lib/memberApi.ts
- * Version : V3.6.0
+ * Version : V3.7.0
  * Update  : 2026-02-01
  * Remarks : 
+ * V3.7.0 - 追加：updateMemberPassword（現在パスワード照合後に新パスワードで更新。プロフィール編集用）。
  * V3.6.1 - 修正：registerMember で introducer_member_number を送信前に除外（PGRST204 エラー防止）。
  * V3.6.0 - 追加：fetchMemberByNicknameAndMemberNumber（ニックネーム＋会員番号で紹介者取得。ゲスト登録用）。
  * V3.5.0 - 追加：fetchMemberByNicknameAndEmail（ニックネーム＋メールで会員取得。物理削除指定用）。
@@ -347,6 +348,42 @@ export const checkNicknameExists = async (
     .maybeSingle();
 
   return !!data;
+};
+
+/**
+ * パスワードの変更（現在のパスワード照合後に更新）
+ * 現在のパスワードが一致しない場合はエラーを返す。
+ */
+export const updateMemberPassword = async (
+  id: string,
+  currentPassword: string,
+  newPassword: string
+): Promise<ApiResponse<null>> => {
+  const { data: member, error: fetchError } = await supabase
+    .from('members')
+    .select('password')
+    .eq('id', id)
+    .single();
+
+  if (fetchError) {
+    return handleError(fetchError);
+  }
+  if (!member || member.password !== (currentPassword || '').trim()) {
+    return {
+      success: false,
+      data: null,
+      error: { message: '現在のパスワードが正しくありません', code: 'WRONG_PASSWORD' },
+    };
+  }
+  const { error: updateError } = await supabase
+    .from('members')
+    .update({ password: (newPassword || '').trim() })
+    .eq('id', id);
+
+  if (updateError) {
+    return handleError(updateError);
+  }
+  return { success: true, data: null, error: null };
 };
 
 /**
