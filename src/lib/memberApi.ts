@@ -1,8 +1,9 @@
 /**
  * Filename: src/lib/memberApi.ts
- * Version : V3.3.0
+ * Version : V3.4.0
  * Update  : 2026-02-01
  * Remarks : 
+ * V3.4.0 - 追加：checkMemberReferenced（物理削除前の参照チェック。announcements.author_id を確認）。
  * V3.3.2 - 修正：fetchMemberByDuprId で同一 dupr_id 複数時は更新せずエラーを返す（重複解消を促すメッセージ）。
  * V3.3.1 - 修正：fetchMemberByDuprId を maybeSingle → limit(1) に変更（同一 dupr_id 複数時エラー回避）。
  * V3.3.0 - 追加：fetchMemberByDuprId（DUPR一括登録用）。
@@ -193,6 +194,56 @@ export const deleteMember = async (
     return handleError(error);
   }
   return { success: true, data: null, error: null };
+};
+
+/**
+ * 他テーブルで会員IDが参照されているかチェックする（物理削除前の確認用）
+ * announcements.author_id などを検索。参照ありの場合は削除しない旨のメッセージを返す。
+ */
+export interface MemberReferenceCheckResult {
+  referenced: boolean;
+  message?: string;
+}
+
+export const checkMemberReferenced = async (
+  memberId: string
+): Promise<ApiResponse<MemberReferenceCheckResult>> => {
+  if (!memberId || !memberId.trim()) {
+    return {
+      success: true,
+      data: { referenced: false },
+      error: null,
+    };
+  }
+
+  const { data: announcementsData, error: annError } = await supabase
+    .from('announcements')
+    .select('id')
+    .eq('author_id', memberId.trim())
+    .limit(1);
+
+  if (annError) {
+    return handleError(annError);
+  }
+  const hasAnnouncements =
+    Array.isArray(announcementsData) && announcementsData.length > 0;
+  if (hasAnnouncements) {
+    return {
+      success: true,
+      data: {
+        referenced: true,
+        message:
+          'お知らせの作成者として参照されています。削除できません。',
+      },
+      error: null,
+    };
+  }
+
+  return {
+    success: true,
+    data: { referenced: false },
+    error: null,
+  };
 };
 
 /**

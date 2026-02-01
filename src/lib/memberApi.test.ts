@@ -23,7 +23,8 @@ import {
   fetchMemberByEmail,
   linkLineIdToMember,
   registerMember,
-  deleteMember
+  deleteMember,
+  checkMemberReferenced,
 } from './memberApi'
 import { supabase } from '@/lib/supabase'
 import { Member, MemberInput } from '@/types/member'
@@ -242,6 +243,36 @@ describe('memberApi - 会員DB操作・連携の総合検証 V3.2.1', () => {
       expect(result.data).toBeNull()
       expect(result.error?.code).toBe('DUPLICATE_DUPR_ID')
       expect(result.error?.message).toContain('同一のDUPR IDが複数会員に登録されています')
+    })
+  })
+
+  describe('checkMemberReferenced (物理削除前の参照チェック)', () => {
+    it('【正常系】announcements に author_id が存在しないとき referenced: false を返すこと', async () => {
+      const chain: any = {}
+      chain.select = vi.fn().mockReturnValue(chain)
+      chain.eq = vi.fn().mockReturnValue(chain)
+      chain.limit = vi.fn().mockResolvedValue({ data: [], error: null })
+      mockFrom.mockReturnValue(chain)
+      const result = await checkMemberReferenced('member-uuid-1')
+      expect(result.success).toBe(true)
+      expect(result.data?.referenced).toBe(false)
+    })
+
+    it('【異常系】announcements に author_id が存在するとき referenced: true とメッセージを返すこと', async () => {
+      const chain: any = {}
+      chain.select = vi.fn().mockReturnValue(chain)
+      chain.eq = vi.fn().mockReturnValue(chain)
+      chain.limit = vi.fn().mockResolvedValue({
+        data: [{ id: 1 }],
+        error: null,
+      })
+      mockFrom.mockReturnValue(chain)
+      const result = await checkMemberReferenced('member-uuid-1')
+      expect(result.success).toBe(true)
+      expect(result.data?.referenced).toBe(true)
+      expect(result.data?.message).toContain(
+        'お知らせの作成者として参照されています'
+      )
     })
   })
 })
