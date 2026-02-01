@@ -26,7 +26,7 @@ import MemberNewPage from '@/app/members/new/page'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import {
   registerMember,
-  checkNicknameExists
+  fetchMemberByNicknameAndMemberNumber
 } from '@/lib/memberApi'
 
 vi.mock('@/hooks/useAuthCheck')
@@ -91,6 +91,7 @@ describe('MemberNewPage V1.5.30 統合テスト', () => {
       render(<MemberNewPage />)
       fireEvent.click(screen.getByText('ゲスト登録'))
       expect(screen.getByLabelText(/紹介者のニックネーム/)).toBeVisible()
+      expect(screen.getByLabelText(/紹介者の会員番号/)).toBeVisible()
     })
   })
 
@@ -117,6 +118,51 @@ describe('MemberNewPage V1.5.30 統合テスト', () => {
       fireEvent.click(submitButton)
 
       expect(mockAlert).toHaveBeenCalled()
+      expect(registerMember).not.toHaveBeenCalled()
+    })
+
+    it('【ゲスト異常系】紹介者ニックネーム・会員番号が一致しないとき「該当するメンバーがいません」で登録しないこと',
+      async () => {
+      vi.mocked(fetchMemberByNicknameAndMemberNumber).mockResolvedValue({
+        success: true,
+        data: null,
+        error: null
+      })
+
+      render(<MemberNewPage />)
+      fireEvent.click(screen.getByText('ゲスト登録'))
+      fireEvent.change(screen.getByLabelText(/紹介者のニックネーム/), {
+        target: { value: '紹介者' }
+      })
+      fireEvent.change(screen.getByLabelText(/紹介者の会員番号/), {
+        target: { value: '0001' }
+      })
+      fireEvent.change(screen.getByLabelText(/氏名（漢字）/), {
+        target: { value: 'ゲスト太郎' }
+      })
+      fireEvent.change(screen.getByLabelText(/氏名（ローマ字）/), {
+        target: { value: 'Guest Taro' }
+      })
+      fireEvent.change(screen.getByLabelText(/性別/), { target: { value: '男性' } })
+      fireEvent.change(screen.getByLabelText(/生年月日/), {
+        target: { value: '2000-01-01' }
+      })
+      fireEvent.change(document.getElementById('nickname')!, {
+        target: { value: 'ゲスト' }
+      })
+      fireEvent.change(screen.getByLabelText(/パスワード/), {
+        target: { value: 'password123' }
+      })
+      fireEvent.change(screen.getByLabelText(/緊急電話番号/), {
+        target: { value: '090-0000-0000' }
+      })
+      fireEvent.change(screen.getByLabelText(/続柄/), { target: { value: '本人' } })
+
+      fireEvent.click(screen.getByRole('button', { name: /新規会員登録申請/ }))
+
+      await waitFor(() => {
+        expect(mockAlert).toHaveBeenCalledWith('該当するメンバーがいません')
+      })
       expect(registerMember).not.toHaveBeenCalled()
     })
 

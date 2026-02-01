@@ -1,8 +1,9 @@
 /**
  * Filename: src/app/members/new/page.tsx
- * Version : V1.5.28
- * Update  : 2026-01-28
+ * Version : V1.6.0
+ * Update  : 2026-02-01
  * Remarks : 
+ * V1.6.0 - 追加：ゲスト登録時に紹介者の会員番号入力。ニックネーム＋会員番号で紹介者照合し、不一致時は「該当するメンバーがいません」で登録画面に留まる。
  * V1.5.28 - 修正：Vitestのハング解消のため性別・生年月日の入力欄を追加。
  * V1.5.28 - 修正：二重更新防止ロジックと依存配列の最適化。
  * V1.5.28 - 書式：80カラムラップ、判定・スタイル定義の改行を徹底。
@@ -23,7 +24,7 @@ import { useAuthCheck } from '@/hooks/useAuthCheck'
 import { MemberInput } from '@/types/member'
 import {
   registerMember,
-  checkNicknameExists
+  fetchMemberByNicknameAndMemberNumber
 } from '@/lib/memberApi'
 import { validateRegistration } from '@/utils/memberHelpers'
 
@@ -41,7 +42,9 @@ function MemberNewContent() {
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const [formData, setFormData] = useState<Partial<MemberInput>>({
+  const [formData, setFormData] = useState<
+    Partial<MemberInput> & { introducer_member_number?: string }
+  >({
     name: '',
     name_roma: '',
     nickname: '',
@@ -57,6 +60,7 @@ function MemberNewContent() {
     emg_rel: '',
     emg_memo: '',
     introducer: '',
+    introducer_member_number: '',
     is_profile_public: true
   })
 
@@ -138,7 +142,11 @@ function MemberNewContent() {
     const {
       isValid,
       errors
-    } = validateRegistration(submissionData)
+    } = validateRegistration({
+      ...submissionData,
+      introducer: formData.introducer,
+      introducer_member_number: formData.introducer_member_number
+    })
 
     if (
       !isValid ||
@@ -146,6 +154,17 @@ function MemberNewContent() {
     ) {
       alert(errors.join('\n') || '必須項目を正しく入力してください')
       return
+    }
+
+    if (mode === 'guest') {
+      const introRes = await fetchMemberByNicknameAndMemberNumber(
+        (formData.introducer || '').trim(),
+        (formData.introducer_member_number || '').trim()
+      )
+      if (!introRes.success || !introRes.data) {
+        alert('該当するメンバーがいません')
+        return
+      }
     }
 
     setIsSubmitting(true)
@@ -218,6 +237,23 @@ function MemberNewContent() {
               value={formData.introducer || ''}
               onChange={handleChange}
               placeholder="紹介者名を入力"
+            />
+            <label
+              htmlFor="introducer_member_number"
+              style={labelStyle}
+            >
+              紹介者の会員番号
+              <span style={reqStyle}>*</span>
+            </label>
+            <input
+              id="introducer_member_number"
+              style={inputStyle}
+              type="text"
+              inputMode="numeric"
+              maxLength={4}
+              value={formData.introducer_member_number || ''}
+              onChange={handleChange}
+              placeholder="0001"
             />
           </section>
         )}

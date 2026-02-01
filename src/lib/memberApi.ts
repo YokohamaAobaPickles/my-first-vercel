@@ -1,8 +1,9 @@
 /**
  * Filename: src/lib/memberApi.ts
- * Version : V3.5.0
+ * Version : V3.6.0
  * Update  : 2026-02-01
  * Remarks : 
+ * V3.6.0 - 追加：fetchMemberByNicknameAndMemberNumber（ニックネーム＋会員番号で紹介者取得。ゲスト登録用）。
  * V3.5.0 - 追加：fetchMemberByNicknameAndEmail（ニックネーム＋メールで会員取得。物理削除指定用）。
  * V3.4.0 - 追加：checkMemberReferenced（物理削除前の参照チェック。announcements.author_id を確認）。
  * V3.3.2 - 修正：fetchMemberByDuprId で同一 dupr_id 複数時は更新せずエラーを返す（重複解消を促すメッセージ）。
@@ -165,6 +166,42 @@ export const fetchMemberByNicknameAndEmail = async (
     .select('*')
     .eq('nickname', n)
     .eq('email', e)
+    .maybeSingle();
+
+  if (error) {
+    return handleError(error);
+  }
+  return { success: true, data: data as Member | null, error: null };
+};
+
+/**
+ * ニックネームと会員番号を指定して会員情報を取得する（ゲスト登録時の紹介者照合用）
+ * 会員番号は 1〜9999 を 4 桁ゼロパディングで照合する。
+ */
+export const fetchMemberByNicknameAndMemberNumber = async (
+  nickname: string,
+  memberNumber: string
+): Promise<ApiResponse<Member | null>> => {
+  const n = (nickname || '').trim();
+  const raw = (memberNumber || '').trim();
+  if (!n || !raw) {
+    return {
+      success: true,
+      data: null,
+      error: null,
+    };
+  }
+  const num = parseInt(raw, 10);
+  const normalized =
+    !Number.isNaN(num) && num >= 1 && num <= 9999
+      ? String(num).padStart(4, '0')
+      : raw;
+
+  const { data, error } = await supabase
+    .from('members')
+    .select('*')
+    .eq('nickname', n)
+    .eq('member_number', normalized)
     .maybeSingle();
 
   if (error) {

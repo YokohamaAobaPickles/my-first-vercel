@@ -18,7 +18,10 @@ import { MemberInput } from '@/types/member';
  * @returns { isValid: boolean, errors: string[] }
  */
 export const validateRegistration = (
-  data: Partial<MemberInput> & { introducer?: string | null }
+  data: Partial<MemberInput> & {
+    introducer?: string | null;
+    introducer_member_number?: string | null;
+  }
 ) => {
   const errors: string[] = [];
 
@@ -38,11 +41,14 @@ export const validateRegistration = (
     errors.push('緊急連絡先電話番号を入力してください');
   }
 
-  // 4. Case C: ゲスト特有のバリデーション
-  // ステータスが guest の場合のみ紹介者の入力を求める
-  if ((data.status as any) === 'guest') {
+  // 4. ゲスト登録時：紹介者ニックネーム・会員番号の必須チェック
+  const isGuest = (data as { member_kind?: string }).member_kind === 'guest';
+  if (isGuest) {
     if (!data.introducer || !data.introducer.trim()) {
       errors.push('紹介者のニックネームを入力してください');
+    }
+    if (!data.introducer_member_number?.trim()) {
+      errors.push('紹介者の会員番号を入力してください');
     }
   }
 
