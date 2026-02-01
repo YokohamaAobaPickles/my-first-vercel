@@ -82,16 +82,32 @@ describe('memberHelpers 総合検証 V5.0.0', () => {
     })
 
     describe('条件付きバリデーション (Case C: ゲスト)', () => {
-      it('statusが guest の時、紹介者が空だとエラー', () => {
-        // status は MemberStatus 型なので安全
-        const data = { ...VALID_MEMBER_BASE, status: 'guest' as any, introducer: '' }
+      it('member_kind が guest の時、紹介者が空だとエラー', () => {
+        const data = {
+          ...VALID_MEMBER_BASE,
+          member_kind: 'guest',
+          introducer: '',
+          introducer_member_number: '0001'
+        }
         const result = validateRegistration(data)
         expect(result.isValid).toBe(false)
         expect(result.errors).toContain('紹介者のニックネームを入力してください')
       })
 
-      it('statusが active(会員) の時、紹介者が空でもパスする', () => {
-        const data = { ...VALID_MEMBER_BASE, status: 'active' as const, introducer: '' }
+      it('member_kind が guest の時、紹介者会員番号が空だとエラー', () => {
+        const data = {
+          ...VALID_MEMBER_BASE,
+          member_kind: 'guest',
+          introducer: '紹介者',
+          introducer_member_number: ''
+        }
+        const result = validateRegistration(data)
+        expect(result.isValid).toBe(false)
+        expect(result.errors).toContain('紹介者の会員番号を入力してください')
+      })
+
+      it('member_kind が general(会員) の時、紹介者が空でもパスする', () => {
+        const data = { ...VALID_MEMBER_BASE, member_kind: 'general', introducer: '' }
         expect(validateRegistration(data).isValid).toBe(true)
       })
     })
@@ -140,11 +156,18 @@ describe('memberHelpers 総合検証 V5.0.0', () => {
     })
   })
 
-  // --- 異常系：メールアドレスの簡易フォーマットチェック ---
+  // --- 異常系：メールアドレス必須・フォーマット ---
+  it('メールアドレスが空だとエラーにすること（一般・ゲストいずれも必須）', () => {
+    const data = { ...VALID_MEMBER_BASE, email: '' }
+    const result = validateRegistration(data)
+    expect(result.isValid).toBe(false)
+    expect(result.errors).toContain('メールアドレスを入力してください')
+  })
+
   it('メールアドレスに「@」が含まれない場合はエラーにすること', () => {
     const data = { ...VALID_MEMBER_BASE, email: 'invalid-email' }
     const result = validateRegistration(data)
-    expect(result.errors).toContain('有効なメールアドレスを入力してください') // 実装に合わせて
+    expect(result.errors).toContain('有効なメールアドレスを入力してください')
   })
 
   // --- 境界系：未定義（undefined）のハンドリング ---

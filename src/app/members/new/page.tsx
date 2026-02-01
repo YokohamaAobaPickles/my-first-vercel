@@ -3,6 +3,7 @@
  * Version : V1.7.0
  * Update  : 2026-02-01
  * Remarks : 
+ * V1.7.1 - 修正：registerMember 送信時に introducer_member_number を除外（DBにないカラムでinsertエラーになるため）。
  * V1.7.0 - 追加：最下部にキャンセルボタン（ログイン画面へ）。申請・キャンセルを等分サイズで並列表示。
  * V1.6.0 - 追加：ゲスト登録時に紹介者の会員番号入力。ニックネーム＋会員番号で紹介者照合し、不一致時は「該当するメンバーがいません」で登録画面に留まる。
  * V1.5.28 - 修正：Vitestのハング解消のため性別・生年月日の入力欄を追加。
@@ -130,8 +131,13 @@ function MemberNewContent() {
       return
     }
 
+    const {
+      introducer_member_number: _introNum,
+      ...formDataForApi
+    } = formData
+
     const submissionData: MemberInput = {
-      ...(formData as MemberInput),
+      ...(formDataForApi as MemberInput),
       birthday: formData.birthday || null,
       password,
       line_id: currentLineId || null,
@@ -346,6 +352,7 @@ function MemberNewContent() {
             style={labelStyle}
           >
             メールアドレス
+            <span style={reqStyle}>*</span>
           </label>
           <input
             id="email"

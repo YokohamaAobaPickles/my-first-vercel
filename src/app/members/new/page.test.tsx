@@ -153,6 +153,9 @@ describe('MemberNewPage V1.5.30 統合テスト', () => {
       fireEvent.change(screen.getByLabelText(/パスワード/), {
         target: { value: 'password123' }
       })
+      fireEvent.change(screen.getByLabelText(/メールアドレス/), {
+        target: { value: 'guest@example.com' }
+      })
       fireEvent.change(screen.getByLabelText(/緊急電話番号/), {
         target: { value: '090-0000-0000' }
       })
@@ -187,6 +190,8 @@ describe('MemberNewPage V1.5.30 統合テスト', () => {
         { target: { value: '2000-01-01' } })
       fireEvent.change(screen.getByLabelText(/ニックネーム/), 
         { target: { value: 'テス太郎' } })
+      fireEvent.change(screen.getByLabelText(/メールアドレス/), 
+        { target: { value: 'test@example.com' } })
       fireEvent.change(screen.getByLabelText(/パスワード/), 
         { target: { value: 'password123' } })
       fireEvent.change(screen.getByLabelText(/緊急電話番号/), 

@@ -30,9 +30,10 @@ export const validateRegistration = (
     errors.push('氏名を入力してください');
   }
 
-  // 2. メールアドレスの形式チェック
-  // テストケース (V5.0.0) の要件に基づき、「@」の有無を確認
-  if (data.email && !data.email.includes('@')) {
+  // 2. メールアドレス必須（一般・ゲストいずれも登録必須）
+  if (!data.email?.trim()) {
+    errors.push('メールアドレスを入力してください');
+  } else if (!data.email.includes('@')) {
     errors.push('有効なメールアドレスを入力してください');
   }
 

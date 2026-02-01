@@ -3,6 +3,7 @@
  * Version : V3.6.0
  * Update  : 2026-02-01
  * Remarks : 
+ * V3.6.1 - 修正：registerMember で introducer_member_number を送信前に除外（PGRST204 エラー防止）。
  * V3.6.0 - 追加：fetchMemberByNicknameAndMemberNumber（ニックネーム＋会員番号で紹介者取得。ゲスト登録用）。
  * V3.5.0 - 追加：fetchMemberByNicknameAndEmail（ニックネーム＋メールで会員取得。物理削除指定用）。
  * V3.4.0 - 追加：checkMemberReferenced（物理削除前の参照チェック。announcements.author_id を確認）。
@@ -212,13 +213,15 @@ export const fetchMemberByNicknameAndMemberNumber = async (
 
 /**
  * 新規会員登録 (初期ステータスは 'new_req')
+ * members テーブルに存在しないカラム（例: introducer_member_number）は送信前に除外する。
  */
 export const registerMember = async (
-  member: MemberInput
+  member: MemberInput & { introducer_member_number?: string | null }
 ): Promise<ApiResponse<Member>> => {
+  const { introducer_member_number: _omit, ...payload } = member;
   const { data, error } = await supabase
     .from('members')
-    .insert([member])
+    .insert([payload])
     .select()
     .single();
 
