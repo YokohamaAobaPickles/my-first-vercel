@@ -174,55 +174,24 @@ export default function MemberDetailAdmin(
       <div style={styles.content}>
         <h1 style={styles.title}>会員詳細編集 (管理者)</h1>
 
+        {/* 1. 基本・管理情報（プロフィール画面の基本情報と同じ並び順） */}
         <section style={styles.section}>
           <h2 style={styles.sectionTitle}>基本・管理情報</h2>
           <div style={styles.card}>
             <div style={styles.field}>
-              <label style={styles.label} htmlFor="member_number">
-                会員番号
-              </label>
+              <label style={styles.label} htmlFor="member_number">会員番号</label>
               <input
                 id="member_number"
                 type="text"
                 value={formData.member_number || ''}
-                onChange={(e) => 
+                onChange={(e) =>
                   setFormData({ ...formData, member_number: e.target.value })
                 }
                 style={styles.input}
               />
             </div>
             <div style={styles.field}>
-              <label style={styles.label} htmlFor="name">
-                氏名（漢字）
-              </label>
-              <input
-                id="name"
-                type="text"
-                value={formData.name || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                style={styles.input}
-              />
-            </div>
-            <div style={styles.field}>
-              <label style={styles.label} htmlFor="name_roma">
-                氏名（ローマ字）
-              </label>
-              <input
-                id="name_roma"
-                type="text"
-                value={formData.name_roma || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, name_roma: e.target.value })
-                }
-                style={styles.input}
-              />
-            </div>
-            <div style={styles.field}>
-              <label style={styles.label} htmlFor="nickname">
-                ニックネーム
-              </label>
+              <label style={styles.label} htmlFor="nickname">ニックネーム</label>
               <input
                 id="nickname"
                 type="text"
@@ -234,9 +203,59 @@ export default function MemberDetailAdmin(
               />
             </div>
             <div style={styles.field}>
-              <label style={styles.label} htmlFor="email">
-                メールアドレス
-              </label>
+              <label style={styles.label} htmlFor="name">氏名（漢字）</label>
+              <input
+                id="name"
+                type="text"
+                value={formData.name || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                style={styles.input}
+              />
+            </div>
+            <div style={styles.field}>
+              <label style={styles.label} htmlFor="name_roma">氏名（ローマ字）</label>
+              <input
+                id="name_roma"
+                type="text"
+                value={formData.name_roma || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, name_roma: e.target.value })
+                }
+                style={styles.input}
+              />
+            </div>
+            <div style={styles.field}>
+              <label style={styles.label} htmlFor="gender">性別</label>
+              <select
+                id="gender"
+                value={formData.gender || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, gender: e.target.value || null })
+                }
+                style={styles.input}
+              >
+                <option value="">未選択</option>
+                <option value="male">男性</option>
+                <option value="female">女性</option>
+                <option value="other">その他</option>
+              </select>
+            </div>
+            <div style={styles.field}>
+              <label style={styles.label} htmlFor="birthday">生年月日</label>
+              <input
+                id="birthday"
+                type="date"
+                value={formData.birthday || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, birthday: e.target.value || null })
+                }
+                style={styles.input}
+              />
+            </div>
+            <div style={styles.field}>
+              <label style={styles.label} htmlFor="email">メールアドレス</label>
               <input
                 id="email"
                 type="email"
@@ -248,9 +267,7 @@ export default function MemberDetailAdmin(
               />
             </div>
             <div style={styles.field}>
-              <label style={styles.label} htmlFor="member_kind">
-                会員種別
-              </label>
+              <label style={styles.label} htmlFor="member_kind">会員種別</label>
               <select
                 id="member_kind"
                 value={formData.member_kind || ''}
@@ -265,9 +282,7 @@ export default function MemberDetailAdmin(
               </select>
             </div>
             <div style={styles.field}>
-              <label style={styles.label} htmlFor="roles">
-                役職（システム権限）
-              </label>
+              <label style={styles.label} htmlFor="roles">役職（システム権限）</label>
               <select
                 id="roles"
                 value={formData.roles}
@@ -282,9 +297,7 @@ export default function MemberDetailAdmin(
               </select>
             </div>
             <div style={styles.field}>
-              <label style={styles.label} htmlFor="status">
-                ステータス
-              </label>
+              <label style={styles.label} htmlFor="status">ステータス</label>
               <select
                 id="status"
                 value={formData.status}
@@ -297,6 +310,149 @@ export default function MemberDetailAdmin(
                   <option key={k} value={k}>{v}</option>
                 ))}
               </select>
+            </div>
+          </div>
+        </section>
+
+        {/* 2. プロフィール（プロフィール画面と同じ並び順） */}
+        <section style={styles.section}>
+          <h2 style={styles.sectionTitle}>プロフィール</h2>
+          <div style={styles.card}>
+            <div style={styles.field}>
+              <label style={styles.label} htmlFor="postal">郵便番号</label>
+              <input
+                id="postal"
+                type="text"
+                value={formData.postal || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, postal: e.target.value || null })
+                }
+                style={styles.input}
+              />
+            </div>
+            <div style={styles.field}>
+              <label style={styles.label} htmlFor="address">住所</label>
+              <input
+                id="address"
+                type="text"
+                value={formData.address || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, address: e.target.value || null })
+                }
+                style={styles.input}
+              />
+            </div>
+            <div style={styles.field}>
+              <label style={styles.label} htmlFor="tel">電話番号</label>
+              <input
+                id="tel"
+                type="text"
+                value={formData.tel || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, tel: e.target.value || null })
+                }
+                style={styles.input}
+              />
+            </div>
+            <div style={styles.field}>
+              <label style={styles.label} htmlFor="profile_memo">プロフィールメモ</label>
+              <textarea
+                id="profile_memo"
+                value={formData.profile_memo || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, profile_memo: e.target.value || null })
+                }
+                style={styles.textarea}
+              />
+            </div>
+            <div style={styles.field}>
+              <label style={styles.label} htmlFor="emg_tel">緊急連絡先電話</label>
+              <input
+                id="emg_tel"
+                type="text"
+                value={formData.emg_tel || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, emg_tel: e.target.value })
+                }
+                style={styles.input}
+              />
+            </div>
+            <div style={styles.field}>
+              <label style={styles.label} htmlFor="emg_rel">続柄</label>
+              <input
+                id="emg_rel"
+                type="text"
+                value={formData.emg_rel || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, emg_rel: e.target.value })
+                }
+                style={styles.input}
+              />
+            </div>
+            <div style={styles.field}>
+              <label style={styles.label} htmlFor="emg_memo">緊急連絡メモ</label>
+              <textarea
+                id="emg_memo"
+                value={formData.emg_memo || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, emg_memo: e.target.value || null })
+                }
+                style={styles.textareaSmall}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* 3. 競技情報 (DUPR)（プロフィール画面と同じ並び順） */}
+        <section style={styles.section}>
+          <h2 style={styles.sectionTitle}>競技情報 (DUPR)</h2>
+          <div style={styles.card}>
+            <div style={styles.field}>
+              <label style={styles.label} htmlFor="dupr_id">DUPR ID</label>
+              <input
+                id="dupr_id"
+                type="text"
+                value={formData.dupr_id || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, dupr_id: e.target.value || null })
+                }
+                placeholder="例: WKRV2Q"
+                style={styles.input}
+              />
+            </div>
+            <div style={styles.field}>
+              <label style={styles.label} htmlFor="dupr_rate_doubles">Doubles Rating</label>
+              <input
+                id="dupr_rate_doubles"
+                type="number"
+                step="0.001"
+                value={formData.dupr_rate_doubles ?? ''}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    dupr_rate_doubles: e.target.value === '' ? '' : e.target.value,
+                  })
+                }
+                placeholder="0.000"
+                style={styles.input}
+              />
+            </div>
+            <div style={styles.field}>
+              <label style={styles.label} htmlFor="dupr_rate_singles">Singles Rating</label>
+              <input
+                id="dupr_rate_singles"
+                type="number"
+                step="0.001"
+                value={formData.dupr_rate_singles ?? ''}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    dupr_rate_singles: e.target.value === '' ? '' : e.target.value,
+                  })
+                }
+                placeholder="0.000"
+                style={styles.input}
+              />
             </div>
           </div>
         </section>
@@ -401,6 +557,28 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: '#1a1a1a',
     color: '#fff',
     fontSize: '1rem',
+  },
+  textarea: {
+    width: '100%',
+    height: '100px',
+    padding: '12px',
+    borderRadius: '8px',
+    border: '1px solid #333',
+    backgroundColor: '#1a1a1a',
+    color: '#fff',
+    fontSize: '1rem',
+    resize: 'vertical',
+  },
+  textareaSmall: {
+    width: '100%',
+    height: '60px',
+    padding: '12px',
+    borderRadius: '8px',
+    border: '1px solid #333',
+    backgroundColor: '#1a1a1a',
+    color: '#fff',
+    fontSize: '1rem',
+    resize: 'vertical',
   },
   actionArea: {
     display: 'flex',

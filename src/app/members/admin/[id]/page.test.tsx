@@ -1,10 +1,10 @@
 /**
  * Filename: src/app/members/admin/[id]/page.test.tsx
- * Version : V2.5.5
+ * Version : V2.6.0
  * Update  : 2026-02-01
- * Remarks : 
+ * Remarks :
+ * V2.6.0 - 編集可能な全項目の表示・初期値検証を追加。権限拒否時に updateMember が呼ばれないことを検証。
  * V2.5.5 - 安定化：プロフィール編集テスト(V2.4.0)の成功パターンを適用。
- * findBy系メソッドによる非同期待機に統一し、タイムアウトとact警告を解消。
  */
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
@@ -55,7 +55,7 @@ window.alert = vi.fn()
 
 const api = memberApi as any
 
-describe('MemberDetailAdmin - 安定化検証 V2.5.5', () => {
+describe('MemberDetailAdmin', () => {
   const mockFullMember = {
     id: 'user-123',
     member_number: '0001',
@@ -91,7 +91,7 @@ describe('MemberDetailAdmin - 安定化検証 V2.5.5', () => {
   })
 
   describe('1. 表示・認可の検証', () => {
-    it('【デグレ防止】全編集項目が画面に存在し、初期値が正しいこと', async () => {
+    it('編集可能な全ての情報が期待通りに表示される', async () => {
       vi.mocked(useAuthCheck).mockReturnValue({
         isLoading: false,
         user: { id: 'admin-1', roles: ROLES.PRESIDENT },
@@ -100,11 +100,34 @@ describe('MemberDetailAdmin - 安定化検証 V2.5.5', () => {
 
       render(<MemberDetailAdmin params={Promise.resolve({ id: 'user-123' })} />)
 
-      // フォーム表示（fetchMemberById 完了）まで待機
-      expect(await screen.findByLabelText(/会員番号/i)).toHaveValue('0001')
+      // フォーム表示まで待機
+      await screen.findByLabelText(/会員番号/i)
+
+      // 基本・管理情報
+      expect(screen.getByLabelText(/会員番号/i)).toHaveValue('0001')
+      expect(screen.getByLabelText(/ニックネーム/i)).toHaveValue('タロー')
       expect(screen.getByLabelText(/氏名（漢字）/i)).toHaveValue('テスト 太郎')
+      expect(screen.getByLabelText(/氏名（ローマ字）/i)).toHaveValue('TEST TARO')
+      expect(screen.getByLabelText(/性別/i)).toHaveValue('male')
+      expect(screen.getByLabelText(/生年月日/i)).toHaveValue('1990-01-01')
+      expect(screen.getByLabelText(/メールアドレス/i)).toHaveValue('test@example.com')
+      expect(screen.getByLabelText(/会員種別/i)).toHaveValue('general')
       expect(screen.getByLabelText(/役職/i)).toHaveValue(ROLES.MEMBER)
       expect(screen.getByLabelText(/ステータス/i)).toHaveValue('active')
+
+      // プロフィール
+      expect(screen.getByLabelText(/郵便番号/i)).toHaveValue('100-0001')
+      expect(screen.getByLabelText(/住所/i)).toHaveValue('東京都千代田区1-1')
+      expect(screen.getByLabelText(/電話番号/i)).toHaveValue('090-1111-2222')
+      expect(screen.getByLabelText(/プロフィールメモ/i)).toHaveValue('自己紹介メモ')
+      expect(screen.getByLabelText(/緊急連絡先電話/i)).toHaveValue('03-3333-4444')
+      expect(screen.getByLabelText(/続柄/i)).toHaveValue('妻')
+      expect(screen.getByLabelText(/緊急連絡メモ/i)).toHaveValue('緊急時メモ')
+
+      // 競技情報 (DUPR)
+      expect(screen.getByLabelText(/DUPR ID/i)).toHaveValue('D12345')
+      expect(screen.getByLabelText(/Doubles Rating/i)).toHaveValue(3.555)
+      expect(screen.getByLabelText(/Singles Rating/i)).toHaveValue(3.222)
     })
   })
 
@@ -160,7 +183,7 @@ describe('MemberDetailAdmin - 安定化検証 V2.5.5', () => {
       })
     })
 
-    it('副会長: 会長への変更を拒否する', async () => {
+    it('副会長: 会長への変更は注意喚起され実行できない', async () => {
       vi.mocked(useAuthCheck).mockReturnValue({
         isLoading: false,
         user: { id: 'admin-1', roles: ROLES.VICE_PRESIDENT },
@@ -172,15 +195,16 @@ describe('MemberDetailAdmin - 安定化検証 V2.5.5', () => {
       const roleSelect = await screen.findByLabelText(/役職/i)
       fireEvent.change(roleSelect, { target: { value: ROLES.PRESIDENT } })
       fireEvent.click(screen.getByRole('button', { name: /保存/i }))
-      
+
       await waitFor(() => {
         expect(window.alert).toHaveBeenCalledWith(
           expect.stringContaining('権限がありません')
         )
       })
+      expect(api.updateMember).not.toHaveBeenCalled()
     })
 
-    it('会員管理担当: 会長・副会長への変更を拒否する', async () => {
+    it('会員管理担当: 会長・副会長への変更は注意喚起され実行できない', async () => {
       vi.mocked(useAuthCheck).mockReturnValue({
         isLoading: false,
         user: { id: 'admin-1', roles: ROLES.MEMBER_MANAGER },
@@ -192,12 +216,13 @@ describe('MemberDetailAdmin - 安定化検証 V2.5.5', () => {
       const roleSelect = await screen.findByLabelText(/役職/i)
       fireEvent.change(roleSelect, { target: { value: ROLES.VICE_PRESIDENT } })
       fireEvent.click(screen.getByRole('button', { name: /保存/i }))
-      
+
       await waitFor(() => {
         expect(window.alert).toHaveBeenCalledWith(
           expect.stringContaining('権限がありません')
         )
       })
+      expect(api.updateMember).not.toHaveBeenCalled()
     })
   })
 })
