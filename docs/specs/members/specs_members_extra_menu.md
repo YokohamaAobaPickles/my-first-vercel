@@ -60,7 +60,7 @@ DUPR から取得したファイルをアップロードし、会員の DUPR 関
 ## 3. 削除処理
 
 ### 3.1 会員取得と一致確認
-- `fetchMemberById(memberId)` で会員を取得  
+- `fetchMemberByNicknameAndEmail` で会員を取得  
 - メールアドレスが一致しない場合  
   - 「ニックネームとメールアドレスが一致する会員が見つかりません。」を表示  
   - 削除処理は行わない  
@@ -86,20 +86,15 @@ DUPR から取得したファイルをアップロードし、会員の DUPR 関
 - 会員ID・メールアドレス入力フォームを追加  
 - 「削除する」ボタンを追加  
 - 確認ダイアログで OK/キャンセルを分岐  
-- `fetchMemberById` で会員取得  
+- `fetchMemberByNicknameAndEmail` で会員を取得  
 - メール一致チェック後に参照チェック → 削除  
 
 ---
 
 ### ● `src/app/admin/extra/page.test.tsx`（V3.0.0）
-- 会員ID・メール入力と削除ボタンが表示されることを検証  
+- ニックネーム・メール入力と削除ボタンが表示されることを検証  
 - **キャンセル時**  
-  - `fetchMemberById` / `deleteMember` が呼ばれないこと  
+  - `fetchMemberByNicknameAndEmail` が呼ばれないこと  
 - **OK時**  
-  - `fetchMemberById` → `checkMemberReferenced` → `deleteMember` の順で呼ばれること  
+  - OK時は ('ヤマダ', 'a@example.com') で呼ばれ削除まで行われることを検証  
   - 「削除しました。」が表示されること  
-
----
-
-必要なら、この仕様を **docs/specs/admin/extra/** 以下に配置するためのファイル名案や、  
-既存仕様とのリンク構造も整備できるよ。
