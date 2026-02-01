@@ -1,8 +1,9 @@
 /**
  * Filename: src/app/members/new/page.tsx
- * Version : V1.6.0
+ * Version : V1.7.0
  * Update  : 2026-02-01
  * Remarks : 
+ * V1.7.0 - 追加：最下部にキャンセルボタン（ログイン画面へ）。申請・キャンセルを等分サイズで並列表示。
  * V1.6.0 - 追加：ゲスト登録時に紹介者の会員番号入力。ニックネーム＋会員番号で紹介者照合し、不一致時は「該当するメンバーがいません」で登録画面に留まる。
  * V1.5.28 - 修正：Vitestのハング解消のため性別・生年月日の入力欄を追加。
  * V1.5.28 - 修正：二重更新防止ロジックと依存配列の最適化。
@@ -509,20 +510,30 @@ function MemberNewContent() {
           />
         </section>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          style={{
-            ...submitButtonStyle,
-            backgroundColor: isSubmitting
-              ? '#444'
-              : '#0070f3'
-          }}
-        >
-          {isSubmitting
-            ? '送信中...'
-            : '新規会員登録申請'}
-        </button>
+        <div style={buttonContainerStyle}>
+          <button
+            type="button"
+            onClick={() => router.push('/members/login')}
+            style={cancelButtonStyle}
+          >
+            キャンセル
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            style={{
+              ...submitButtonStyle,
+              flex: 1,
+              backgroundColor: isSubmitting
+                ? '#444'
+                : '#0070f3'
+            }}
+          >
+            {isSubmitting
+              ? '送信中...'
+              : '新規会員登録申請'}
+          </button>
+        </div>
       </form>
     </div>
   )
@@ -637,14 +648,31 @@ const gridRowStyle: React.CSSProperties = {
   gap: '12px'
 }
 
+const buttonContainerStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: '16px',
+  marginTop: '20px',
+  marginBottom: '80px'
+}
+
+const cancelButtonStyle: React.CSSProperties = {
+  flex: 1,
+  backgroundColor: 'transparent',
+  color: '#888',
+  border: '1px solid #444',
+  padding: '14px',
+  borderRadius: '8px',
+  fontSize: '1rem',
+  cursor: 'pointer'
+}
+
 const submitButtonStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '16px',
-  borderRadius: '30px',
+  flex: 1,
+  padding: '14px',
+  borderRadius: '8px',
   color: '#fff',
   border: 'none',
   fontWeight: 'bold',
-  fontSize: '1.1rem',
-  cursor: 'pointer',
-  marginBottom: '80px'
+  fontSize: '1rem',
+  cursor: 'pointer'
 }
