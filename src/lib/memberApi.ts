@@ -3,6 +3,8 @@
  * Version : V3.3.0
  * Update  : 2026-02-01
  * Remarks : 
+ * V3.3.2 - 修正：fetchMemberByDuprId で同一 dupr_id 複数時は更新せずエラーを返す（重複解消を促すメッセージ）。
+ * V3.3.1 - 修正：fetchMemberByDuprId を maybeSingle → limit(1) に変更（同一 dupr_id 複数時エラー回避）。
  * V3.3.0 - 追加：fetchMemberByDuprId（DUPR一括登録用）。
  * V3.2.0 - 追加：管理者用一括更新関数 updateMember を実装。
  * V3.1.0 - 追加：deleteMember (物理レコード削除) を実装。
@@ -83,6 +85,7 @@ export const fetchMemberById = async (
 
 /**
  * DUPR ID を指定して会員情報を取得する（一括更新用）
+ * 同一 dupr_id が複数いる場合は更新せずエラーを返す（重複時は該当ユーザを更新しない）
  */
 export const fetchMemberByDuprId = async (
   duprId: string
@@ -98,13 +101,27 @@ export const fetchMemberByDuprId = async (
   const { data, error } = await supabase
     .from('members')
     .select('*')
-    .eq('dupr_id', trimmed)
-    .maybeSingle();
+    .eq('dupr_id', trimmed);
 
   if (error) {
     return handleError(error);
   }
-  return { success: true, data: data as Member | null, error: null };
+  const arr = Array.isArray(data) ? data : [];
+  if (arr.length === 0) {
+    return { success: true, data: null, error: null };
+  }
+  if (arr.length > 1) {
+    return {
+      success: false,
+      data: null,
+      error: {
+        message:
+          '同一のDUPR IDが複数会員に登録されています。重複を解消してから再度実行してください。',
+        code: 'DUPLICATE_DUPR_ID',
+      },
+    };
+  }
+  return { success: true, data: arr[0] as Member, error: null };
 };
 
 /**

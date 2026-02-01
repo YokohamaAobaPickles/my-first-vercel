@@ -18,11 +18,12 @@ import {
   fetchPendingMembers,
   updateMemberStatus,
   fetchMemberById,
+  fetchMemberByDuprId,
   fetchMembers,
   fetchMemberByEmail,
   linkLineIdToMember,
   registerMember,
-  deleteMember // 追加
+  deleteMember
 } from './memberApi'
 import { supabase } from '@/lib/supabase'
 import { Member, MemberInput } from '@/types/member'
@@ -196,6 +197,51 @@ describe('memberApi - 会員DB操作・連携の総合検証 V3.2.1', () => {
       const result = await fetchMemberById('u123')
       expect(result.success).toBe(true)
       expect(result.data?.id).toBe('u123')
+    })
+  })
+
+  describe('fetchMemberByDuprId (DUPR ID で会員取得)', () => {
+    it('【正常系】0件のとき data: null を返すこと', async () => {
+      mockFrom.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ data: [], error: null })
+      })
+      const result = await fetchMemberByDuprId('ABC123')
+      expect(result.success).toBe(true)
+      expect(result.data).toBeNull()
+    })
+
+    it('【正常系】1件のときその会員を返すこと', async () => {
+      const mockMember = { id: 'u1', dupr_id: 'WKRV2Q' }
+      mockFrom.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({
+          data: [mockMember],
+          error: null
+        })
+      })
+      const result = await fetchMemberByDuprId('WKRV2Q')
+      expect(result.success).toBe(true)
+      expect(result.data?.id).toBe('u1')
+      expect(result.data?.dupr_id).toBe('WKRV2Q')
+    })
+
+    it('【異常系】同一 DUPR ID が複数会員に登録されているとき更新せずエラーを返すこと', async () => {
+      mockFrom.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({
+          data: [
+            { id: 'u1', dupr_id: 'WKRV2Q' },
+            { id: 'u2', dupr_id: 'WKRV2Q' }
+          ],
+          error: null
+        })
+      })
+      const result = await fetchMemberByDuprId('WKRV2Q')
+      expect(result.success).toBe(false)
+      expect(result.data).toBeNull()
+      expect(result.error?.code).toBe('DUPLICATE_DUPR_ID')
+      expect(result.error?.message).toContain('同一のDUPR IDが複数会員に登録されています')
     })
   })
 })

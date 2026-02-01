@@ -152,4 +152,47 @@ NR
       screen.getByText(/Doubles 2.26 \/ Singles 0 で更新/)
     ).toBeInTheDocument()
   })
+
+  it('同一 DUPR ID が複数会員に登録されている場合は更新せずエラー理由を表示する', async () => {
+    vi.mocked(useAuthCheck).mockReturnValue({
+      isLoading: false,
+      user: { id: 'admin-1', roles: ROLES.SYSTEM_ADMIN },
+      userRoles: ROLES.SYSTEM_ADMIN,
+    } as any)
+    vi.mocked(memberApi.fetchMemberByDuprId).mockResolvedValue({
+      success: false,
+      data: null,
+      error: {
+        message:
+          '同一のDUPR IDが複数会員に登録されています。重複を解消してから再度実行してください。',
+        code: 'DUPLICATE_DUPR_ID',
+      },
+    })
+
+    const fileContent = `Tomo Yamashita
+WKRV2Q
+Yokohama, Kanagawa, JP
+• M
+2.26
+NR
+`
+    const file = new File([fileContent], 'dupr.txt', { type: 'text/plain' })
+    if (typeof file.text !== 'function') {
+      (file as any).text = () => Promise.resolve(fileContent)
+    }
+
+    render(<MembersExtraPage />)
+
+    const input = screen.getByLabelText(/DUPRファイルを選択/i)
+    fireEvent.change(input, { target: { files: [file] } })
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /更新結果/i })).toBeInTheDocument()
+    })
+
+    expect(screen.getByText(/エラー: 1 件/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/同一のDUPR IDが複数会員に登録されています/)
+    ).toBeInTheDocument()
+  })
 })

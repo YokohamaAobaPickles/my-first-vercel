@@ -1,0 +1,31 @@
+🧩 最適なワークフロー（あなたの開発スタイルに完全一致）
+① ブランチを切る
+例：
+feature/dupr-bulk-update
+
+② 新しいチャットを作る
+チャット名：
+「DUPR一括更新機能（feature/dupr-bulk-update）」
+
+③ 最初のメッセージで Cursor に仕様を読み込ませる
+コード
+このチャットでは DUPR 一括更新機能を開発します。
+
+まず以下を参照してください：
+- docs/specs/system_overview.md
+- docs/specs/members/
+- docs/specs/events/
+- docs/development_guidelines.md
+
+参照が終わったら、今回の機能追加に必要な仕様と影響範囲を説明してください。
+④ Cursor が仕様を理解したら、TDD で進める
+まずテストコード
+
+次に最小実装
+
+差分ベースで修正
+
+方針説明 → 差分 → 実装 の順
+
+⑤ 完成したらブランチをマージ
+チャットはそのままアーカイブしておけば、後で参照できる。
