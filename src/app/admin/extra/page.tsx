@@ -1,8 +1,9 @@
 /**
  * Filename: src/app/admin/extra/page.tsx
- * Version : V2.0.0
+ * Version : V3.0.0
  * Update  : 2026-02-01
  * Remarks :
+ * V3.0.0 - 物理削除を「会員ID＋メールアドレス指定」に変更。確認でOKなら削除、キャンセルなら何もしない。
  * V2.0.0 - 不要会員の物理削除機能を実装（一覧・確認ダイアログ・参照チェック・削除後再取得）。
  * - エキストラ管理ページ（管理者専用）
  * - 1. DUPR技術レベルの一括登録機能
@@ -11,35 +12,25 @@
 
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import { canManageMembers } from '@/utils/auth'
 import {
-  fetchMembers,
+  fetchMemberById,
   deleteMember,
   checkMemberReferenced,
 } from '@/lib/memberApi'
-import type { Member } from '@/types/member'
 
 export default function AdminExtraPage() {
   const router = useRouter()
   const { user, userRoles, isLoading: isAuthLoading } = useAuthCheck()
 
-  const [members, setMembers] = useState<Member[]>([])
-  const [isListLoading, setIsListLoading] = useState(false)
+  const [targetId, setTargetId] = useState('')
+  const [targetEmail, setTargetEmail] = useState('')
   const [deleteMessage, setDeleteMessage] = useState<string | null>(null)
-
-  const loadMembers = useCallback(async () => {
-    setIsListLoading(true)
-    setDeleteMessage(null)
-    const res = await fetchMembers()
-    if (res.success && res.data) {
-      setMembers(res.data)
-    }
-    setIsListLoading(false)
-  }, [])
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     if (isAuthLoading) return
@@ -47,37 +38,73 @@ export default function AdminExtraPage() {
       router.replace('/members/profile')
       return
     }
-    loadMembers()
-  }, [user, userRoles, isAuthLoading, router, loadMembers])
+  }, [user, userRoles, isAuthLoading, router])
 
-  const handleDeleteClick = async (member: Member) => {
-    const label = `${member.member_number ?? '—'} ${member.name}（${member.nickname}）`
-    const confirmed = window.confirm(
-      `会員ID ${member.id}（${label}）を物理削除します。よろしいですか？`
-    )
-    if (!confirmed) return
+  const handleDeleteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const id = targetId.trim()
+    const email = targetEmail.trim()
+    if (!id || !email) {
+      setDeleteMessage('会員IDとメールアドレスを両方入力してください。')
+      return
+    }
 
     setDeleteMessage(null)
 
-    const refRes = await checkMemberReferenced(member.id)
+    const confirmed = window.confirm(
+      `会員ID ${id}、メールアドレス ${email} を物理削除します。よろしいですか？`
+    )
+    if (!confirmed) return
+
+    setIsSubmitting(true)
+
+    const fetchRes = await fetchMemberById(id)
+    if (!fetchRes.success || fetchRes.error) {
+      setDeleteMessage(
+        fetchRes.error?.message ?? '会員の取得に失敗しました。'
+      )
+      setIsSubmitting(false)
+      return
+    }
+    const member = fetchRes.data
+    if (!member) {
+      setDeleteMessage('指定した会員IDの会員が見つかりません。')
+      setIsSubmitting(false)
+      return
+    }
+    if (member.email?.trim() !== email) {
+      setDeleteMessage(
+        '会員IDとメールアドレスが一致する会員が見つかりません。'
+      )
+      setIsSubmitting(false)
+      return
+    }
+
+    const refRes = await checkMemberReferenced(id)
     if (!refRes.success || refRes.error) {
       setDeleteMessage(
         refRes.error?.message ?? '参照チェックに失敗しました。'
       )
+      setIsSubmitting(false)
       return
     }
     if (refRes.data?.referenced && refRes.data.message) {
       setDeleteMessage(refRes.data.message)
+      setIsSubmitting(false)
       return
     }
 
-    const delRes = await deleteMember(member.id)
+    const delRes = await deleteMember(id)
     if (!delRes.success) {
       setDeleteMessage(delRes.error?.message ?? '削除に失敗しました。')
+      setIsSubmitting(false)
       return
     }
 
-    await loadMembers()
+    setDeleteMessage('削除しました。')
+    setTargetId('')
+    setTargetEmail('')
+    setIsSubmitting(false)
   }
 
   if (isAuthLoading) {
@@ -121,7 +148,7 @@ export default function AdminExtraPage() {
           </h2>
           <div style={styles.card}>
             <p style={styles.help}>
-              会員を指定して members テーブルから物理削除します。他機能で参照されている場合は削除できません。
+              削除したい会員の会員IDとメールアドレスを入力し、削除を実行してください。他機能で参照されている場合は削除できません。
             </p>
             {deleteMessage && (
               <div
@@ -132,30 +159,46 @@ export default function AdminExtraPage() {
                 {deleteMessage}
               </div>
             )}
-            {isListLoading ? (
-              <p style={styles.placeholder}>一覧を取得中...</p>
-            ) : members.length === 0 ? (
-              <p style={styles.placeholder}>会員が0件です。</p>
-            ) : (
-              <ul style={styles.list}>
-                {members.map((m) => (
-                  <li key={m.id} style={styles.listItem}>
-                    <span style={styles.listLabel}>
-                      {m.member_number ?? '—'} {m.name}（{m.nickname}）
-                    </span>
-                    <span style={styles.listId}>ID: {m.id.slice(0, 8)}…</span>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteClick(m)}
-                      style={styles.deleteButton}
-                      aria-label={`${m.name} を物理削除`}
-                    >
-                      削除
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <form onSubmit={handleDeleteSubmit} style={styles.form}>
+              <div style={styles.field}>
+                <label htmlFor="delete-member-id" style={styles.label}>
+                  会員ID
+                </label>
+                <input
+                  id="delete-member-id"
+                  type="text"
+                  value={targetId}
+                  onChange={(e) => setTargetId(e.target.value)}
+                  placeholder="UUID"
+                  style={styles.input}
+                  disabled={isSubmitting}
+                  aria-required="true"
+                />
+              </div>
+              <div style={styles.field}>
+                <label htmlFor="delete-member-email" style={styles.label}>
+                  メールアドレス
+                </label>
+                <input
+                  id="delete-member-email"
+                  type="email"
+                  value={targetEmail}
+                  onChange={(e) => setTargetEmail(e.target.value)}
+                  placeholder="example@example.com"
+                  style={styles.input}
+                  disabled={isSubmitting}
+                  aria-required="true"
+                />
+              </div>
+              <button
+                type="submit"
+                style={styles.deleteButton}
+                disabled={isSubmitting}
+                aria-label="指定した会員を物理削除"
+              >
+                {isSubmitting ? '処理中...' : '削除する'}
+              </button>
+            </form>
           </div>
         </section>
       </div>
@@ -238,34 +281,36 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '12px',
     fontSize: '0.9rem',
   },
-  list: {
-    listStyle: 'none',
-    padding: 0,
-    margin: 0,
-  },
-  listItem: {
+  form: {
     display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '10px 0',
-    borderBottom: '1px solid #333',
+    flexDirection: 'column',
+    gap: '16px',
+  },
+  field: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  label: {
     fontSize: '0.9rem',
+    color: '#ccc',
   },
-  listLabel: {
-    flex: '1 1 auto',
-    minWidth: 0,
-  },
-  listId: {
-    color: '#666',
-    fontSize: '0.8rem',
+  input: {
+    padding: '10px 12px',
+    backgroundColor: '#222',
+    border: '1px solid #444',
+    borderRadius: '6px',
+    color: '#fff',
+    fontSize: '0.95rem',
   },
   deleteButton: {
-    padding: '6px 12px',
+    padding: '10px 16px',
     backgroundColor: '#500',
     border: '1px solid #a33',
     borderRadius: '6px',
     color: '#faa',
     cursor: 'pointer',
-    fontSize: '0.85rem',
+    fontSize: '0.9rem',
+    alignSelf: 'flex-start',
   },
 }

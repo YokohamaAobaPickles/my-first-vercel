@@ -1,11 +1,11 @@
 /**
  * Filename: src/app/admin/extra/page.test.tsx
- * Version : V2.0.0
+ * Version : V3.0.0
  * Update  : 2026-02-01
- * Remarks : エキストラ管理ページの骨組み・物理削除セクションの検証。V2.0.0 で memberApi モック追加。
+ * Remarks : エキストラ管理ページの骨組み・物理削除セクション（会員ID＋メール指定）の検証。
  */
 
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import '@testing-library/jest-dom'
 import AdminExtraPage from './page'
@@ -17,6 +17,7 @@ vi.mock('@/hooks/useAuthCheck')
 vi.mock('@/lib/memberApi')
 
 const mockReplace = vi.fn()
+const mockConfirm = vi.fn()
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     replace: mockReplace,
@@ -28,11 +29,7 @@ vi.mock('next/navigation', () => ({
 describe('AdminExtraPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(memberApi.fetchMembers).mockResolvedValue({
-      success: true,
-      data: [],
-      error: null,
-    })
+    window.confirm = mockConfirm
   })
 
   it('管理者権限がない場合、会員プロフィールへリダイレクトする', () => {
@@ -89,36 +86,90 @@ describe('AdminExtraPage', () => {
     expect(backLink).toHaveAttribute('href', '/members/admin')
   })
 
-  it('管理者権限がある場合、物理削除セクションに会員一覧または0件メッセージが表示される', async () => {
+  it('管理者権限がある場合、物理削除セクションに会員ID・メールアドレス入力と削除ボタンが表示される', async () => {
     vi.mocked(useAuthCheck).mockReturnValue({
       isLoading: false,
       user: { id: 'admin-1', roles: ROLES.SYSTEM_ADMIN },
       userRoles: ROLES.SYSTEM_ADMIN,
     } as any)
-    vi.mocked(memberApi.fetchMembers).mockResolvedValue({
+
+    render(<AdminExtraPage />)
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', { name: /不要会員の物理削除/i })
+      ).toBeInTheDocument()
+    })
+    expect(screen.getByLabelText(/会員ID/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/メールアドレス/i)).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /指定した会員を物理削除/i })
+    ).toBeInTheDocument()
+  })
+
+  it('確認でキャンセルを選んだ場合、削除せず何もしない', async () => {
+    mockConfirm.mockReturnValue(false)
+    vi.mocked(useAuthCheck).mockReturnValue({
+      isLoading: false,
+      user: { id: 'admin-1', roles: ROLES.SYSTEM_ADMIN },
+      userRoles: ROLES.SYSTEM_ADMIN,
+    } as any)
+
+    render(<AdminExtraPage />)
+    fireEvent.change(screen.getByLabelText(/会員ID/i), {
+      target: { value: 'u1' },
+    })
+    fireEvent.change(screen.getByLabelText(/メールアドレス/i), {
+      target: { value: 'a@example.com' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /指定した会員を物理削除/i }))
+
+    expect(mockConfirm).toHaveBeenCalledWith(
+      expect.stringContaining('会員ID u1')
+    )
+    expect(memberApi.fetchMemberById).not.toHaveBeenCalled()
+    expect(memberApi.deleteMember).not.toHaveBeenCalled()
+  })
+
+  it('確認でOKを選んだ場合、会員を取得して参照チェック後に削除する', async () => {
+    mockConfirm.mockReturnValue(true)
+    vi.mocked(useAuthCheck).mockReturnValue({
+      isLoading: false,
+      user: { id: 'admin-1', roles: ROLES.SYSTEM_ADMIN },
+      userRoles: ROLES.SYSTEM_ADMIN,
+    } as any)
+    vi.mocked(memberApi.fetchMemberById).mockResolvedValue({
       success: true,
-      data: [],
+      data: { id: 'u1', email: 'a@example.com' } as any,
+      error: null,
+    })
+    vi.mocked(memberApi.checkMemberReferenced).mockResolvedValue({
+      success: true,
+      data: { referenced: false },
+      error: null,
+    })
+    vi.mocked(memberApi.deleteMember).mockResolvedValue({
+      success: true,
+      data: null,
       error: null,
     })
 
     render(<AdminExtraPage />)
-
-    await waitFor(() => {
-      expect(screen.getByText(/会員が0件です/)).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText(/会員ID/i), {
+      target: { value: 'u1' },
     })
-  })
-
-  it('管理者権限がある場合、物理削除セクションで fetchMembers が呼ばれる', async () => {
-    vi.mocked(useAuthCheck).mockReturnValue({
-      isLoading: false,
-      user: { id: 'admin-1', roles: ROLES.SYSTEM_ADMIN },
-      userRoles: ROLES.SYSTEM_ADMIN,
-    } as any)
-
-    render(<AdminExtraPage />)
+    fireEvent.change(screen.getByLabelText(/メールアドレス/i), {
+      target: { value: 'a@example.com' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /指定した会員を物理削除/i }))
 
     await waitFor(() => {
-      expect(memberApi.fetchMembers).toHaveBeenCalled()
+      expect(memberApi.fetchMemberById).toHaveBeenCalledWith('u1')
+    })
+    expect(memberApi.checkMemberReferenced).toHaveBeenCalledWith('u1')
+    expect(memberApi.deleteMember).toHaveBeenCalledWith('u1')
+    await waitFor(() => {
+      expect(screen.getByText(/削除しました/)).toBeInTheDocument()
     })
   })
 })
