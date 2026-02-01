@@ -13,6 +13,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 
@@ -133,6 +134,11 @@ export default function MemberLoginPage() {
               <a href="/members/new" style={{ color: '#0070f3', fontSize: '0.9rem', textDecoration: 'none' }}>
                 新規会員登録はこちら
               </a>
+              <div style={{ marginTop: '8px' }}>
+                <Link href="/members/password-reset" style={passwordResetLinkStyle}>
+                  パスワード忘却時のリセットはこちら
+                </Link>
+              </div>
             </div>
           )}
         </form>
@@ -169,6 +175,12 @@ const buttonStyle = {
   fontSize: '1rem',
   marginTop: '10px',
   marginBottom: '20px',
+}
+
+const passwordResetLinkStyle: React.CSSProperties = {
+  color: '#0070f3',
+  fontSize: '0.9rem',
+  textDecoration: 'none',
 }
 
 const footerStyle: React.CSSProperties = {

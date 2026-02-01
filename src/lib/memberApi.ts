@@ -1,8 +1,9 @@
 /**
  * Filename: src/lib/memberApi.ts
- * Version : V3.7.0
+ * Version : V3.8.0
  * Update  : 2026-02-01
  * Remarks : 
+ * V3.8.0 - 追加：パスワードリセット用（saveResetToken, fetchMemberByResetToken, updatePasswordByResetToken）。
  * V3.7.0 - 追加：updateMemberPassword（現在パスワード照合後に新パスワードで更新。プロフィール編集用）。
  * V3.6.1 - 修正：registerMember で introducer_member_number を送信前に除外（PGRST204 エラー防止）。
  * V3.6.0 - 追加：fetchMemberByNicknameAndMemberNumber（ニックネーム＋会員番号で紹介者取得。ゲスト登録用）。
@@ -417,6 +418,72 @@ export const updateMember = async (
     .from('members')
     .update(data)
     .eq('id', id);
+
+  if (error) {
+    return handleError(error);
+  }
+  return { success: true, data: null, error: null };
+};
+
+/**
+ * パスワードリセット用トークンを保存する
+ */
+export const saveResetToken = async (
+  memberId: string,
+  token: string,
+  expiresAt: Date
+): Promise<ApiResponse<null>> => {
+  const { error } = await supabase
+    .from('members')
+    .update({
+      reset_token: token,
+      reset_token_expires_at: expiresAt.toISOString(),
+    })
+    .eq('id', memberId);
+
+  if (error) {
+    return handleError(error);
+  }
+  return { success: true, data: null, error: null };
+};
+
+/**
+ * リセットトークンで会員を取得する（有効期限は呼び出し側でチェック）
+ */
+export const fetchMemberByResetToken = async (
+  token: string
+): Promise<ApiResponse<Member | null>> => {
+  const t = (token || '').trim();
+  if (!t) {
+    return { success: true, data: null, error: null };
+  }
+  const { data, error } = await supabase
+    .from('members')
+    .select('*')
+    .eq('reset_token', t)
+    .maybeSingle();
+
+  if (error) {
+    return handleError(error);
+  }
+  return { success: true, data: data as Member | null, error: null };
+};
+
+/**
+ * リセットトークンでパスワードを更新しトークンをクリアする
+ */
+export const updatePasswordByResetToken = async (
+  memberId: string,
+  newPassword: string
+): Promise<ApiResponse<null>> => {
+  const { error } = await supabase
+    .from('members')
+    .update({
+      password: (newPassword || '').trim(),
+      reset_token: null,
+      reset_token_expires_at: null,
+    })
+    .eq('id', memberId);
 
   if (error) {
     return handleError(error);

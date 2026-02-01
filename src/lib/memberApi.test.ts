@@ -27,6 +27,9 @@ import {
   deleteMember,
   checkMemberReferenced,
   updateMemberPassword,
+  saveResetToken,
+  fetchMemberByResetToken,
+  updatePasswordByResetToken,
 } from './memberApi'
 import { supabase } from '@/lib/supabase'
 import { Member, MemberInput } from '@/types/member'
@@ -289,6 +292,66 @@ describe('memberApi - 会員DB操作・連携の総合検証 V3.2.1', () => {
       expect(result.success).toBe(false)
       expect(result.error?.message).toBe('現在のパスワードが正しくありません')
       expect(result.error?.code).toBe('WRONG_PASSWORD')
+    })
+  })
+
+  describe('saveResetToken (パスワードリセットトークン保存)', () => {
+    it('【正常系】reset_token と reset_token_expires_at を更新できること', async () => {
+      const mockEq = vi.fn().mockResolvedValue({ error: null })
+      mockFrom.mockReturnValue({
+        update: vi.fn().mockReturnValue({ eq: mockEq }),
+      })
+
+      const expiresAt = new Date('2026-02-01T12:00:00Z')
+      const result = await saveResetToken('u123', 'abc-token', expiresAt)
+
+      expect(result.success).toBe(true)
+      expect(mockFrom().update).toHaveBeenCalledWith({
+        reset_token: 'abc-token',
+        reset_token_expires_at: '2026-02-01T12:00:00.000Z',
+      })
+    })
+  })
+
+  describe('fetchMemberByResetToken (トークンで会員取得)', () => {
+    it('【正常系】トークンに一致する会員を返すこと', async () => {
+      mockFrom.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({
+          data: { id: 'u1', reset_token: 'valid-token' },
+          error: null,
+        }),
+      })
+
+      const result = await fetchMemberByResetToken('valid-token')
+
+      expect(result.success).toBe(true)
+      expect(result.data?.id).toBe('u1')
+    })
+
+    it('【正常系】トークンが空のとき data: null を返すこと', async () => {
+      const result = await fetchMemberByResetToken('')
+      expect(result.success).toBe(true)
+      expect(result.data).toBeNull()
+    })
+  })
+
+  describe('updatePasswordByResetToken (トークンでパスワード更新)', () => {
+    it('【正常系】パスワードを更新しトークンをクリアできること', async () => {
+      const mockEq = vi.fn().mockResolvedValue({ error: null })
+      mockFrom.mockReturnValue({
+        update: vi.fn().mockReturnValue({ eq: mockEq }),
+      })
+
+      const result = await updatePasswordByResetToken('u123', 'newpass')
+
+      expect(result.success).toBe(true)
+      expect(mockFrom().update).toHaveBeenCalledWith({
+        password: 'newpass',
+        reset_token: null,
+        reset_token_expires_at: null,
+      })
     })
   })
 

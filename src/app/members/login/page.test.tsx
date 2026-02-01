@@ -65,7 +65,7 @@ describe('MemberLoginPage (交通整理・紐付けロジック検証 V1.4.2)', 
   })
 
   // 2. ブラウザ環境での項目表示
-  it('【ブラウザ環境】パスワード欄、ログインボタン、新規登録リンクが表示されること', () => {
+  it('【ブラウザ環境】パスワード欄、ログインボタン、新規登録リンク、パスワードリセットリンクが表示されること', () => {
     vi.mocked(useAuthCheck).mockReturnValue({
       isLoading: false,
       currentLineId: null,
@@ -79,6 +79,7 @@ describe('MemberLoginPage (交通整理・紐付けロジック検証 V1.4.2)', 
     expect(screen.getByPlaceholderText(/パスワード/i)).toBeTruthy()
     expect(screen.getByRole('button', { name: /ログイン/i })).toBeTruthy()
     expect(screen.getByText(/新規会員登録はこちら/i)).toBeTruthy()
+    expect(screen.getByText(/パスワード忘却時のリセットはこちら/i)).toBeTruthy()
   })
 
   // 3. 連携済みユーザーの自動遷移

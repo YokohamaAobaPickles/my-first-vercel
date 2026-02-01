@@ -13,7 +13,7 @@
 | **A-02** | ゲスト会員として新規登録する | ⚠️ 一部実装 | `members/new`：ゲストタブで「紹介者のニックネーム」のみ入力。仕様の「ホストのニックネーム＋会員番号」のうち、**会員番号（秘密キー）の入力・照合は未実装**。 |
 | **A-03** | LINEでログインする | ✅ 実装済 | `members/login`：`useAuthCheck` の `currentLineId` あり時、メール入力で既存会員なら LINE ID 紐付け後に `/members/profile` へ。未登録なら `/members/new?email=...` へ誘導。 |
 | **A-04** | メールアドレス＋パスワードでログインする | ✅ 実装済 | `members/login`：メール・パスワード入力で DB 照合。一致時は `sessionStorage.auth_member_id` に id を保存し `/members/profile` へ。 |
-| **A-05** | パスワードをリセットする | ❌ 未実装 | 画面・API ともになし。 |
+| **A-05** | パスワードをリセットする | ✅ 実装済 | `members/login`：リセットリンク。`members/password-reset`：メール入力。`members/password-reset/change`：トークン検証・新パスワード設定。30分有効トークン、Gmail送信。 |
 
 ---
 
@@ -60,7 +60,9 @@
 
 | パス | 主な役割 |
 |------|----------|
-| `src/app/members/login/page.tsx` | A-03, A-04 ログイン（LINE／メール+パスワード） |
+| `src/app/members/login/page.tsx` | A-03, A-04 ログイン、A-05 パスワードリセットリンク |
+| `src/app/members/password-reset/page.tsx` | A-05 パスワードリセット用メール入力 |
+| `src/app/members/password-reset/change/page.tsx` | A-05 パスワードリセット用新パスワード設定 |
 | `src/app/members/new/page.tsx` | A-01, A-02 新規登録（一般／ゲスト） |
 | `src/app/members/profile/page.tsx` | A-11 閲覧、A-14〜A-17 休会・退会申請・取消、入会取消 |
 | `src/app/members/profile/edit/page.tsx` | A-12 プロフィール編集、A-18 公開設定 |
@@ -73,7 +75,7 @@
 
 ## サマリ
 
-- **実装済み**: A-01, A-03, A-04, A-11, A-12, A-14, A-15, A-16, A-17, A-18, A-31, A-32, A-33, A-34, A-36, A-37  
+- **実装済み**: A-01, A-03, A-04, A-05, A-11, A-12, A-14, A-15, A-16, A-17, A-18, A-21, A-31, A-32, A-33, A-34, A-36, A-37  
 - **一部実装**: A-02（ホスト会員番号未実装）, A-35（退会承認は実装、入会承認の導線は要確認）  
-- **未実装**: A-05（パスワードリセット）, A-19（他会員検索）  
+- **未実装**: A-19（他会員検索）  
 - **対象外**: A-13, A-22（仕様で初期未実装）
