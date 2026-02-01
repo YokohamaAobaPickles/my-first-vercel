@@ -1,8 +1,9 @@
 /**
  * Filename: src/lib/memberApi.ts
- * Version : V3.2.0
+ * Version : V3.3.0
  * Update  : 2026-02-01
  * Remarks : 
+ * V3.3.0 - 追加：fetchMemberByDuprId（DUPR一括登録用）。
  * V3.2.0 - 追加：管理者用一括更新関数 updateMember を実装。
  * V3.1.0 - 追加：deleteMember (物理レコード削除) を実装。
  * V3.0.0 - 修正：ステータス名称変更に対応 (new_req) および updateMemberStatus の引数型修正。
@@ -78,6 +79,32 @@ export const fetchMemberById = async (
     return handleError(error);
   }
   return { success: true, data: data as Member, error: null };
+};
+
+/**
+ * DUPR ID を指定して会員情報を取得する（一括更新用）
+ */
+export const fetchMemberByDuprId = async (
+  duprId: string
+): Promise<ApiResponse<Member | null>> => {
+  const trimmed = (duprId || '').trim();
+  if (!trimmed) {
+    return {
+      success: true,
+      data: null,
+      error: null,
+    };
+  }
+  const { data, error } = await supabase
+    .from('members')
+    .select('*')
+    .eq('dupr_id', trimmed)
+    .maybeSingle();
+
+  if (error) {
+    return handleError(error);
+  }
+  return { success: true, data: data as Member | null, error: null };
 };
 
 /**

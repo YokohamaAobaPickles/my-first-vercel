@@ -96,7 +96,7 @@ export default function AdminDashboard() {
           会員管理パネル
         </h1>
         <Link
-          href="/members/admin/extra"
+          href="/admin/extra"
           style={extraButtonStyle}
         >
           エキストラ管理

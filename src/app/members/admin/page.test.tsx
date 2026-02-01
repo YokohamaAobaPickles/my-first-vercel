@@ -144,6 +144,6 @@ it('【ナビ】エキストラ画面へのリンクが「管理権限を持つ�
       })
 
       expect(extraLink).toBeTruthy()
-      expect(extraLink.getAttribute('href')).toBe('/members/admin/extra')
+      expect(extraLink.getAttribute('href')).toBe('/admin/extra')
     })
 })
