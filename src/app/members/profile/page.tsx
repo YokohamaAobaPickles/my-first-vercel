@@ -1,8 +1,9 @@
 /**
  * Filename: src/app/members/profile/page.tsx
- * Version : V2.7.8
- * Update  : 2026-01-31
+ * Version : V2.7.9
+ * Update  : 2026-02-01
  * Remarks : 
+ * V2.7.9 - 追加：基本情報にメールアドレスをニックネームの下に表示。
  * V2.7.8 - 修正：emergency_memo を emg_memo に修正。
  * V2.7.7 - 修正：ログアウト処理を環境別に最適化。
  * LINE内ならウィンドウを閉じ、ブラウザならセッションを切って遷移。
@@ -179,6 +180,7 @@ export default function ProfilePage() {
             {[
               { label: '会員番号', value: user.member_number || '-' },
               { label: 'ニックネーム', value: user.nickname },
+              { label: 'メールアドレス', value: user.email || '-' },
               { label: '氏名', value: user.name },
               { label: '氏名（ローマ字）', value: user.name_roma || '-' },
               { label: '性別', value: user.gender || '-' },
@@ -202,7 +204,7 @@ export default function ProfilePage() {
             ].map((item, idx) => (
               <div
                 key={idx}
-                style={idx === 9 ? styles.infoRowLast : styles.infoRow}
+                style={idx === 10 ? styles.infoRowLast : styles.infoRow}
               >
                 <span style={styles.label}>{item.label}</span>
                 <span style={{
