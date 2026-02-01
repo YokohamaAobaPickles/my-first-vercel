@@ -3,6 +3,7 @@
  * Version : V3.0.0
  * Update  : 2026-02-01
  * Remarks :
+ * V3.1.0 - 物理削除の指定を「ニックネーム＋メールアドレス」に変更。
  * V3.0.0 - 物理削除を「会員ID＋メールアドレス指定」に変更。確認でOKなら削除、キャンセルなら何もしない。
  * V2.0.0 - 不要会員の物理削除機能を実装（一覧・確認ダイアログ・参照チェック・削除後再取得）。
  * - エキストラ管理ページ（管理者専用）
@@ -18,7 +19,7 @@ import Link from 'next/link'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import { canManageMembers } from '@/utils/auth'
 import {
-  fetchMemberById,
+  fetchMemberByNicknameAndEmail,
   deleteMember,
   checkMemberReferenced,
 } from '@/lib/memberApi'
@@ -27,7 +28,7 @@ export default function AdminExtraPage() {
   const router = useRouter()
   const { user, userRoles, isLoading: isAuthLoading } = useAuthCheck()
 
-  const [targetId, setTargetId] = useState('')
+  const [targetNickname, setTargetNickname] = useState('')
   const [targetEmail, setTargetEmail] = useState('')
   const [deleteMessage, setDeleteMessage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -42,23 +43,23 @@ export default function AdminExtraPage() {
 
   const handleDeleteSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const id = targetId.trim()
+    const nickname = targetNickname.trim()
     const email = targetEmail.trim()
-    if (!id || !email) {
-      setDeleteMessage('会員IDとメールアドレスを両方入力してください。')
+    if (!nickname || !email) {
+      setDeleteMessage('ニックネームとメールアドレスを両方入力してください。')
       return
     }
 
     setDeleteMessage(null)
 
     const confirmed = window.confirm(
-      `会員ID ${id}、メールアドレス ${email} を物理削除します。よろしいですか？`
+      `ニックネーム ${nickname}、メールアドレス ${email} を物理削除します。よろしいですか？`
     )
     if (!confirmed) return
 
     setIsSubmitting(true)
 
-    const fetchRes = await fetchMemberById(id)
+    const fetchRes = await fetchMemberByNicknameAndEmail(nickname, email)
     if (!fetchRes.success || fetchRes.error) {
       setDeleteMessage(
         fetchRes.error?.message ?? '会員の取得に失敗しました。'
@@ -68,19 +69,14 @@ export default function AdminExtraPage() {
     }
     const member = fetchRes.data
     if (!member) {
-      setDeleteMessage('指定した会員IDの会員が見つかりません。')
-      setIsSubmitting(false)
-      return
-    }
-    if (member.email?.trim() !== email) {
       setDeleteMessage(
-        '会員IDとメールアドレスが一致する会員が見つかりません。'
+        'ニックネームとメールアドレスが一致する会員が見つかりません。'
       )
       setIsSubmitting(false)
       return
     }
 
-    const refRes = await checkMemberReferenced(id)
+    const refRes = await checkMemberReferenced(member.id)
     if (!refRes.success || refRes.error) {
       setDeleteMessage(
         refRes.error?.message ?? '参照チェックに失敗しました。'
@@ -94,7 +90,7 @@ export default function AdminExtraPage() {
       return
     }
 
-    const delRes = await deleteMember(id)
+    const delRes = await deleteMember(member.id)
     if (!delRes.success) {
       setDeleteMessage(delRes.error?.message ?? '削除に失敗しました。')
       setIsSubmitting(false)
@@ -102,7 +98,7 @@ export default function AdminExtraPage() {
     }
 
     setDeleteMessage('削除しました。')
-    setTargetId('')
+    setTargetNickname('')
     setTargetEmail('')
     setIsSubmitting(false)
   }
@@ -148,7 +144,7 @@ export default function AdminExtraPage() {
           </h2>
           <div style={styles.card}>
             <p style={styles.help}>
-              削除したい会員の会員IDとメールアドレスを入力し、削除を実行してください。他機能で参照されている場合は削除できません。
+              削除したい会員のニックネームとメールアドレスを入力し、削除を実行してください。他機能で参照されている場合は削除できません。
             </p>
             {deleteMessage && (
               <div
@@ -161,15 +157,15 @@ export default function AdminExtraPage() {
             )}
             <form onSubmit={handleDeleteSubmit} style={styles.form}>
               <div style={styles.field}>
-                <label htmlFor="delete-member-id" style={styles.label}>
-                  会員ID
+                <label htmlFor="delete-member-nickname" style={styles.label}>
+                  ニックネーム
                 </label>
                 <input
-                  id="delete-member-id"
+                  id="delete-member-nickname"
                   type="text"
-                  value={targetId}
-                  onChange={(e) => setTargetId(e.target.value)}
-                  placeholder="UUID"
+                  value={targetNickname}
+                  onChange={(e) => setTargetNickname(e.target.value)}
+                  placeholder="ニックネーム"
                   style={styles.input}
                   disabled={isSubmitting}
                   aria-required="true"

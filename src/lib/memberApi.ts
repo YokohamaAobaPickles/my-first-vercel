@@ -1,8 +1,9 @@
 /**
  * Filename: src/lib/memberApi.ts
- * Version : V3.4.0
+ * Version : V3.5.0
  * Update  : 2026-02-01
  * Remarks : 
+ * V3.5.0 - 追加：fetchMemberByNicknameAndEmail（ニックネーム＋メールで会員取得。物理削除指定用）。
  * V3.4.0 - 追加：checkMemberReferenced（物理削除前の参照チェック。announcements.author_id を確認）。
  * V3.3.2 - 修正：fetchMemberByDuprId で同一 dupr_id 複数時は更新せずエラーを返す（重複解消を促すメッセージ）。
  * V3.3.1 - 修正：fetchMemberByDuprId を maybeSingle → limit(1) に変更（同一 dupr_id 複数時エラー回避）。
@@ -135,6 +136,35 @@ export const fetchMemberByEmail = async (
     .from('members')
     .select('*')
     .eq('email', email)
+    .maybeSingle();
+
+  if (error) {
+    return handleError(error);
+  }
+  return { success: true, data: data as Member | null, error: null };
+};
+
+/**
+ * ニックネームとメールアドレスを指定して会員情報を取得する（物理削除指定用）
+ */
+export const fetchMemberByNicknameAndEmail = async (
+  nickname: string,
+  email: string
+): Promise<ApiResponse<Member | null>> => {
+  const n = (nickname || '').trim();
+  const e = (email || '').trim();
+  if (!n || !e) {
+    return {
+      success: true,
+      data: null,
+      error: null,
+    };
+  }
+  const { data, error } = await supabase
+    .from('members')
+    .select('*')
+    .eq('nickname', n)
+    .eq('email', e)
     .maybeSingle();
 
   if (error) {

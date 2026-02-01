@@ -2,7 +2,7 @@
  * Filename: src/app/admin/extra/page.test.tsx
  * Version : V3.0.0
  * Update  : 2026-02-01
- * Remarks : エキストラ管理ページの骨組み・物理削除セクション（会員ID＋メール指定）の検証。
+ * Remarks : エキストラ管理ページの骨組み・物理削除セクション（ニックネーム＋メール指定）の検証。
  */
 
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
@@ -86,7 +86,7 @@ describe('AdminExtraPage', () => {
     expect(backLink).toHaveAttribute('href', '/members/admin')
   })
 
-  it('管理者権限がある場合、物理削除セクションに会員ID・メールアドレス入力と削除ボタンが表示される', async () => {
+  it('管理者権限がある場合、物理削除セクションにニックネーム・メールアドレス入力と削除ボタンが表示される', async () => {
     vi.mocked(useAuthCheck).mockReturnValue({
       isLoading: false,
       user: { id: 'admin-1', roles: ROLES.SYSTEM_ADMIN },
@@ -100,7 +100,7 @@ describe('AdminExtraPage', () => {
         screen.getByRole('heading', { name: /不要会員の物理削除/i })
       ).toBeInTheDocument()
     })
-    expect(screen.getByLabelText(/会員ID/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/ニックネーム/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/メールアドレス/i)).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /指定した会員を物理削除/i })
@@ -116,8 +116,8 @@ describe('AdminExtraPage', () => {
     } as any)
 
     render(<AdminExtraPage />)
-    fireEvent.change(screen.getByLabelText(/会員ID/i), {
-      target: { value: 'u1' },
+    fireEvent.change(screen.getByLabelText(/ニックネーム/i), {
+      target: { value: 'ヤマダ' },
     })
     fireEvent.change(screen.getByLabelText(/メールアドレス/i), {
       target: { value: 'a@example.com' },
@@ -125,9 +125,9 @@ describe('AdminExtraPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /指定した会員を物理削除/i }))
 
     expect(mockConfirm).toHaveBeenCalledWith(
-      expect.stringContaining('会員ID u1')
+      expect.stringContaining('ニックネーム ヤマダ')
     )
-    expect(memberApi.fetchMemberById).not.toHaveBeenCalled()
+    expect(memberApi.fetchMemberByNicknameAndEmail).not.toHaveBeenCalled()
     expect(memberApi.deleteMember).not.toHaveBeenCalled()
   })
 
@@ -138,9 +138,9 @@ describe('AdminExtraPage', () => {
       user: { id: 'admin-1', roles: ROLES.SYSTEM_ADMIN },
       userRoles: ROLES.SYSTEM_ADMIN,
     } as any)
-    vi.mocked(memberApi.fetchMemberById).mockResolvedValue({
+    vi.mocked(memberApi.fetchMemberByNicknameAndEmail).mockResolvedValue({
       success: true,
-      data: { id: 'u1', email: 'a@example.com' } as any,
+      data: { id: 'u1', nickname: 'ヤマダ', email: 'a@example.com' } as any,
       error: null,
     })
     vi.mocked(memberApi.checkMemberReferenced).mockResolvedValue({
@@ -155,8 +155,8 @@ describe('AdminExtraPage', () => {
     })
 
     render(<AdminExtraPage />)
-    fireEvent.change(screen.getByLabelText(/会員ID/i), {
-      target: { value: 'u1' },
+    fireEvent.change(screen.getByLabelText(/ニックネーム/i), {
+      target: { value: 'ヤマダ' },
     })
     fireEvent.change(screen.getByLabelText(/メールアドレス/i), {
       target: { value: 'a@example.com' },
@@ -164,7 +164,10 @@ describe('AdminExtraPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /指定した会員を物理削除/i }))
 
     await waitFor(() => {
-      expect(memberApi.fetchMemberById).toHaveBeenCalledWith('u1')
+      expect(memberApi.fetchMemberByNicknameAndEmail).toHaveBeenCalledWith(
+        'ヤマダ',
+        'a@example.com'
+      )
     })
     expect(memberApi.checkMemberReferenced).toHaveBeenCalledWith('u1')
     expect(memberApi.deleteMember).toHaveBeenCalledWith('u1')
