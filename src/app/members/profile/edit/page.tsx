@@ -1,8 +1,9 @@
 /**
  * Filename: src/app/members/profile/edit/page.tsx
- * Version : V2.5.0
+ * Version : V2.6.0
  * Update  : 2026-02-01
  * Remarks : 
+ * V2.6.0 - 追加：ゲスト時のみ紹介者欄・紹介者会員番号欄をニックネーム上に表示。紹介者変更時の照合ロジック。
  * V2.5.0 - 追加：メールアドレス欄、パスワード変更欄（現在・新・確認）、表示切替ボタン。
  * V2.4.1 - 追加：公開設定(is_profile_public)のチェックボックスを追加。
  * V2.4.0 - 統合：Member型(V2.3.0)に準拠。emg_memo等の最新キー名を使用。
@@ -15,7 +16,8 @@ import { useState, useEffect } from 'react'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import {
   updateMemberProfile,
-  updateMemberPassword
+  updateMemberPassword,
+  fetchMemberByNicknameAndMemberNumber
 } from '@/lib/memberApi'
 import { useRouter } from 'next/navigation'
 
@@ -30,6 +32,9 @@ export default function ProfileEditPage() {
   const [showCurrentPw, setShowCurrentPw] = useState(false)
   const [showNewPw, setShowNewPw] = useState(false)
   const [showNewPwConfirm, setShowNewPwConfirm] = useState(false)
+  const [introducerMemberNumber, setIntroducerMemberNumber] = useState('')
+
+  const isGuest = formData?.member_kind === 'guest'
 
   useEffect(() => {
     if (user) {
@@ -72,6 +77,33 @@ export default function ProfileEditPage() {
       if (!pwRes.success) {
         alert(pwRes.error?.message || 'パスワードの変更に失敗しました。')
         return
+      }
+    }
+
+    if (isGuest) {
+      const introNick = (formData.introducer || '').trim()
+      const introNum = introducerMemberNumber.trim()
+      const originalIntro = (user.introducer || '').trim()
+      const introducerChanged =
+        introNick !== originalIntro || introNum !== ''
+
+      if (introducerChanged) {
+        if (!introNick || !introNum) {
+          alert(
+            '紹介者を変更する場合は、ニックネームと会員番号の両方を入力してください。'
+          )
+          return
+        }
+        const introRes = await fetchMemberByNicknameAndMemberNumber(
+          introNick,
+          introNum
+        )
+        if (!introRes.success || !introRes.data) {
+          alert(
+            'ニックネームと会員番号が一致する紹介者が見つかりません。'
+          )
+          return
+        }
       }
     }
 
@@ -230,6 +262,36 @@ export default function ProfileEditPage() {
         <section style={styles.section}>
           <h2 style={styles.sectionTitle}>編集可能項目</h2>
           <div style={styles.card}>
+            {isGuest && (
+              <>
+                <div style={styles.inputGroup}>
+                  <label htmlFor="introducer" style={styles.label}>
+                    紹介者
+                  </label>
+                  <input
+                    id="introducer"
+                    type="text"
+                    name="introducer"
+                    value={formData.introducer || ''}
+                    onChange={handleChange}
+                    style={styles.input}
+                  />
+                </div>
+                <div style={styles.inputGroup}>
+                  <label htmlFor="introducer_member_number" style={styles.label}>
+                    紹介者会員番号
+                  </label>
+                  <input
+                    id="introducer_member_number"
+                    type="text"
+                    placeholder="紹介者の会員番号を入力してください"
+                    value={introducerMemberNumber}
+                    onChange={(e) => setIntroducerMemberNumber(e.target.value)}
+                    style={styles.input}
+                  />
+                </div>
+              </>
+            )}
             <div style={styles.inputGroup}>
               <label htmlFor="nickname" style={styles.label}>
                 ニックネーム <span style={styles.requiredBadge}>*</span>

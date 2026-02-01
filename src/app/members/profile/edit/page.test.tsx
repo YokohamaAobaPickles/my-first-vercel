@@ -3,6 +3,7 @@
  * Version : V2.5.0
  * Update  : 2026-02-01
  * Remarks : 
+ * V2.6.0 - 追加：ゲストの紹介者変更（表示・照合・更新）の検証。
  * V2.5.0 - 追加：メールアドレス、パスワード変更（一致確認・現在パスワード照合）の検証。
  * V2.4.0 - 網羅：全入力項目、読取専用項目、公開フラグの検証を統合。
  * V2.3.1 - 統合：DUPRレート入力の検証を追加。
@@ -25,13 +26,18 @@ import '@testing-library/jest-dom'
 import { Member } from '@/types/member'
 import EditProfilePage from './page'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
-import { updateMemberProfile, updateMemberPassword } from '@/lib/memberApi'
+import {
+  updateMemberProfile,
+  updateMemberPassword,
+  fetchMemberByNicknameAndMemberNumber
+} from '@/lib/memberApi'
 
 // --- モック設定 ---
 vi.mock('@/hooks/useAuthCheck')
 vi.mock('@/lib/memberApi', () => ({
   updateMemberProfile: vi.fn(),
   updateMemberPassword: vi.fn(),
+  fetchMemberByNicknameAndMemberNumber: vi.fn(),
 }))
 
 const mockPush = vi.fn()
@@ -77,6 +83,11 @@ describe('EditProfilePage - 総合検証 V2.4.0', () => {
       success: true,
       data: null,
       error: null
+    })
+    vi.mocked(fetchMemberByNicknameAndMemberNumber).mockResolvedValue({
+      success: true,
+      data: null,
+      error: null,
     })
   })
 
@@ -284,6 +295,145 @@ describe('EditProfilePage - 総合検証 V2.4.0', () => {
         )
         expect(updateMemberProfile).toHaveBeenCalled()
         expect(window.alert).toHaveBeenCalledWith('プロフィールを更新しました')
+      })
+    })
+  })
+
+  describe('5. ゲスト会員の紹介者変更', () => {
+    const GUEST_USER: Partial<Member> = {
+      ...TEST_USER,
+      member_kind: 'guest',
+      introducer: 'ホストさん',
+    }
+
+    it('ゲスト時は紹介者欄・紹介者会員番号欄がニックネーム上に表示される', () => {
+      ; (useAuthCheck as any).mockReturnValue({
+        isLoading: false,
+        user: GUEST_USER,
+      })
+      render(<EditProfilePage />)
+
+      expect(screen.getByLabelText(/^紹介者$/)).toBeInTheDocument()
+      expect(screen.getByLabelText(/紹介者会員番号/)).toBeInTheDocument()
+      expect(screen.getByPlaceholderText(/紹介者の会員番号を入力してください/))
+        .toBeInTheDocument()
+      expect(screen.getByLabelText(/^紹介者$/)).toHaveValue('ホストさん')
+    })
+
+    it('非ゲスト時は紹介者欄・紹介者会員番号欄は表示されない', () => {
+      ; (useAuthCheck as any).mockReturnValue({
+        isLoading: false,
+        user: TEST_USER,
+      })
+      render(<EditProfilePage />)
+
+      expect(screen.queryByLabelText(/^紹介者$/)).not.toBeInTheDocument()
+      expect(screen.queryByLabelText(/紹介者会員番号/)).not.toBeInTheDocument()
+    })
+
+    it('ゲストが紹介者を変更しニックネーム・会員番号が一致すれば更新される', async () => {
+      ; (useAuthCheck as any).mockReturnValue({
+        isLoading: false,
+        user: GUEST_USER,
+      })
+      vi.mocked(fetchMemberByNicknameAndMemberNumber).mockResolvedValue({
+        success: true,
+        data: { id: 'intro-1', nickname: '新ホスト', member_number: '0002' } as Member,
+        error: null,
+      })
+
+      render(<EditProfilePage />)
+      fireEvent.change(screen.getByLabelText(/^紹介者$/), {
+        target: { value: '新ホスト' },
+      })
+      fireEvent.change(screen.getByLabelText(/紹介者会員番号/), {
+        target: { value: '0002' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: '変更を保存' }))
+
+      await waitFor(() => {
+        expect(fetchMemberByNicknameAndMemberNumber).toHaveBeenCalledWith(
+          '新ホスト',
+          '0002'
+        )
+        expect(updateMemberProfile).toHaveBeenCalledWith(
+          GUEST_USER.id,
+          expect.objectContaining({ introducer: '新ホスト' })
+        )
+        expect(window.alert).toHaveBeenCalledWith('プロフィールを更新しました')
+      })
+    })
+
+    it('ゲストが紹介者を変更しニックネーム・会員番号が一致しなければエラー', async () => {
+      ; (useAuthCheck as any).mockReturnValue({
+        isLoading: false,
+        user: GUEST_USER,
+      })
+      vi.mocked(fetchMemberByNicknameAndMemberNumber).mockResolvedValue({
+        success: true,
+        data: null,
+        error: null,
+      })
+
+      render(<EditProfilePage />)
+      fireEvent.change(screen.getByLabelText(/^紹介者$/), {
+        target: { value: '存在しない' },
+      })
+      fireEvent.change(screen.getByLabelText(/紹介者会員番号/), {
+        target: { value: '9999' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: '変更を保存' }))
+
+      await waitFor(() => {
+        expect(window.alert).toHaveBeenCalledWith(
+          'ニックネームと会員番号が一致する紹介者が見つかりません。'
+        )
+        expect(updateMemberProfile).not.toHaveBeenCalled()
+      })
+    })
+
+    it('ゲストが紹介者を変更せず他項目だけ更新するときは照合せず更新される', async () => {
+      ; (useAuthCheck as any).mockReturnValue({
+        isLoading: false,
+        user: GUEST_USER,
+      })
+
+      render(<EditProfilePage />)
+      fireEvent.change(screen.getByLabelText(/プロフィールメモ/), {
+        target: { value: '更新メモ' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: '変更を保存' }))
+
+      await waitFor(() => {
+        expect(fetchMemberByNicknameAndMemberNumber).not.toHaveBeenCalled()
+        expect(updateMemberProfile).toHaveBeenCalledWith(
+          GUEST_USER.id,
+          expect.objectContaining({
+            introducer: 'ホストさん',
+            profile_memo: '更新メモ',
+          })
+        )
+      })
+    })
+
+    it('ゲストが紹介者を変更する際に片方だけ入力のときエラー', async () => {
+      ; (useAuthCheck as any).mockReturnValue({
+        isLoading: false,
+        user: GUEST_USER,
+      })
+
+      render(<EditProfilePage />)
+      fireEvent.change(screen.getByLabelText(/^紹介者$/), {
+        target: { value: '新ホスト' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: '変更を保存' }))
+
+      await waitFor(() => {
+        expect(window.alert).toHaveBeenCalledWith(
+          '紹介者を変更する場合は、ニックネームと会員番号の両方を入力してください。'
+        )
+        expect(fetchMemberByNicknameAndMemberNumber).not.toHaveBeenCalled()
+        expect(updateMemberProfile).not.toHaveBeenCalled()
       })
     })
   })
