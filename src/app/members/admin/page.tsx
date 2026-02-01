@@ -1,8 +1,9 @@
 /**
  * Filename: src/app/members/admin/page.tsx
- * Version : V2.2.1
+ * Version : V2.2.2
  * Update  : 2026-02-01
  * Remarks : 
+ * V2.2.2 - 枠割ありメンバーは氏名の右に赤い上付き*を表示。
  * V2.2.1 - 確定：会員番号・ニックネーム・氏名の三点表示。
  * 削除機能をエキストラ管理へ完全分離。
  */
@@ -24,6 +25,7 @@ import {
   MemberStatus,
   MEMBER_STATUS_LABELS
 } from '@/types/member'
+import { hasOfficerRole } from '@/utils/memberHelpers'
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -151,6 +153,9 @@ export default function AdminDashboard() {
                     </div>
                     <div style={realNameStyle}>
                       {m.name}
+                      {hasOfficerRole(m) && (
+                        <sup style={officerMarkStyle}>*</sup>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -287,6 +292,11 @@ const nicknameStyle: React.CSSProperties = {
 const realNameStyle: React.CSSProperties = {
   fontSize: '0.8rem',
   color: '#888',
+}
+
+const officerMarkStyle: React.CSSProperties = {
+  color: '#f00',
+  marginLeft: '2px',
 }
 
 const actionAreaStyle: React.CSSProperties = {

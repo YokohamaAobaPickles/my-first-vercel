@@ -1,7 +1,7 @@
 /**
  * Filename: src/utils/memberHelpers.ts
- * Version : V2.1.0
- * Update  : 2026-01-27
+ * Version : V2.1.1
+ * Update  : 2026-02-01
  * * 内容：
  * - 会員関連のビジネスロジック・バリデーション・加工関数。
  * - V2.1.0 変更点:
@@ -10,7 +10,7 @@
  * 3. メールアドレス形式チェック等のバリデーション強化。
  */
 
-import { MemberInput } from '@/types/member';
+import { MemberInput, ROLES } from '@/types/member';
 
 /**
  * 会員登録・編集時のバリデーション
@@ -120,4 +120,16 @@ export const isNicknameDuplicate = async (
  */
 export const formatMemberName = (name: string | null) => {
   return name ? name.trim() : '未登録';
+};
+
+/**
+ * 枠割（役職）を持っているかどうか
+ * roles に ROLES.MEMBER（役職無し）以外のロールが含まれる場合 true
+ * @param member - roles プロパティを持つオブジェクト
+ * @returns 枠割ありなら true
+ */
+export const hasOfficerRole = (member: { roles?: string | null }): boolean => {
+  if (!member.roles || !member.roles.trim()) return false;
+  const rolesArray = member.roles.split(',').map((r) => r.trim());
+  return rolesArray.some((r) => r && r !== ROLES.MEMBER);
 };
