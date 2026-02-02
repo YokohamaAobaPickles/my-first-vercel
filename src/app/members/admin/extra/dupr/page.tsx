@@ -1,8 +1,10 @@
 /**
- * Filename: src/app/members/extra/page.tsx
+ * Filename: src/app/members/extra/dupr/page.tsx
  * Version : V1.0.0
  * Update  : 2026-02-01
- * Remarks : DUPR一括登録。ファイルアップロードで members の DUPR 関連カラムを更新する。
+ * Remarks :
+ * V1.0.1 - ファイル位置をsrc/app/members/extra/duprに移動 
+ * V1.0.0 - DUPR一括登録。ファイルアップロードで members の DUPR 関連カラムを更新する。
  */
 
 'use client'
@@ -174,7 +176,7 @@ export default function MembersExtraPage() {
       <div style={styles.content}>
         <header style={styles.header}>
           <h1 style={styles.title}>DUPR一括登録</h1>
-          <Link href="/admin/extra" style={styles.backLink}>
+          <Link href="/members/admin/extra" style={styles.backLink}>
             エキストラ管理へ戻る
           </Link>
         </header>

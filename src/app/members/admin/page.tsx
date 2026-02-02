@@ -1,8 +1,9 @@
 /**
  * Filename: src/app/members/admin/page.tsx
- * Version : V2.2.2
- * Update  : 2026-02-01
- * Remarks : 
+ * Version : V2.2.3
+ * Update  : 2026-02-02
+ * Remarks :
+ * V2.2.3 - ファイル位置変更に伴うリンク修正 
  * V2.2.2 - 枠割ありメンバーは氏名の右に赤い上付き*を表示。
  * V2.2.1 - 確定：会員番号・ニックネーム・氏名の三点表示。
  * 削除機能をエキストラ管理へ完全分離。
@@ -98,7 +99,7 @@ export default function AdminDashboard() {
           会員管理パネル
         </h1>
         <Link
-          href="/admin/extra"
+          href="/members/admin/extra"
           style={extraButtonStyle}
         >
           エキストラ管理

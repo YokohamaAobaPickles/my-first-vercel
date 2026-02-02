@@ -1,8 +1,10 @@
 /**
- * Filename: src/app/members/extra/page.test.tsx
- * Version : V1.0.0
- * Update  : 2026-02-01
- * Remarks : DUPR一括登録ページの表示・権限・結果表示の検証
+ * Filename: src/app/members/extra/dupr/page.test.tsx
+ * Version : V1.0.1
+ * Update  : 2026-02-02
+ * Remarks : 
+ * V1.0.1 - ファイル位置をsrc/app/members/extra/dupr/に移動
+ * V1.0.0 - DUPR一括登録ページの表示・権限・結果表示の検証
  */
 
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
@@ -57,7 +59,7 @@ describe('MembersExtraPage (DUPR一括登録)', () => {
     const backLink = screen.getByRole('link', {
       name: /エキストラ管理へ戻る/i,
     })
-    expect(backLink).toHaveAttribute('href', '/admin/extra')
+    expect(backLink).toHaveAttribute('href', '/members/admin/extra')
     expect(
       screen.getByText(/書式: 氏名 \/ DUPR ID \/ 住所/)
     ).toBeInTheDocument()

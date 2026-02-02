@@ -1,8 +1,9 @@
 /**
- * Filename: src/app/admin/extra/page.tsx
- * Version : V3.0.0
+ * Filename: src/app/members/admin/extra/page.tsx
+ * Version : V3.1.1
  * Update  : 2026-02-01
  * Remarks :
+ * V3.1.1 - ファイル位置をapp/adminからapp/members/adminに変更
  * V3.1.0 - 物理削除の指定を「ニックネーム＋メールアドレス」に変更。
  * V3.0.0 - 物理削除を「会員ID＋メールアドレス指定」に変更。確認でOKなら削除、キャンセルなら何もしない。
  * V2.0.0 - 不要会員の物理削除機能を実装（一覧・確認ダイアログ・参照チェック・削除後再取得）。
@@ -131,7 +132,7 @@ export default function AdminExtraPage() {
             DUPR技術レベルの一括登録
           </h2>
           <div style={styles.card}>
-            <Link href="/members/extra" style={styles.featureLink}>
+            <Link href="/members/admin/extra/dupr" style={styles.featureLink}>
               DUPR一括登録ページを開く
             </Link>
           </div>

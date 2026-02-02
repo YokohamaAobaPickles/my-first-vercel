@@ -1,8 +1,9 @@
 /**
  * Filename: src/app/members/admin/page.test.tsx
- * Version : V2.2.1
- * Update  : 2026-02-01
- * Remarks : 
+ * Version : V2.2.2
+ * Update  : 2026-02-02
+ * Remarks :
+ * V2.2.2 - ファイル位置変更のためリンク修正 
  * V2.2.1 - 修正：非同期ステート更新待ち(waitFor)を追加。
  * V2.2.0 - 仕様変更対応：ニックネーム・氏名の表示、削除ボタンの隔離、
  * エキストラ画面リンクの検証を追加。V2.1.1の認可テストを継承。
@@ -144,6 +145,6 @@ it('【ナビ】エキストラ画面へのリンクが「管理権限を持つ�
       })
 
       expect(extraLink).toBeTruthy()
-      expect(extraLink.getAttribute('href')).toBe('/admin/extra')
+      expect(extraLink.getAttribute('href')).toBe('/members/admin/extra')
     })
 })

@@ -1,8 +1,10 @@
 /**
- * Filename: src/app/admin/extra/page.test.tsx
+ * Filename: src/app/members/admin/extra/page.test.tsx
  * Version : V3.0.0
  * Update  : 2026-02-01
- * Remarks : エキストラ管理ページの骨組み・物理削除セクション（ニックネーム＋メール指定）の検証。
+ * Remarks :
+ * V3.0.1 -ファイル位置をapp/admin/extraからapp/members/admin/extraに移動  
+ * V3.0.0 -エキストラ管理ページの骨組み・物理削除セクション（ニックネーム＋メール指定）の検証。
  */
 
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
