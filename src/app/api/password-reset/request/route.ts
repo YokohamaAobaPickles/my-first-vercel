@@ -44,9 +44,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const baseUrl =
+    const baseUrl = (
       process.env.NEXT_PUBLIC_APP_URL ||
-      (request.nextUrl?.origin || 'http://localhost:3000')
+      request.nextUrl?.origin ||
+      'http://localhost:3000'
+    ).replace(/\/+$/, '')
     const resetUrl = `${baseUrl}/members/password-reset/change?token=${token}`
 
     const mailRes = await sendPasswordResetEmail(email, resetUrl)
