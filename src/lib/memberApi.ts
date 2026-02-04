@@ -214,6 +214,38 @@ export const fetchMemberByNicknameAndMemberNumber = async (
 };
 
 /**
+ * 検索条件に応じて会員一覧を取得する
+ * 空欄の条件は無視される
+ */
+export const fetchMembersByQuery = async (
+  nickname: string,
+  memberNumber: string,
+  email: string
+): Promise<ApiResponse<Member[]>> => {
+  let query = supabase.from('members').select('*')
+
+  if (nickname.trim()) {
+    query = query.ilike('nickname', `%${nickname.trim()}%`)
+  }
+
+  if (memberNumber.trim()) {
+    query = query.eq('member_number', memberNumber.trim())
+  }
+
+  if (email.trim()) {
+    query = query.ilike('email', `%${email.trim()}%`)
+  }
+
+  const { data, error } = await query.order('member_number', { ascending: true })
+
+  if (error) {
+    return handleError(error)
+  }
+
+  return { success: true, data: data as Member[], error: null }
+}
+
+/**
  * 新規会員登録 (初期ステータスは 'new_req')
  * members テーブルに存在しないカラム（例: introducer_member_number）は送信前に除外する。
  */

@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useState } from 'react'
-import { fetchMembers } from '@/lib/memberApi'
+import { fetchMembersByQuery } from '@/lib/memberApi'
 import Link from 'next/link'
 import type { Member } from '@/types/member'
 
@@ -25,33 +25,29 @@ export default function MemberSearchPage() {
   const [memberNumber, setMemberNumber] = useState('')
   const [email, setEmail] = useState('')
 
-  const [members, setMembers] = useState<Member[]>([])
-  const [results, setResults] = useState<Member[]>([])
+  //const [results, setResults] = useState<Member[]>([])
+  const [results, setResults] = useState<Member[] | null>(null)
 
   const { user, userRoles, isLoading } = useAuthCheck()
   const isAdmin = canManageMembers(userRoles)
 
-  useEffect(() => {
-    fetchMembers().then((res) => {
-      if (res.success && res.data) {
-        setMembers(res.data)
-      }
-    })
-  }, [])
+  const handleSearch = async () => {
+    const res = await fetchMembersByQuery(nickname, memberNumber, email)
 
-  const handleSearch = () => {
-    const filtered = members.filter((m) => {
+    if (!res.success || !res.data) {
+      setResults([])
+      return
+    }
+
+    // 権限チェックは UI 側で継続
+    const filtered = res.data.filter((m) => {
       if (!isAdmin && !m.is_profile_public) return false
-
-      if (nickname && !m.nickname.includes(nickname)) return false
-      if (memberNumber && m.member_number !== memberNumber) return false
-      if (email && !m.email.includes(email)) return false
-
       return true
     })
 
     setResults(filtered)
   }
+
 
   if (isLoading) return <div>読み込み中...</div>
   if (!user) return <div>ログインしてください。</div>
@@ -73,33 +69,38 @@ export default function MemberSearchPage() {
 
           <div style={styles.card}>
             <div style={styles.infoRow}>
-              <span style={styles.label}>ニックネーム</span>
-              <input
-                type="text"
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                style={styles.input}
-              />
+              <label style={styles.label}>
+                ニックネーム
+                <input
+                  type="text"
+                  value={nickname}
+                  onChange={(e) => setNickname(e.target.value)}
+                  style={styles.input}
+                />
+              </label>
+
             </div>
 
             <div style={styles.infoRow}>
-              <span style={styles.label}>会員番号</span>
-              <input
-                type="text"
-                value={memberNumber}
-                onChange={(e) => setMemberNumber(e.target.value)}
-                style={styles.input}
-              />
+              <label style={styles.label}>会員番号
+                <input
+                  type="text"
+                  value={memberNumber}
+                  onChange={(e) => setMemberNumber(e.target.value)}
+                  style={styles.input}
+                />
+              </label>
             </div>
 
             <div style={styles.infoRowLast}>
-              <span style={styles.label}>メールアドレス</span>
-              <input
-                type="text"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                style={styles.input}
-              />
+              <label style={styles.label}>メールアドレス
+                <input
+                  type="text"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  style={styles.input}
+                />
+              </label>
             </div>
 
             <button onClick={handleSearch} style={styles.searchButton}>
@@ -114,11 +115,11 @@ export default function MemberSearchPage() {
             <h2 style={styles.sectionTitle}>検索結果</h2>
           </div>
 
-          {results.length === 0 && (
-            <p style={{ padding: '12px' }}>検索結果はありません。</p>
+          {results !== null && results.length === 0 && (
+            <p style={{ padding: '12px' }}>該当する会員が見つかりません</p>
           )}
 
-          {results.map((m) => (
+          {results !== null && results.length > 0 && results.map((m) => (
             <div key={m.id} style={styles.card}>
               <div style={styles.infoRow}>
                 <span style={styles.label}>ニックネーム</span>
@@ -144,7 +145,7 @@ export default function MemberSearchPage() {
             </div>
           ))}
         </section>
-        
+
         {/* フッター：プロフィールに戻る */}
         <div style={styles.footer}>
           <Link href="/members/profile" style={styles.logoutLink}>
