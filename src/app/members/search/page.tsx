@@ -144,6 +144,13 @@ export default function MemberSearchPage() {
             </div>
           ))}
         </section>
+        
+        {/* フッター：プロフィールに戻る */}
+        <div style={styles.footer}>
+          <Link href="/members/profile" style={styles.logoutLink}>
+            プロファイルに戻る
+          </Link>
+        </div>
 
       </div>
     </div>
