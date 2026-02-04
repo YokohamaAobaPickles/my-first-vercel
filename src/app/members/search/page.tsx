@@ -68,39 +68,41 @@ export default function MemberSearchPage() {
           </div>
 
           <div style={styles.card}>
-            <div style={styles.infoRow}>
-              <label style={styles.label}>
-                ニックネーム
-                <input
-                  type="text"
-                  value={nickname}
-                  onChange={(e) => setNickname(e.target.value)}
-                  style={styles.input}
-                />
-              </label>
 
+            {/* ニックネーム */}
+            <div style={styles.infoRow}>
+              <label htmlFor="nickname" style={styles.label}>ニックネーム</label>
+              <input
+                id="nickname"
+                type="text"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                style={styles.input}
+              />
             </div>
 
+            {/* 会員番号 */}
             <div style={styles.infoRow}>
-              <label style={styles.label}>会員番号
-                <input
-                  type="text"
-                  value={memberNumber}
-                  onChange={(e) => setMemberNumber(e.target.value)}
-                  style={styles.input}
-                />
-              </label>
+              <label htmlFor="memberNumber" style={styles.label}>会員番号</label>
+              <input
+                id="memberNumber"
+                type="text"
+                value={memberNumber}
+                onChange={(e) => setMemberNumber(e.target.value)}
+                style={styles.input}
+              />
             </div>
 
+            {/* メールアドレス */}
             <div style={styles.infoRowLast}>
-              <label style={styles.label}>メールアドレス
-                <input
-                  type="text"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  style={styles.input}
-                />
-              </label>
+              <label htmlFor="email" style={styles.label}>メールアドレス</label>
+              <input
+                id="email"
+                type="text"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={styles.input}
+              />
             </div>
 
             <button onClick={handleSearch} style={styles.searchButton}>
