@@ -1,5 +1,5 @@
 /**
- * Filename: src/app/members/profile/[id]/page.tsx
+ * Filename: src/app/members/[id]/page.tsx
  * Version : V1.0.0
  * Update  : 2026-02-04
  * Remarks :
