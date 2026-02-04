@@ -1,8 +1,9 @@
 /**
  * Filename: src/app/members/profile/page.tsx
- * Version : V2.7.9
+ * Version : V2.8.0
  * Update  : 2026-02-01
- * Remarks : 
+ * Remarks :
+ * V2.8.0 - 追加：検索用ボタン
  * V2.7.9 - 追加：基本情報にメールアドレスをニックネームの下に表示。
  * V2.7.8 - 修正：emergency_memo を emg_memo に修正。
  * V2.7.7 - 修正：ログアウト処理を環境別に最適化。
@@ -222,9 +223,10 @@ export default function ProfilePage() {
         <section style={styles.section}>
           <div style={styles.sectionHeader}>
             <h2 style={styles.sectionTitle}>プロフィール</h2>
-            <Link href="/members/profile/edit" style={styles.editButtonSmall}>
-              編集
-            </Link>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Link href="/members/search" style={styles.editButtonSmall}> 検索 </Link>
+              <Link href="/members/profile/edit" style={styles.editButtonSmall}> 編集 </Link>
+            </div>
           </div>
           <div style={styles.card}>
             <div style={styles.infoRow}>
