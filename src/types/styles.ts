@@ -83,6 +83,8 @@ export const styles: Record<string, React.CSSProperties> = {
   label: {
     color: '#888',
     fontSize: '0.9rem',
+    width: '120px',        // ★ ラベル幅を固定
+    whiteSpace: 'nowrap',  // ★ 改行しない
   },
   value: {
     fontWeight: 500,
@@ -192,8 +194,9 @@ export const styles: Record<string, React.CSSProperties> = {
     padding: '10px',
   },
   // 検索フォームインプット
-    input: {
+  input: {
     width: '100%',
+    flex: 1, // ★ 横幅を自動で揃える
     padding: '8px',
     backgroundColor: '#000',
     color: '#fff',
