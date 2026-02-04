@@ -50,7 +50,7 @@ export default function MemberDetailPage() {
       <div style={styles.container}>
         <div style={styles.content}>
           <h2>この会員のプロフィールは非公開です。</h2>
-          <Link href="/members/search" style={styles.editButtonSmall}>
+          <Link href="/members/search" style={styles.logoutLink}>
             検索に戻る
           </Link>
         </div>
@@ -66,9 +66,6 @@ export default function MemberDetailPage() {
         <div style={styles.header}>
           <h1 style={styles.title}>会員詳細</h1>
 
-          <Link href="/members/search" style={styles.editButtonSmall}>
-            検索に戻る
-          </Link>
         </div>
 
         {/* 基本情報 */}
@@ -134,6 +131,10 @@ export default function MemberDetailPage() {
             </div>
           </div>
         </section>
+
+        <Link href="/members/search" style={styles.logoutLink}>
+          検索に戻る
+        </Link>
 
       </div>
     </div>
