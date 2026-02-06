@@ -88,7 +88,7 @@ describe('MemberLoginPage (交通整理・紐付けロジック検証 V1.4.2)', 
       isLoading: false,
       currentLineId: TEST_LINE_ID,
       user: { id: 'existing_user' },
-      userRoles: 'member',
+      userRoles: ['member'],
       lineNickname: 'TestUser',
     })
     

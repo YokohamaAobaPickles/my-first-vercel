@@ -143,7 +143,7 @@ function MemberNewContent() {
       line_id: currentLineId || null,
       member_kind: mode === 'member' ? 'general' : 'guest',
       status: 'new_req',
-      roles: 'member'
+      roles: ['member']
     }
 
     const {
