@@ -57,32 +57,33 @@ export default function ProfilePage() {
   }
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
+    if (typeof window === 'undefined') return
 
     const ua = navigator.userAgent.toLowerCase()
     const isLine = ua.includes('line')
 
     if (isLine) {
-      // LINE用：localStorage に保存
-      localStorage.setItem('logout', '1')
+      // LINE環境: 再ログイン防止フラグを立ててウィンドウを閉じる
+      localStorage.setItem('logout', 'true')
 
       try {
-        await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID || '' })
-        await liff.logout()
+        // LIFFのログアウト処理
+        if (liff.isLoggedIn()) {
+          liff.logout()
+        }
+        // LINEアプリの画面を閉じる
         liff.closeWindow()
-        return
-      } catch (e) {
-        window.close()
-        setTimeout(() => {
-          window.location.href = '/members/login'
-        }, 300)
-        return
+      } catch (err) {
+        console.error('LIFF logout error:', err)
+        router.replace('/members/login')
       }
-    }
 
-    // PCブラウザ用：sessionStorage に保存
-    sessionStorage.setItem('logout', '1')
-    window.location.href = '/members/login'
+    } else {
+      // ブラウザ環境: セッションをクリアしてログイン画面へ
+      sessionStorage.setItem('logout', 'true')
+      sessionStorage.removeItem('auth_member_id')
+      router.replace('/members/login')
+    }
   }
 
   const handleAction = async () => {
