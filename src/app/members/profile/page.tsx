@@ -59,16 +59,16 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     await supabase.auth.signOut()
 
-    // 自動ログイン抑止
-    localStorage.setItem('logout', '1')
-
     const ua = navigator.userAgent.toLowerCase()
     const isLine = ua.includes('line')
 
     if (isLine) {
+      // LINE用：localStorage に保存
+      localStorage.setItem('logout', '1')
+
       try {
         await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID || '' })
-        await liff.logout()   // ← これが超重要
+        await liff.logout()
         liff.closeWindow()
         return
       } catch (e) {
@@ -80,6 +80,8 @@ export default function ProfilePage() {
       }
     }
 
+    // PCブラウザ用：sessionStorage に保存
+    sessionStorage.setItem('logout', '1')
     window.location.href = '/members/login'
   }
 

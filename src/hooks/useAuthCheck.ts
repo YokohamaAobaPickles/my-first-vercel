@@ -65,31 +65,34 @@ export const useAuthCheck = () => {
         }
 
         // --- PCブラウザ処理 ---
-        const memberIdToCheck = typeof window !== 'undefined'
-          ? sessionStorage.getItem('auth_member_id')
-          : null
+        if (typeof window !== 'undefined') {
 
-        if (memberIdToCheck) {
-          const { data: member } = await supabase
-            .from('members')
-            .select('*')
-            .eq('id', memberIdToCheck)
-            .maybeSingle()
-
-          if (member) {
-            const fixedRoles =
-              Array.isArray(member.roles)
-                ? member.roles
-                : member.roles
-                  ? [member.roles]
-                  : [];
-
-            setUser({ ...member, roles: fixedRoles });
-            setUserRoles(fixedRoles);
-            setCurrentLineId(member.line_id || null);
+          // PC用：sessionStorage の logout フラグを見る
+          if (sessionStorage.getItem('logout') === '1') {
+            sessionStorage.removeItem('auth_member_id')
+            setIsLoading(false)
+            return
           }
 
+          const memberIdToCheck = sessionStorage.getItem('auth_member_id')
 
+          if (memberIdToCheck) {
+            const { data: member } = await supabase
+              .from('members')
+              .select('*')
+              .eq('id', memberIdToCheck)
+              .maybeSingle()
+
+            if (member) {
+              const fixedRoles = Array.isArray(member.roles)
+                ? member.roles
+                : member.roles ? [member.roles] : []
+
+              setUser({ ...member, roles: fixedRoles })
+              setUserRoles(fixedRoles)
+              setCurrentLineId(member.line_id || null)
+            }
+          }
         }
 
         setIsLoading(false)
