@@ -16,7 +16,7 @@
 
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import { canManageMembers } from '@/utils/auth'
 import { calculateEnrollmentDays } from '@/utils/memberHelpers'
@@ -56,7 +56,16 @@ export default function ProfilePage() {
     return <div style={styles.container}>ユーザー情報が見つかりません。</div>
   }
 
-  const handleLogout = async () => {
+  //const handleLogout = async () => {
+  
+  // 引数 e を受け取るように定義を変更
+  const handleLogout = async (e: React.MouseEvent) => {
+    // 【重要】ブラウザのデフォルト動作を完全に止める
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+
     if (typeof window === 'undefined') return
 
     const ua = navigator.userAgent.toLowerCase()
@@ -318,7 +327,8 @@ export default function ProfilePage() {
         */}
           {/* フッターエリア：リンクからボタンに変更 */}
           <button
-            onClick={handleLogout}
+            //onClick={handleLogout}
+            onClick={(e) => handleLogout(e)} // イベントオブジェクトを渡す
             style={styles.logoutButton}
           >
             ログアウト
