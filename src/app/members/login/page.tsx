@@ -1,11 +1,12 @@
 /**
  * Filename: src/app/members/login/page.tsx
- * Version : V2.0.5
- * Update  : 2026-02-6
+ * Version : V2.0.6
+ * Update  : 2026-02-06
  * Remarks :
- * V2.0.5
- *  * - LINEアプリでログアウト後に自動ログインが復活しない問題を修正
- * - ログイン画面到達時に logout フラグをクリア
+ * V2.0.6
+ * - logout フラグを LINE / ブラウザ共通でクリア
+ * - useAuthCheck の logout 判定と整合
+ * - LINE 自動ログイン復活の不具合を修正
  */
 
 'use client'
@@ -23,19 +24,26 @@ export default function MemberLoginPage() {
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // ★ LINE では logout フラグを使わない
-  // PC/スマホブラウザのみ logout フラグを消す
+  // ---------------------------------------------------------
+  // ログイン画面に来たら logout フラグを必ずクリア
+  // LINE / ブラウザ共通
+  // ---------------------------------------------------------
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const ua = navigator.userAgent.toLowerCase()
       const isLine = ua.includes('line')
 
-      if (!isLine) {
+      if (isLine) {
+        localStorage.removeItem('logout')
+      } else {
         sessionStorage.removeItem('logout')
       }
     }
   }, [])
 
+  // ---------------------------------------------------------
+  // すでにログイン済みならプロフィールへ
+  // ---------------------------------------------------------
   useEffect(() => {
     if (!isLoading && user) {
       router.replace('/members/profile')
@@ -62,8 +70,10 @@ export default function MemberLoginPage() {
 
       if (fetchError) throw fetchError
 
+      // ---------------------------------------------------------
+      // LINE ログイン
+      // ---------------------------------------------------------
       if (currentLineId) {
-        // LINE紐付け
         if (member) {
           const { error: updateError } = await supabase
             .from('members')
@@ -75,14 +85,17 @@ export default function MemberLoginPage() {
         } else {
           router.replace(`/members/new?email=${encodeURIComponent(email)}`)
         }
+        return
+      }
+
+      // ---------------------------------------------------------
+      // PC / スマホブラウザログイン
+      // ---------------------------------------------------------
+      if (member && password && member.password === password) {
+        sessionStorage.setItem('auth_member_id', member.id)
+        router.replace('/members/profile')
       } else {
-        // PC/スマホブラウザ
-        if (member && password && member.password === password) {
-          sessionStorage.setItem('auth_member_id', member.id)
-          router.replace('/members/profile')
-        } else {
-          alert('メールアドレスまたはパスワードが正しくありません')
-        }
+        alert('メールアドレスまたはパスワードが正しくありません')
       }
     } catch (err) {
       console.error('Action error:', err)

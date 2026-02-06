@@ -1,14 +1,12 @@
 /**
  * Filename: hooks/useAuthCheck.ts
- * Version : V1.10.0
- * Update  : 2026-01-26
+ * Version : V1.11.0
+ * Update  : 2026-02-06
  * 修正内容：
- * V1.10.0
- * - LINE自動ログイン、ログアウトで画面閉じる
- * - PCログイン画面、ログアウトでログイン画面
- * V1.9.7
- * - Hook内での直接的な router.replace を廃止（app/page.tsxに集約）
- * - isLoading が false になる前に、必要な情報をすべて確定させるよう同期を強化
+ * V1.11.0
+ * - logout フラグを LINE / ブラウザ共通で参照
+ * - logout フラグがある場合は user を作らず即 isLoading=false
+ * - login ページで logout フラグを消した後は自動ログインが復活
  */
 
 import { useEffect, useState } from 'react'
@@ -29,6 +27,22 @@ export const useAuthCheck = () => {
       try {
         const ua = typeof window !== 'undefined' ? navigator.userAgent.toLowerCase() : ''
         const isLine = ua.includes('line')
+
+        // ---------------------------------------------------------
+        // 共通：logout フラグチェック
+        // ---------------------------------------------------------
+        let logoutFlag = null
+        if (typeof window !== 'undefined') {
+          logoutFlag = isLine
+            ? localStorage.getItem('logout')
+            : sessionStorage.getItem('logout')
+        }
+
+        if (logoutFlag) {
+          // ログアウト直後は user を作らない
+          setIsLoading(false)
+          return
+        }
 
         // ---------------------------------------------------------
         // LINE アプリ内ブラウザ
