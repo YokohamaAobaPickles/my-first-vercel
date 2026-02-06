@@ -32,6 +32,13 @@ export default function MemberSearchPage() {
   const isAdmin = canManageMembers(userRoles)
 
   const handleSearch = async () => {
+
+    // ★ 追加：検索条件が全部空なら該当なしにする
+    if (!nickname && !memberNumber && !email) {
+      setResults([]) // ← UI が「該当者なし」を表示する
+      return
+    }
+    
     const res = await fetchMembersByQuery(nickname, memberNumber, email)
 
     if (!res.success || !res.data) {
