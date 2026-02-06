@@ -62,19 +62,33 @@ export default function ProfilePage() {
     const ua = navigator.userAgent.toLowerCase()
     const isLine = ua.includes('line')
 
-    if (isLine) {
-      // LINE環境: 再ログイン防止フラグを立ててウィンドウを閉じる
-      localStorage.setItem('logout', 'true')
+    // デバッグ情報1: 判定結果の確認
+    alert(`Debug: isLine=${isLine}, UA=${ua.substring(0, 30)}...`)
 
+    if (isLine) {
       try {
-        // LIFFのログアウト処理
+        // デバッグ情報2: フラグセット直前
+        localStorage.setItem('logout', 'true')
+        console.log('Debug: logout flag set to localStorage')
+
+        // デバッグ情報3: closeWindow直前
+        alert('Debug: Attempting to close LIFF window...')
+
         if (liff.isLoggedIn()) {
+          // 念のため logout は呼ぶが、その直後に close を優先
           liff.logout()
         }
-        // LINEアプリの画面を閉じる
+
         liff.closeWindow()
-      } catch (err) {
-        console.error('LIFF logout error:', err)
+
+        // もしここが実行されたら、closeWindowが無視されている証拠
+        setTimeout(() => {
+          alert('Debug: closeWindow failed to close after 1 sec.')
+          router.replace('/members/login')
+        }, 1000)
+
+      } catch (err: any) {
+        alert(`Debug Error: ${err.message}`)
         router.replace('/members/login')
       }
 
