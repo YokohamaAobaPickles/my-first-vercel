@@ -19,7 +19,9 @@ import { useAuthCheck } from '@/hooks/useAuthCheck'
 
 export default function MemberLoginPage() {
   const router = useRouter()
-  const { user, isLoading, currentLineId } = useAuthCheck()
+  //const { user, isLoading, currentLineId } = useAuthCheck()
+  //デバッグのためにlineNickname なども取得して表示対象にする
+  const { user, isLoading, currentLineId, lineNickname } = useAuthCheck()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -171,6 +173,24 @@ export default function MemberLoginPage() {
           {' '}
           Yokohama Aoba Pickles
         </footer>
+
+        {/* --- デバッグ情報セクション ここから --- */}
+        <div style={debugPanelStyle}>
+          <p style={{ borderBottom: '1px solid #444', paddingBottom: '4px', marginBottom: '8px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+            Debug Info (Development Only)
+          </p>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '0.7rem', textAlign: 'left', lineHeight: '1.6' }}>
+            <li><strong>isLoading:</strong> {isLoading ? 'true' : 'false'}</li>
+            <li><strong>isLineUA:</strong> {typeof window !== 'undefined' && navigator.userAgent.toLowerCase().includes('line') ? 'YES' : 'NO'}</li>
+            <li><strong>currentLineId:</strong> {currentLineId || 'null'}</li>
+            <li><strong>lineNickname:</strong> {lineNickname || 'null'}</li>
+            <li><strong>userExists:</strong> {user ? `YES (ID: ${user.id})` : 'NO'}</li>
+            <li><strong>Session ID:</strong> {typeof window !== 'undefined' ? (sessionStorage.getItem('auth_member_id') || 'null') : 'n/a'}</li>
+            <li><strong>Logout Flag:</strong> {typeof window !== 'undefined' ? (localStorage.getItem('logout') || sessionStorage.getItem('logout') || 'none') : 'n/a'}</li>
+          </ul>
+        </div>
+        {/* --- デバッグ情報セクション ここまで --- */}
+
       </div>
     </div>
   )
@@ -212,4 +232,15 @@ const footerStyle: React.CSSProperties = {
   fontSize: '0.7rem',
   color: '#666',
   letterSpacing: '0.05em',
+}
+
+// デバッグ用スタイル
+const debugPanelStyle: React.CSSProperties = {
+  marginTop: '40px',
+  padding: '15px',
+  backgroundColor: '#111',
+  border: '1px dashed #555',
+  borderRadius: '8px',
+  color: '#0f0', // 緑色でデバッグ感を表示
+  fontFamily: 'monospace'
 }
