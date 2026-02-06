@@ -27,8 +27,7 @@ export const useAuthCheck = () => {
         // --- LINE環境判定 ---
         if (typeof window !== 'undefined' && /Line/i.test(navigator.userAgent)) {
 
-          // ログアウト直後なら自動ログインを無効化
-          if (sessionStorage.getItem('logout') === '1') {
+          if (localStorage.getItem('logout') === '1') {
             setIsLoading(false)
             return
           }
@@ -37,7 +36,8 @@ export const useAuthCheck = () => {
           await liff.init({ liffId: liffId || 'DUMMY_ID' })
 
           if (!liff.isLoggedIn()) {
-            liff.login()
+            // ログアウト直後はここに入る
+            setIsLoading(false)
             return
           }
 
