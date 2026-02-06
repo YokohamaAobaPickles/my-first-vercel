@@ -193,7 +193,7 @@ export default function ProfilePage() {
               },
               {
                 label: '役職',
-                value: ROLES_LABELS[user.roles] || user.roles || '-'
+                value: userRoles?.map(r => ROLES_LABELS[r] || r).join(', ') || '-'
               },
               {
                 label: 'ステータス',
