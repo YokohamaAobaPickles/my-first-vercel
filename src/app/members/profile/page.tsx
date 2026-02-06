@@ -32,6 +32,7 @@ import {
 } from '@/types/member'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
 
 export default function ProfilePage() {
   const { user, isLoading, userRoles } = useAuthCheck()
