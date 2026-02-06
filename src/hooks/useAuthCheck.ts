@@ -28,7 +28,7 @@ export const useAuthCheck = () => {
         if (typeof window !== 'undefined' && /Line/i.test(navigator.userAgent)) {
           const liffId = process.env.NEXT_PUBLIC_LIFF_ID
           await liff.init({ liffId: liffId || 'DUMMY_ID' })
-          
+
           if (!liff.isLoggedIn()) {
             liff.login()
             return
@@ -45,17 +45,25 @@ export const useAuthCheck = () => {
             .maybeSingle()
 
           if (member) {
-            setUser(member)
-            setUserRoles(member.roles || [])
+            const fixedRoles =
+              Array.isArray(member.roles)
+                ? member.roles
+                : member.roles
+                  ? [member.roles]
+                  : [];
+
+            setUser(member);
+            setUserRoles(fixedRoles);
           }
+
           // Hook内でのリダイレクトは削除。案内係(page.tsx)に任せる。
           setIsLoading(false)
           return
         }
 
         // --- PCブラウザ処理 ---
-        const memberIdToCheck = typeof window !== 'undefined' 
-          ? sessionStorage.getItem('auth_member_id') 
+        const memberIdToCheck = typeof window !== 'undefined'
+          ? sessionStorage.getItem('auth_member_id')
           : null
 
         if (memberIdToCheck) {
@@ -66,10 +74,18 @@ export const useAuthCheck = () => {
             .maybeSingle()
 
           if (member) {
-            setUser(member)
-            setUserRoles(member.roles || [])
-            setCurrentLineId(member.line_id || null)
+            const fixedRoles =
+              Array.isArray(member.roles)
+                ? member.roles
+                : member.roles
+                  ? [member.roles]
+                  : [];
+
+            setUser(member);
+            setUserRoles(fixedRoles);
+            setCurrentLineId(member.line_id || null);
           }
+
         }
 
         setIsLoading(false)
