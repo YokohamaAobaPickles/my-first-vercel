@@ -57,7 +57,7 @@ export default function ProfilePage() {
   }
 
   //const handleLogout = async () => {
-  
+
   // 引数 e を受け取るように定義を変更
   const handleLogout = async (e: React.MouseEvent) => {
     // 【重要】ブラウザのデフォルト動作を完全に止める
@@ -320,20 +320,21 @@ export default function ProfilePage() {
 
         {/* フッターエリア */}
         <div style={styles.footer}>
-          {/*}
-          <Link href="/members/login" style={styles.logoutLink}>
-            ログアウト
-          </Link>
-        */}
-          {/* フッターエリア：リンクからボタンに変更 */}
-          <button
-            //onClick={handleLogout}
-            onClick={(e) => handleLogout(e)} // イベントオブジェクトを渡す
-            style={styles.logoutButton}
-          >
-            ログアウト
-          </button>
-
+          {/* LINE環境以外（ブラウザ）の場合のみ、ログアウトボタンを表示する。
+            isLine 判定を利用（ua判定を再度行うか、useAuthCheckから取得）
+          */}
+          {!(typeof window !== 'undefined' && navigator.userAgent.toLowerCase().includes('line')) ? (
+            <button
+              onClick={(e) => handleLogout(e)}
+              style={styles.logoutButton}
+            >
+              ログアウト
+            </button>
+          ) : (
+            <p style={{ color: '#666', fontSize: '0.8rem' }}>
+              ※ LINEアプリでお使いの方は、右上の「×」で閉じてください。
+            </p>
+          )}
         </div>
       </div>
 
