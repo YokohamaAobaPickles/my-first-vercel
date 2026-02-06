@@ -540,12 +540,12 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
   },
   logoutButton: {
-    backgroundColor: 'transparent',
+    backgroundColor: '#111',
     color: '#888',
-    textDecoration: 'underline',
-    border: 'none',
+    textDecoration: 'none',
+    border: '1px solid #333',
     fontSize: '0.9rem',
     cursor: 'pointer',
-    padding: '10px',
+    padding: '8px 16px',
   },
 }
