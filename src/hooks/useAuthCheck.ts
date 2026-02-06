@@ -1,15 +1,18 @@
 /**
  * Filename: hooks/useAuthCheck.ts
- * Version : V1.9.7
+ * Version : V1.10.0
  * Update  : 2026-01-26
  * 修正内容：
+ * V1.10.0
+ * - LINE自動ログイン、ログアウトで画面閉じる
+ * - PCログイン画面、ログアウトでログイン画面
  * V1.9.7
  * - Hook内での直接的な router.replace を廃止（app/page.tsxに集約）
  * - isLoading が false になる前に、必要な情報をすべて確定させるよう同期を強化
  */
 
 import { useEffect, useState } from 'react'
-import { usePathname } from 'next/navigation' // router は不要になったので削除可
+import { usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import liff from '@line/liff'
 
@@ -24,19 +27,18 @@ export const useAuthCheck = () => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        // --- LINE環境判定 ---
-        if (typeof window !== 'undefined' && /Line/i.test(navigator.userAgent)) {
+        const ua = typeof window !== 'undefined' ? navigator.userAgent.toLowerCase() : ''
+        const isLine = ua.includes('line')
 
-          if (localStorage.getItem('logout') === '1') {
-            setIsLoading(false)
-            return
-          }
-
+        // ---------------------------------------------------------
+        // LINE アプリ内ブラウザ
+        // ---------------------------------------------------------
+        if (isLine && typeof window !== 'undefined') {
           const liffId = process.env.NEXT_PUBLIC_LIFF_ID
           await liff.init({ liffId: liffId || 'DUMMY_ID' })
 
+          // ログアウト直後は liff.isLoggedIn() が false
           if (!liff.isLoggedIn()) {
-            // ログアウト直後はここに入る
             setIsLoading(false)
             return
           }
@@ -64,16 +66,10 @@ export const useAuthCheck = () => {
           return
         }
 
-        // --- PCブラウザ処理 ---
+        // ---------------------------------------------------------
+        // PC / スマホブラウザ
+        // ---------------------------------------------------------
         if (typeof window !== 'undefined') {
-
-          // PC用：sessionStorage の logout フラグを見る
-          if (sessionStorage.getItem('logout') === '1') {
-            sessionStorage.removeItem('auth_member_id')
-            setIsLoading(false)
-            return
-          }
-
           const memberIdToCheck = sessionStorage.getItem('auth_member_id')
 
           if (memberIdToCheck) {
@@ -101,8 +97,9 @@ export const useAuthCheck = () => {
         setIsLoading(false)
       }
     }
+
     initAuth()
-  }, [pathname]) // パスが変わるたびに再チェック
+  }, [pathname])
 
   return { isLoading, userRoles, currentLineId, lineNickname, user }
 }
