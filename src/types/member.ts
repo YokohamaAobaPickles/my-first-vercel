@@ -88,7 +88,7 @@ export interface Member {
   emg_rel: string;
   status: MemberStatus;
   member_kind: string;
-  roles: string;
+  roles: string[];
 
   // --- 任意項目 (is_nullable: YES) ---
   member_number?: string | null;

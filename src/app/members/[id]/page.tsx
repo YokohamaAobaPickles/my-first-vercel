@@ -14,6 +14,10 @@ import Link from 'next/link'
 
 import { fetchMemberById } from '@/lib/memberApi'
 import type { Member } from '@/types/member'
+import {
+  MEMBER_STATUS_LABELS,
+  MEMBER_KIND_LABELS,
+  ROLES_LABELS} from '@/types/member'
 
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import { canManageMembers } from '@/utils/auth'
@@ -83,9 +87,15 @@ export default function MemberDetailPage() {
               { label: '氏名（ローマ字）', value: member.name_roma },
               { label: '性別', value: member.gender || '-' },
               { label: '生年月日', value: member.birthday || '-' },
-              { label: '会員種別', value: member.member_kind },
-              { label: '役職', value: member.roles },
-              { label: 'ステータス', value: member.status },
+              { label: '会員種別', value: MEMBER_KIND_LABELS[member.member_kind] },
+              {
+                label: '役職',
+                value: member.roles
+                  .map((r) => ROLES_LABELS[r] || r)
+                  .filter((label) => label !== '') // 役職なしは非表示
+                  .join('、')
+              },
+              { label: 'ステータス', value: MEMBER_STATUS_LABELS[member.status] },
             ].map((item, idx) => (
               <div
                 key={idx}

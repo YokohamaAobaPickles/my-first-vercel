@@ -47,8 +47,8 @@ const MOCK_MEMBERS: Member[] = [
     emg_tel: '000-0000-0000',
     emg_rel: 'friend',
     status: 'active' as MemberStatus,   // enum の値に合わせて変更
-    member_kind: 'regular',
-    roles: 'member',
+    member_kind: 'general',
+    roles: ['member'],
 
     // 任意項目
     member_number: '1007',
