@@ -26,6 +26,13 @@ export const useAuthCheck = () => {
       try {
         // --- LINE環境判定 ---
         if (typeof window !== 'undefined' && /Line/i.test(navigator.userAgent)) {
+
+          // ログアウト直後なら自動ログインを無効化
+          if (sessionStorage.getItem('logout') === '1') {
+            setIsLoading(false)
+            return
+          }
+
           const liffId = process.env.NEXT_PUBLIC_LIFF_ID
           await liff.init({ liffId: liffId || 'DUMMY_ID' })
 
@@ -36,7 +43,7 @@ export const useAuthCheck = () => {
 
           const profile = await liff.getProfile()
           setLineNickname(profile.displayName)
-          setCurrentLineId(profile.userId) // まずIDをセット
+          setCurrentLineId(profile.userId)
 
           const { data: member } = await supabase
             .from('members')
@@ -45,19 +52,14 @@ export const useAuthCheck = () => {
             .maybeSingle()
 
           if (member) {
-            const fixedRoles =
-              Array.isArray(member.roles)
-                ? member.roles
-                : member.roles
-                  ? [member.roles]
-                  : [];
+            const fixedRoles = Array.isArray(member.roles)
+              ? member.roles
+              : member.roles ? [member.roles] : []
 
-            setUser({ ...member, roles: fixedRoles });
-            setUserRoles(fixedRoles);
+            setUser({ ...member, roles: fixedRoles })
+            setUserRoles(fixedRoles)
           }
 
-
-          // Hook内でのリダイレクトは削除。案内係(page.tsx)に任せる。
           setIsLoading(false)
           return
         }

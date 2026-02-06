@@ -33,6 +33,7 @@ import {
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import liff from '@line/liff'
 
 export default function ProfilePage() {
   const { user, isLoading, userRoles } = useAuthCheck()
@@ -58,20 +59,30 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     await supabase.auth.signOut()
 
-    // LINE/PC 共通：sessionStorage をクリア
-    sessionStorage.clear()
+    // ログアウトフラグで自動ログインを防止
+    sessionStorage.setItem('logout', '1')
 
     const ua = navigator.userAgent.toLowerCase()
-    const isLine = ua.indexOf('line') > -1
+    const isLine = ua.includes('line')
 
     if (isLine) {
-      window.close()
-      setTimeout(() => {
-        router.push('/members/login')
-      }, 300)
-    } else {
-      window.location.href = '/members/login'
+      // LINEアプリ内ブラウザを確実に閉じる
+      try {
+        await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID || '' })
+        liff.closeWindow()
+        return
+      } catch (e) {
+        // フォールバック
+        window.close()
+        setTimeout(() => {
+          window.location.href = '/members/login'
+        }, 300)
+        return
+      }
     }
+
+    // 通常ブラウザ
+    window.location.href = '/members/login'
   }
 
   const handleAction = async () => {
