@@ -56,23 +56,19 @@ export default function ProfilePage() {
   }
 
   const handleLogout = async () => {
-    // 1. Supabase セッション破棄
     await supabase.auth.signOut()
 
-    // 2. LINE内ブラウザ判定
+    // LINE/PC 共通：sessionStorage をクリア
+    sessionStorage.clear()
+
     const ua = navigator.userAgent.toLowerCase()
     const isLine = ua.indexOf('line') > -1
 
-    // 3. LINEユーザーの自動ログイン防止
-    sessionStorage.removeItem('line_user_id')
-
     if (isLine) {
-      if (typeof window !== 'undefined') {
-        window.close()
-        setTimeout(() => {
-          router.push('/members/login')
-        }, 300)
-      }
+      window.close()
+      setTimeout(() => {
+        router.push('/members/login')
+      }, 300)
     } else {
       window.location.href = '/members/login'
     }
