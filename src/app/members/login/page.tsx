@@ -1,12 +1,10 @@
 /**
  * Filename: src/app/members/login/page.tsx
- * Version : V2.0.3
+ * Version : V2.0.4
  * Update  : 2026-01-31
- * Remarks : 
- * V2.0.3 - 追加：フッターにシステムバージョンとコピーライトを表示。
- * V2.0.2
- * - テストCase 6に合わせ、パスワードが空の場合もDB照合へ流し「正しくありません」を出せるように変更
- * - isInvalidのガードレールをemailのみに緩和
+ * Remarks :
+ * - LINEアプリでログアウト後に自動ログインが復活しない問題を修正
+ * - ログイン画面到達時に logout フラグをクリア
  */
 
 'use client'
@@ -24,6 +22,20 @@ export default function MemberLoginPage() {
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // ログイン画面に来たら logout フラグを消す
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const ua = navigator.userAgent.toLowerCase()
+      const isLine = ua.includes('line')
+
+      if (isLine) {
+        localStorage.removeItem('logout')
+      } else {
+        sessionStorage.removeItem('logout')
+      }
+    }
+  }, [])
+
   useEffect(() => {
     if (!isLoading && user) {
       router.replace('/members/profile')
@@ -34,8 +46,7 @@ export default function MemberLoginPage() {
     e.preventDefault()
     if (isSubmitting) return
 
-    // バリデーション：emailがない場合は即アラート
-    // (PC環境でpasswordが空の場合も、ここでは止めずにDB照合後のエラーに任せる)
+    // email がない場合は即アラート
     if (!email) {
       alert('メールアドレスとパスワードを入力してください')
       return
@@ -63,16 +74,16 @@ export default function MemberLoginPage() {
           if (updateError) throw updateError
           router.replace('/members/profile')
         } else {
-          router.replace(`/members/new?email=${encodeURIComponent(email)}`)
+          router.replace(
+            `/members/new?email=${encodeURIComponent(email)}`
+          )
         }
       } else {
         // --- PC環境：通常ログインフロー ---
-        // テストCase 6(password="")やCase 5の検証に対応
         if (member && password && member.password === password) {
           sessionStorage.setItem('auth_member_id', member.id)
           router.replace('/members/profile')
         } else {
-          // テストの期待値「メールアドレスまたはパスワードが正しくありません」を出す
           alert('メールアドレスまたはパスワードが正しくありません')
         }
       }
@@ -84,17 +95,58 @@ export default function MemberLoginPage() {
     }
   }
 
-  if (isLoading) return <div style={{ backgroundColor: '#000', minHeight: '100vh' }} />
+  if (isLoading) {
+    return (
+      <div
+        style={{
+          backgroundColor: '#000',
+          minHeight: '100vh',
+        }}
+      />
+    )
+  }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#000', color: '#fff', padding: '20px', display: 'flex', justifyContent: 'center' }}>
-      <div style={{ width: '100%', maxWidth: '400px' }}>
-        <h1 style={{ textAlign: 'center', fontSize: '1.5rem', marginBottom: '30px' }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        backgroundColor: '#000',
+        color: '#fff',
+        padding: '20px',
+        display: 'flex',
+        justifyContent: 'center',
+      }}
+    >
+      <div
+        style={{
+          width: '100%',
+          maxWidth: '400px',
+        }}
+      >
+        <h1
+          style={{
+            textAlign: 'center',
+            fontSize: '1.5rem',
+            marginBottom: '30px',
+          }}
+        >
           {currentLineId ? 'LINE会員確認' : 'ログイン'}
         </h1>
 
-        <form onSubmit={handleAction} style={{ display: 'flex', flexDirection: 'column' }}>
-          <p style={{ fontSize: '0.85rem', marginBottom: '15px', color: '#aaa' }}>
+        <form
+          onSubmit={handleAction}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <p
+            style={{
+              fontSize: '0.85rem',
+              marginBottom: '15px',
+              color: '#aaa',
+            }}
+          >
             {currentLineId
               ? '登録状況を確認します。メールアドレスを入力してください。'
               : 'メールアドレスとパスワードを入力してください。'}
@@ -123,19 +175,42 @@ export default function MemberLoginPage() {
             disabled={isSubmitting}
             style={{
               ...buttonStyle,
-              backgroundColor: isSubmitting ? '#444' : '#0070f3'
+              backgroundColor: isSubmitting ? '#444' : '#0070f3',
             }}
           >
-            {isSubmitting ? '処理中...' : (currentLineId ? '連携する' : 'ログイン')}
+            {isSubmitting
+              ? '処理中...'
+              : currentLineId
+                ? '連携する'
+                : 'ログイン'}
           </button>
 
           {!currentLineId && (
-            <div style={{ textAlign: 'center', marginTop: '10px' }}>
-              <a href="/members/new" style={{ color: '#0070f3', fontSize: '0.9rem', textDecoration: 'none' }}>
+            <div
+              style={{
+                textAlign: 'center',
+                marginTop: '10px',
+              }}
+            >
+              <a
+                href="/members/new"
+                style={{
+                  color: '#0070f3',
+                  fontSize: '0.9rem',
+                  textDecoration: 'none',
+                }}
+              >
                 新規会員登録はこちら
               </a>
-              <div style={{ marginTop: '8px' }}>
-                <Link href="/members/password-reset" style={passwordResetLinkStyle}>
+              <div
+                style={{
+                  marginTop: '8px',
+                }}
+              >
+                <Link
+                  href="/members/password-reset"
+                  style={passwordResetLinkStyle}
+                >
                   パスワード忘却時のリセットはこちら
                 </Link>
               </div>
@@ -143,11 +218,11 @@ export default function MemberLoginPage() {
           )}
         </form>
 
-        {/* バージョン情報・コピーライト表示 */}
         <footer style={footerStyle}>
-          YAPMS V1.0.0 Copyright 2026 Yokohama Aoba Pickles
+          YAPMS V1.0.0 Copyright 2026
+          {' '}
+          Yokohama Aoba Pickles
         </footer>
-
       </div>
     </div>
   )
