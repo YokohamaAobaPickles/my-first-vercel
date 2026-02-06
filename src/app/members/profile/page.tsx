@@ -72,37 +72,22 @@ export default function ProfilePage() {
     const isLine = ua.includes('line')
 
     // デバッグ情報1: 判定結果の確認
-    alert(`Debug: isLine=${isLine}, UA=${ua.substring(0, 30)}...`)
+    //alert(`Debug: isLine=${isLine}, UA=${ua.substring(0, 30)}...`)
 
     if (isLine) {
+      // LINE環境: 
+      // ログアウト後の自動ログインループを防ぐため、フラグを立てて閉じる。
+      // 現在、LINEアプリではボタン自体を非表示にする運用へ移行中。
+      localStorage.setItem('logout', 'true')
       try {
-        // デバッグ情報2: フラグセット直前
-        localStorage.setItem('logout', 'true')
-        console.log('Debug: logout flag set to localStorage')
-
-        // デバッグ情報3: closeWindow直前
-        alert('Debug: Attempting to close LIFF window...')
-
-        if (liff.isLoggedIn()) {
-          // 念のため logout は呼ぶが、その直後に close を優先
-          liff.logout()
-        }
-
+        if (liff.isLoggedIn()) liff.logout()
         liff.closeWindow()
-
-        // もしここが実行されたら、closeWindowが無視されている証拠
-        setTimeout(() => {
-          alert('Debug: closeWindow failed to close after 1 sec.')
-          router.replace('/members/login')
-        }, 1000)
-
-      } catch (err: any) {
-        alert(`Debug Error: ${err.message}`)
+      } catch (err) {
+        console.error('LIFF close error:', err)
         router.replace('/members/login')
       }
-
     } else {
-      // ブラウザ環境: セッションをクリアしてログイン画面へ
+      // ブラウザ環境: 通常のログアウト処理
       sessionStorage.setItem('logout', 'true')
       sessionStorage.removeItem('auth_member_id')
       router.replace('/members/login')
@@ -320,10 +305,11 @@ export default function ProfilePage() {
 
         {/* フッターエリア */}
         <div style={styles.footer}>
-          {/* LINE環境以外（ブラウザ）の場合のみ、ログアウトボタンを表示する。
-            isLine 判定を利用（ua判定を再度行うか、useAuthCheckから取得）
+          {/* LINEアプリでは自動ログインの仕組み上、ログアウトボタンを表示せず、
+              ユーザーにアプリを閉じてもらう運用とする。
           */}
-          {!(typeof window !== 'undefined' && navigator.userAgent.toLowerCase().includes('line')) ? (
+          {!(typeof window !== 'undefined' &&
+            navigator.userAgent.toLowerCase().includes('line')) ? (
             <button
               onClick={(e) => handleLogout(e)}
               style={styles.logoutButton}
