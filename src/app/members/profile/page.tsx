@@ -55,30 +55,27 @@ export default function ProfilePage() {
   }
 
   const handleLogout = async () => {
-    // 1. セッション破棄 (認証システムに合わせる)
-    // await supabase.auth.signOut()
+    // 1. Supabase セッション破棄
+    await supabase.auth.signOut()
 
-    // 2. LINE内ブラウザ（UA判定）かどうかのチェック
+    // 2. LINE内ブラウザ判定
     const ua = navigator.userAgent.toLowerCase()
     const isLine = ua.indexOf('line') > -1
 
+    // 3. LINEユーザーの自動ログイン防止
+    sessionStorage.removeItem('line_user_id')
+
     if (isLine) {
-      // LINEアプリ内の場合はウィンドウを閉じる
-      // 注意: LIFFを使用している場合は liff.closeWindow() が確実です
       if (typeof window !== 'undefined') {
         window.close()
-        // window.close() が効かない場合のフォールバック（LINEの深い階層など）
         setTimeout(() => {
           router.push('/members/login')
         }, 300)
       }
     } else {
-      // 通常ブラウザの場合はログイン画面へ
-      // 自動ログインを避けるためキャッシュを無視して遷移させるのが安全
       window.location.href = '/members/login'
     }
   }
-
 
   const handleAction = async () => {
     if (!modalConfig.type) return
