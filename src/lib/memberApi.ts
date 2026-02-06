@@ -49,11 +49,20 @@ export const fetchMembers = async (): Promise<ApiResponse<Member[]>> => {
     .select('*')
     .order('member_number', { ascending: true });
 
-  if (error) {
-    return handleError(error);
-  }
-  return { success: true, data: data as Member[], error: null };
+  if (error) return handleError(error);
+
+  const fixed = (data || []).map((m) => ({
+    ...m,
+    roles: Array.isArray(m.roles)
+      ? m.roles
+      : m.roles
+        ? [m.roles]
+        : [],
+  }));
+
+  return { success: true, data: fixed, error: null };
 };
+
 
 /**
  * 承認待ち会員 (status: 'new_req') 一覧を取得する
@@ -65,10 +74,18 @@ export const fetchPendingMembers = async (): Promise<ApiResponse<Member[]>> => {
     .eq('status', 'new_req')
     .order('create_date', { ascending: true });
 
-  if (error) {
-    return handleError(error);
-  }
-  return { success: true, data: data as Member[], error: null };
+  if (error) return handleError(error);
+
+  const fixed = (data || []).map((m) => ({
+    ...m,
+    roles: Array.isArray(m.roles)
+      ? m.roles
+      : m.roles
+        ? [m.roles]
+        : [],
+  }));
+
+  return { success: true, data: fixed, error: null };
 };
 
 /**
@@ -83,11 +100,20 @@ export const fetchMemberById = async (
     .eq('id', id)
     .single();
 
-  if (error) {
-    return handleError(error);
-  }
-  return { success: true, data: data as Member, error: null };
+  if (error) return handleError(error);
+
+  const fixed = {
+    ...data,
+    roles: Array.isArray(data.roles)
+      ? data.roles
+      : data.roles
+        ? [data.roles]
+        : [],
+  };
+
+  return { success: true, data: fixed, error: null };
 };
+
 
 /**
  * DUPR ID を指定して会員情報を取得する（一括更新用）

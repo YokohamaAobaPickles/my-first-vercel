@@ -62,7 +62,7 @@ describe('useAuthCheck (sessionStorage対応検証)', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    ;(useRouter as any).mockReturnValue({ replace: mockReplace })
+      ; (useRouter as any).mockReturnValue({ replace: mockReplace })
 
     // sessionStorageのモック化
     const sessionStorageMock = (() => {
@@ -82,24 +82,24 @@ describe('useAuthCheck (sessionStorage対応検証)', () => {
 
     // 各テスト前にストレージをリセット
     sessionStorage.clear()
-    ;(liff.isLoggedIn as any).mockReturnValue(true)
+      ; (liff.isLoggedIn as any).mockReturnValue(true)
   })
 
   it('【新規検証】LINE未登録ユーザー時、IDだけでなくニックネームも返却すること', async () => {
     Object.defineProperty(window.navigator, 'userAgent', {
       value: 'Mozilla/5.0 Line/12.1.1', configurable: true
     })
-    ;(usePathname as any).mockReturnValue('/members/login')
-    ;(liff.init as any).mockResolvedValue(undefined)
-    ;(liff.getProfile as any).mockResolvedValue({
-      userId: TEST_LINE_ID,
-      displayName: TEST_DISPLAY_NAME
-    })
-    ;(supabase.from as any).mockReturnValue({
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null })
-    })
+      ; (usePathname as any).mockReturnValue('/members/login')
+      ; (liff.init as any).mockResolvedValue(undefined)
+      ; (liff.getProfile as any).mockResolvedValue({
+        userId: TEST_LINE_ID,
+        displayName: TEST_DISPLAY_NAME
+      })
+      ; (supabase.from as any).mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null })
+      })
 
     const { result } = renderHook(() => useAuthCheck())
     await waitFor(() => expect(result.current.isLoading).toBe(false))
@@ -112,8 +112,8 @@ describe('useAuthCheck (sessionStorage対応検証)', () => {
     Object.defineProperty(window.navigator, 'userAgent', {
       value: 'Mozilla/5.0 Chrome/120.0.0.0 Safari/537.36', configurable: true
     })
-    ;(usePathname as any).mockReturnValue('/members/new')
-    ;(liff.isLoggedIn as any).mockReturnValue(false)
+      ; (usePathname as any).mockReturnValue('/members/new')
+      ; (liff.isLoggedIn as any).mockReturnValue(false)
 
     const { result } = renderHook(() => useAuthCheck())
     await waitFor(() => expect(result.current.isLoading).toBe(false))
@@ -125,19 +125,19 @@ describe('useAuthCheck (sessionStorage対応検証)', () => {
     Object.defineProperty(window.navigator, 'userAgent', {
       value: 'Mozilla/5.0 Line/12.1.1', configurable: true
     })
-    ;(usePathname as any).mockReturnValue('/members/profile')
+      ; (usePathname as any).mockReturnValue('/members/profile')
     const MOCK_USER = {
       line_id: TEST_LINE_ID,
-      roles: 'member',
+      roles: ['member'],
       name: 'テストユーザー'
     }
-    ;(liff.init as any).mockResolvedValue(undefined)
-    ;(liff.getProfile as any).mockResolvedValue({ userId: TEST_LINE_ID })
-    ;(supabase.from as any).mockReturnValue({
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      maybeSingle: vi.fn().mockResolvedValue({ data: MOCK_USER, error: null })
-    })
+      ; (liff.init as any).mockResolvedValue(undefined)
+      ; (liff.getProfile as any).mockResolvedValue({ userId: TEST_LINE_ID })
+      ; (supabase.from as any).mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: MOCK_USER, error: null })
+      })
 
     const { result } = renderHook(() => useAuthCheck())
     await waitFor(() => expect(result.current.isLoading).toBe(false))
@@ -150,21 +150,21 @@ describe('useAuthCheck (sessionStorage対応検証)', () => {
     Object.defineProperty(window.navigator, 'userAgent', {
       value: 'Mozilla/5.0 Chrome/120.0.0.0 Safari/537.36', configurable: true
     })
-    ;(usePathname as any).mockReturnValue('/members/profile')
+      ; (usePathname as any).mockReturnValue('/members/profile')
     sessionStorage.setItem('auth_member_id', TEST_MEMBER_ID)
 
-    const MOCK_USER = { id: TEST_MEMBER_ID, roles: 'admin', name: 'PCユーザー' }
-    ;(supabase.from as any).mockReturnValue({
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      maybeSingle: vi.fn().mockResolvedValue({ data: MOCK_USER, error: null })
-    })
+    const MOCK_USER = { id: TEST_MEMBER_ID, roles: ['admin'], name: 'PCユーザー' }
+      ; (supabase.from as any).mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: MOCK_USER, error: null })
+      })
 
     const { result } = renderHook(() => useAuthCheck())
     await waitFor(() => expect(result.current.isLoading).toBe(false))
 
     expect(result.current.user).toEqual(MOCK_USER)
-    expect(result.current.userRoles).toBe('admin')
+    expect(result.current.userRoles).toEqual(['admin'])
     expect(mockReplace).not.toHaveBeenCalled()
   })
 })
