@@ -15,6 +15,9 @@ import {
 } from './memberHelpers'
 import { MemberInput } from '@/types/member'
 
+import { hasOfficerRole } from './memberHelpers'
+import { ROLES } from '@/types/member'
+
 describe('memberHelpers 総合検証 V5.0.0', () => {
 
   /**
@@ -29,7 +32,7 @@ describe('memberHelpers 総合検証 V5.0.0', () => {
     name_roma: 'Taro Yamada',
     gender: '男性',
     birthday: '1990-01-01',
-    roles: 'member',
+    roles: ['member'],
     tel: '03-1234-5678',
     postal: '123-4567',
     address: '東京都...',
@@ -174,6 +177,29 @@ describe('memberHelpers 総合検証 V5.0.0', () => {
   it('必須項目が undefined の場合も適切にエラーを返すこと', () => {
     const data = { ...VALID_MEMBER_BASE, name: undefined as any }
     expect(validateRegistration(data).isValid).toBe(false)
+  })
+
+  describe('hasOfficerRole (役職判定)', () => {
+    it('役職が member のみなら false', () => {
+      expect(hasOfficerRole({ roles: ['member'] })).toBe(false)
+    })
+
+    it('会長を含む場合は true', () => {
+      expect(hasOfficerRole({ roles: [ROLES.PRESIDENT] })).toBe(true)
+    })
+
+    it('複数役職（会長 + イベント担当）でも true', () => {
+      expect(hasOfficerRole({ roles: [ROLES.PRESIDENT, 'event_manager'] })).toBe(true)
+    })
+
+    it('roles が空配列なら false', () => {
+      expect(hasOfficerRole({ roles: [] })).toBe(false)
+    })
+
+    it('roles が null/undefined なら false', () => {
+      expect(hasOfficerRole({ roles: null })).toBe(false)
+      expect(hasOfficerRole({})).toBe(false)
+    })
   })
 
 })

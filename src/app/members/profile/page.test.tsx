@@ -80,7 +80,7 @@ describe('ProfilePage 統合検証 V2.8.0', () => {
    * -------------------- */
   it('全てのプロフィール項目（メモ、DUPR等）が表示される', () => {
     ; (useAuthCheck as any).mockReturnValue({
-      isLoading: false, user: TEST_USER, userRoles: 'member'
+      isLoading: false, user: TEST_USER, userRoles: ['member']
     })
     render(<ProfilePage />)
     expect(screen.getByText('たろう')).toBeInTheDocument()
@@ -97,7 +97,7 @@ describe('ProfilePage 統合検証 V2.8.0', () => {
    * -------------------- */
   it('【新規入会申請】ステータス表示と入会取消(deleteMember)の連動', async () => {
     ; (useAuthCheck as any).mockReturnValue({
-      isLoading: false, user: { ...TEST_USER, status: 'new_req' }, userRoles: 'member'
+      isLoading: false, user: { ...TEST_USER, status: 'new_req' }, userRoles: ['member']
     })
     vi.mocked(deleteMember).mockResolvedValue({ success: true, data: null, error: null })
 
@@ -115,7 +115,7 @@ describe('ProfilePage 統合検証 V2.8.0', () => {
 
   it('【休会申請】ステータス変更(updateMemberStatus)とリロード', async () => {
     ; (useAuthCheck as any).mockReturnValue({
-      isLoading: false, user: TEST_USER, userRoles: 'member'
+      isLoading: false, user: TEST_USER, userRoles: ['member']
     })
     vi.mocked(updateMemberStatus).mockResolvedValue({ success: true, data: null, error: null })
 
@@ -134,7 +134,7 @@ describe('ProfilePage 統合検証 V2.8.0', () => {
    * -------------------- */
   it('API失敗時は alert が表示される', async () => {
     ; (useAuthCheck as any).mockReturnValue({
-      isLoading: false, user: TEST_USER, userRoles: 'member'
+      isLoading: false, user: TEST_USER, userRoles: ['member']
     })
     vi.mocked(updateMemberStatus).mockResolvedValue({
       success: false,
@@ -153,7 +153,7 @@ describe('ProfilePage 統合検証 V2.8.0', () => {
 
   it('実行中は「処理中...」が表示され、ボタンが無効になる', async () => {
     ; (useAuthCheck as any).mockReturnValue({
-      isLoading: false, user: TEST_USER, userRoles: 'member'
+      isLoading: false, user: TEST_USER, userRoles: ['member']
     })
     let resolveFn: any
     vi.mocked(updateMemberStatus).mockReturnValue(

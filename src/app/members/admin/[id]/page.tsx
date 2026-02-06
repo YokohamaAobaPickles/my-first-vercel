@@ -17,6 +17,7 @@ import {
 } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
+import { canManageMembers } from '@/utils/auth'
 import {
   fetchMemberById,
   updateMember
@@ -47,22 +48,14 @@ export default function MemberDetailAdmin(
   const [originalMember, setOriginalMember] = useState<Member | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const canManage = useCallback((role: string | null | undefined) => {
-    return (
-      role === ROLES.SYSTEM_ADMIN ||
-      role === ROLES.PRESIDENT ||
-      role === ROLES.VICE_PRESIDENT ||
-      role === ROLES.MEMBER_MANAGER
-    )
-  }, [])
-
   useEffect(() => {
     if (authLoading) return
 
-    if (!currentUser || !canManage(currentUserRole)) {
+    if (!currentUser || !canManageMembers(currentUserRole ?? [])) {
       router.replace('/members/profile')
       return
     }
+
 
     async function load() {
       try {
@@ -81,7 +74,7 @@ export default function MemberDetailAdmin(
       }
     }
     load()
-  }, [id, authLoading, currentUser, currentUserRole, router, canManage])
+  }, [id, authLoading, currentUser, currentUserRole, router])
 
   // 実績のあるガード条件
   if (authLoading || !formData) {
@@ -96,29 +89,40 @@ export default function MemberDetailAdmin(
     if (!formData || !originalMember) return
 
     // 役職変更の認可階層ルール
-    if (formData.roles !== originalMember.roles) {
-      if (currentUserRole === ROLES.VICE_PRESIDENT) {
-        if (formData.roles === ROLES.PRESIDENT) {
+    if (JSON.stringify(formData.roles) !== JSON.stringify(originalMember.roles)) {
+
+      // 副会長の制限
+      if (currentUserRole?.includes(ROLES.VICE_PRESIDENT)) {
+
+        // 副会長は会長権限を付与できない
+        if (formData.roles.includes(ROLES.PRESIDENT)) {
           alert('権限がありません：副会長は会長権限を付与できません。')
           return
         }
-        if (originalMember.roles === ROLES.PRESIDENT) {
+
+        // 会長の役職は変更できない
+        if (originalMember.roles.includes(ROLES.PRESIDENT)) {
           alert('権限がありません：会長の役職は変更できません。')
           return
         }
       }
 
-      if (currentUserRole === ROLES.MEMBER_MANAGER) {
+      // 会員担当の制限
+      if (currentUserRole?.includes(ROLES.MEMBER_MANAGER)) {
+
+        // 会員担当は会長・副会長を付与できない
         if (
-          formData.roles === ROLES.PRESIDENT ||
-          formData.roles === ROLES.VICE_PRESIDENT
+          formData.roles.includes(ROLES.PRESIDENT) ||
+          formData.roles.includes(ROLES.VICE_PRESIDENT)
         ) {
           alert('権限がありません：会長・副会長権限は付与できません。')
           return
         }
+
+        // 会長・副会長の役職は変更できない
         if (
-          originalMember.roles === ROLES.PRESIDENT ||
-          originalMember.roles === ROLES.VICE_PRESIDENT
+          originalMember.roles.includes(ROLES.PRESIDENT) ||
+          originalMember.roles.includes(ROLES.VICE_PRESIDENT)
         ) {
           alert('権限がありません：会長・副会長の役職は変更できません。')
           return
@@ -130,11 +134,11 @@ export default function MemberDetailAdmin(
     try {
       const submitData = {
         ...formData,
-        dupr_rate_doubles: formData.dupr_rate_doubles === '' 
-          ? null 
+        dupr_rate_doubles: formData.dupr_rate_doubles === ''
+          ? null
           : parseFloat(formData.dupr_rate_doubles),
-        dupr_rate_singles: formData.dupr_rate_singles === '' 
-          ? null 
+        dupr_rate_singles: formData.dupr_rate_singles === ''
+          ? null
           : parseFloat(formData.dupr_rate_singles),
       }
 
@@ -285,9 +289,12 @@ export default function MemberDetailAdmin(
               <label style={styles.label} htmlFor="roles">役職（システム権限）</label>
               <select
                 id="roles"
-                value={formData.roles}
+                value={formData.roles[0] ?? ''}
                 onChange={(e) =>
-                  setFormData({ ...formData, roles: e.target.value })
+                  setFormData({
+                    ...formData,
+                    roles: [e.target.value],
+                  })
                 }
                 style={styles.input}
               >
@@ -473,7 +480,7 @@ export default function MemberDetailAdmin(
                   const today = new Date().toISOString()
                     .split('T')[0].replace(/-/g, '')
                   handleQuickStatusChange(
-                    'withdrawn', 
+                    'withdrawn',
                     `${originalMember.email}_withdrawn_${today}`
                   )
                 }}

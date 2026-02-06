@@ -252,7 +252,17 @@ export const fetchMembersByQuery = async (
 export const registerMember = async (
   member: MemberInput & { introducer_member_number?: string | null }
 ): Promise<ApiResponse<Member>> => {
-  const { introducer_member_number: _omit, ...payload } = member;
+
+  // --- 安全ガード：roles を必ず配列に統一 ---
+  const fixedRoles = Array.isArray(member.roles)
+    ? member.roles
+    : [member.roles];
+
+  const { introducer_member_number: _omit, ...payload } = {
+    ...member,
+    roles: fixedRoles,
+  };
+
   const { data, error } = await supabase
     .from('members')
     .insert([payload])
@@ -264,6 +274,7 @@ export const registerMember = async (
   }
   return { success: true, data: data as Member, error: null };
 };
+
 
 /**
  * 会員ステータスの更新
@@ -446,6 +457,12 @@ export const updateMember = async (
   id: string,
   data: Partial<Member>
 ): Promise<ApiResponse<null>> => {
+
+  // --- 安全ガード：roles を必ず配列に統一 ---
+  if (data.roles && !Array.isArray(data.roles)) {
+    data.roles = [data.roles];
+  }
+
   const { error } = await supabase
     .from('members')
     .update(data)
@@ -456,6 +473,7 @@ export const updateMember = async (
   }
   return { success: true, data: null, error: null };
 };
+
 
 /**
  * パスワードリセット用トークンを保存する
@@ -535,9 +553,9 @@ export async function syncDuprData(memberId: string) {
     return result;
   } catch (error) {
     console.error('syncDuprData error:', error);
-    return { 
-      success: false, 
-      error: '通信エラーが発生しました' 
+    return {
+      success: false,
+      error: '通信エラーが発生しました'
     };
   }
 }

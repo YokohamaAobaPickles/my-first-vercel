@@ -35,8 +35,8 @@ describe('MembersExtraPage (DUPR一括登録)', () => {
   it('管理権限がない場合、会員プロフィールへリダイレクトする', () => {
     vi.mocked(useAuthCheck).mockReturnValue({
       isLoading: false,
-      user: { id: 'u1', roles: ROLES.MEMBER },
-      userRoles: ROLES.MEMBER,
+      user: { id: 'u1', roles: [ROLES.MEMBER] },
+      userRoles: [ROLES.MEMBER],
     } as any)
 
     render(<MembersExtraPage />)
@@ -47,8 +47,8 @@ describe('MembersExtraPage (DUPR一括登録)', () => {
   it('管理権限がある場合、タイトル・戻るリンク・アップロード説明が表示される', () => {
     vi.mocked(useAuthCheck).mockReturnValue({
       isLoading: false,
-      user: { id: 'admin-1', roles: ROLES.SYSTEM_ADMIN },
-      userRoles: ROLES.SYSTEM_ADMIN,
+      user: { id: 'admin-1', roles: [ROLES.SYSTEM_ADMIN] },
+      userRoles: [ROLES.SYSTEM_ADMIN],
     } as any)
 
     render(<MembersExtraPage />)
@@ -69,8 +69,8 @@ describe('MembersExtraPage (DUPR一括登録)', () => {
   it('ファイル選択後、該当会員がいなければスキップとして結果に表示される', async () => {
     vi.mocked(useAuthCheck).mockReturnValue({
       isLoading: false,
-      user: { id: 'admin-1', roles: ROLES.MEMBER_MANAGER },
-      userRoles: ROLES.MEMBER_MANAGER,
+      user: { id: 'admin-1', roles: [ROLES.MEMBER_MANAGER] },
+      userRoles: [ROLES.MEMBER_MANAGER],
     } as any)
     vi.mocked(memberApi.fetchMemberByDuprId).mockResolvedValue({
       success: true,
@@ -110,8 +110,8 @@ NR
   it('該当会員がいる場合、更新済として結果に表示される', async () => {
     vi.mocked(useAuthCheck).mockReturnValue({
       isLoading: false,
-      user: { id: 'admin-1', roles: ROLES.SYSTEM_ADMIN },
-      userRoles: ROLES.SYSTEM_ADMIN,
+      user: { id: 'admin-1', roles: [ROLES.SYSTEM_ADMIN] },
+      userRoles: [ROLES.SYSTEM_ADMIN],
     } as any)
     vi.mocked(memberApi.fetchMemberByDuprId).mockResolvedValue({
       success: true,
@@ -158,8 +158,8 @@ NR
   it('同一 DUPR ID が複数会員に登録されている場合は更新せずエラー理由を表示する', async () => {
     vi.mocked(useAuthCheck).mockReturnValue({
       isLoading: false,
-      user: { id: 'admin-1', roles: ROLES.SYSTEM_ADMIN },
-      userRoles: ROLES.SYSTEM_ADMIN,
+      user: { id: 'admin-1', roles: [ROLES.SYSTEM_ADMIN] },
+      userRoles: [ROLES.SYSTEM_ADMIN],
     } as any)
     vi.mocked(memberApi.fetchMemberByDuprId).mockResolvedValue({
       success: false,

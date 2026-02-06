@@ -91,7 +91,7 @@ describe('SearchPage 統合検証 V1.0.1', () => {
     vi.mocked(useAuthCheck).mockReturnValue({
       isLoading: false,
       user: { id: 'u1', nickname: 'テストユーザー' },
-      userRoles: 'member',
+      userRoles: ['member'],
       currentLineId: null,
       lineNickname: null,
     })

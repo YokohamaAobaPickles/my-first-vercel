@@ -37,8 +37,8 @@ describe('AdminExtraPage', () => {
   it('管理者権限がない場合、会員プロフィールへリダイレクトする', () => {
     vi.mocked(useAuthCheck).mockReturnValue({
       isLoading: false,
-      user: { id: 'u1', roles: ROLES.MEMBER },
-      userRoles: ROLES.MEMBER,
+      user: { id: 'u1', roles: [ROLES.MEMBER] },
+      userRoles: [ROLES.MEMBER],
     } as any)
 
     render(<AdminExtraPage />)
@@ -49,8 +49,8 @@ describe('AdminExtraPage', () => {
   it('管理者権限がある場合、ページタイトルと2つの機能セクションが表示される', async () => {
     vi.mocked(useAuthCheck).mockReturnValue({
       isLoading: false,
-      user: { id: 'admin-1', roles: ROLES.SYSTEM_ADMIN },
-      userRoles: ROLES.SYSTEM_ADMIN,
+      user: { id: 'admin-1', roles: [ROLES.SYSTEM_ADMIN] },
+      userRoles: [ROLES.SYSTEM_ADMIN],
     } as any)
 
     render(<AdminExtraPage />)
@@ -71,8 +71,8 @@ describe('AdminExtraPage', () => {
   it('会員管理パネルへ戻るリンクが表示される', async () => {
     vi.mocked(useAuthCheck).mockReturnValue({
       isLoading: false,
-      user: { id: 'admin-1', roles: ROLES.PRESIDENT },
-      userRoles: ROLES.PRESIDENT,
+      user: { id: 'admin-1', roles: [ROLES.PRESIDENT] },
+      userRoles: [ROLES.PRESIDENT],
     } as any)
 
     render(<AdminExtraPage />)
@@ -91,8 +91,8 @@ describe('AdminExtraPage', () => {
   it('管理者権限がある場合、物理削除セクションにニックネーム・メールアドレス入力と削除ボタンが表示される', async () => {
     vi.mocked(useAuthCheck).mockReturnValue({
       isLoading: false,
-      user: { id: 'admin-1', roles: ROLES.SYSTEM_ADMIN },
-      userRoles: ROLES.SYSTEM_ADMIN,
+      user: { id: 'admin-1', roles: [ROLES.SYSTEM_ADMIN] },
+      userRoles: [ROLES.SYSTEM_ADMIN],
     } as any)
 
     render(<AdminExtraPage />)
@@ -113,8 +113,8 @@ describe('AdminExtraPage', () => {
     mockConfirm.mockReturnValue(false)
     vi.mocked(useAuthCheck).mockReturnValue({
       isLoading: false,
-      user: { id: 'admin-1', roles: ROLES.SYSTEM_ADMIN },
-      userRoles: ROLES.SYSTEM_ADMIN,
+      user: { id: 'admin-1', roles: [ROLES.SYSTEM_ADMIN] },
+      userRoles: [ROLES.SYSTEM_ADMIN],
     } as any)
 
     render(<AdminExtraPage />)
@@ -137,8 +137,8 @@ describe('AdminExtraPage', () => {
     mockConfirm.mockReturnValue(true)
     vi.mocked(useAuthCheck).mockReturnValue({
       isLoading: false,
-      user: { id: 'admin-1', roles: ROLES.SYSTEM_ADMIN },
-      userRoles: ROLES.SYSTEM_ADMIN,
+      user: { id: 'admin-1', roles: [ROLES.SYSTEM_ADMIN] },
+      userRoles: [ROLES.SYSTEM_ADMIN],
     } as any)
     vi.mocked(memberApi.fetchMemberByNicknameAndEmail).mockResolvedValue({
       success: true,

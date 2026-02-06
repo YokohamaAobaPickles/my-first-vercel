@@ -49,7 +49,7 @@ export default function MembersExtraPage() {
 
   useEffect(() => {
     if (isAuthLoading) return
-    if (!user || !userRoles || !canManageMembers(userRoles)) {
+    if (!user || !canManageMembers(userRoles ?? [])) {
       router.replace('/members/profile')
       return
     }
@@ -163,7 +163,7 @@ export default function MembersExtraPage() {
     )
   }
 
-  if (!user || !userRoles || !canManageMembers(userRoles)) {
+  if (!user || !canManageMembers(userRoles ?? [])) {
     return null
   }
 

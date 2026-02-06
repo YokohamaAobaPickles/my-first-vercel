@@ -71,19 +71,48 @@ describe('memberApi - 会員DB操作・連携の総合検証 V3.2.1', () => {
       expect(result.success).toBe(true)
       expect(result.data?.id).toBe('generated-uuid-123')
     })
+
+    it('【安全ガード】roles が string の場合でも配列に変換されて保存されること', async () => {
+      const mockInput: MemberInput = {
+        name: '新規 太郎',
+        email: 'new@example.com',
+        status: 'new_req',
+        roles: 'member'   // ← string で渡す
+      } as any
+
+      const mockCreatedMember = { id: 'uuid-1', ...mockInput, roles: ['member'] }
+
+      const mockSingle = vi.fn().mockResolvedValue({
+        data: mockCreatedMember,
+        error: null
+      })
+      const mockSelect = vi.fn().mockReturnValue({ single: mockSingle })
+      const mockInsert = vi.fn().mockReturnValue({ select: mockSelect })
+
+      mockFrom.mockReturnValue({ insert: mockInsert })
+
+      const result = await registerMember(mockInput)
+
+      expect(result.success).toBe(true)
+      expect(mockInsert).toHaveBeenCalledWith([
+        expect.objectContaining({
+          roles: ['member']   // ← 配列化されていることを検証
+        })
+      ])
+    })
   })
 
   describe('deleteMember (会員レコード削除)', () => {
     it('【正常系】指定したIDのレコードが物理削除されること', async () => {
       const mockEq = vi.fn().mockResolvedValue({ error: null })
       const mockDelete = vi.fn().mockReturnValue({ eq: mockEq })
-      
+
       mockFrom.mockReturnValue({
         delete: mockDelete
       })
 
       const result = await deleteMember('u123')
-      
+
       expect(result.success).toBe(true)
       expect(mockDelete).toHaveBeenCalled()
       expect(mockEq).toHaveBeenCalledWith('id', 'u123')

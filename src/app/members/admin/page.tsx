@@ -57,7 +57,6 @@ export default function AdminDashboard() {
 
     if (
       !user || 
-      !userRoles || 
       !canManageMembers(userRoles)
     ) {
       router.replace('/members/profile')

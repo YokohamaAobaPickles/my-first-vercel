@@ -36,7 +36,7 @@ export default function AdminExtraPage() {
 
   useEffect(() => {
     if (isAuthLoading) return
-    if (!user || !userRoles || !canManageMembers(userRoles)) {
+    if (!user || !canManageMembers(userRoles ?? [])) {
       router.replace('/members/profile')
       return
     }
@@ -112,7 +112,7 @@ export default function AdminExtraPage() {
     )
   }
 
-  if (!user || !canManageMembers(userRoles)) {
+  if (!user || !canManageMembers(userRoles ?? [])) {
     return null
   }
 

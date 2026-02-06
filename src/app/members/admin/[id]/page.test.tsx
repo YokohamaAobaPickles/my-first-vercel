@@ -77,16 +77,16 @@ describe('MemberDetailAdmin', () => {
     dupr_rate_singles: 3.222,
     is_profile_public: true,
     member_kind: 'general',
-    roles: ROLES.MEMBER,
+    roles: [ROLES.MEMBER],
     status: 'active',
   }
 
   beforeEach(() => {
     vi.clearAllMocks()
     // デフォルトのAPIレスポンス設定
-    api.fetchMemberById.mockResolvedValue({ 
-      success: true, 
-      data: mockFullMember 
+    api.fetchMemberById.mockResolvedValue({
+      success: true,
+      data: mockFullMember
     })
   })
 
@@ -94,8 +94,8 @@ describe('MemberDetailAdmin', () => {
     it('編集可能な全ての情報が期待通りに表示される', async () => {
       vi.mocked(useAuthCheck).mockReturnValue({
         isLoading: false,
-        user: { id: 'admin-1', roles: ROLES.PRESIDENT },
-        userRoles: ROLES.PRESIDENT,
+        user: { id: 'admin-1', roles: [ROLES.PRESIDENT] },
+        userRoles: [ROLES.PRESIDENT],
       } as any)
 
       render(<MemberDetailAdmin params={Promise.resolve({ id: 'user-123' })} />)
@@ -135,8 +135,8 @@ describe('MemberDetailAdmin', () => {
     it('【整合性】全項目を一度に書き換えてもAPIに正しく送信されること', async () => {
       vi.mocked(useAuthCheck).mockReturnValue({
         isLoading: false,
-        user: { id: 'admin-1', roles: ROLES.PRESIDENT },
-        userRoles: ROLES.PRESIDENT,
+        user: { id: 'admin-1', roles: [ROLES.PRESIDENT] },
+        userRoles: [ROLES.PRESIDENT],
       } as any)
       api.updateMember.mockResolvedValue({ success: true })
 
@@ -145,9 +145,9 @@ describe('MemberDetailAdmin', () => {
       // 読み込み完了を待機してから操作
       const nameInput = await screen.findByLabelText(/氏名（漢字）/i)
       fireEvent.change(nameInput, { target: { value: '変更 太郎' } })
-      
+
       const roleSelect = screen.getByLabelText(/役職/i)
-      fireEvent.change(roleSelect, { target: { value: ROLES.VICE_PRESIDENT } })
+      fireEvent.change(roleSelect, { target: { value: [ROLES.VICE_PRESIDENT] } })
 
       fireEvent.click(screen.getByRole('button', { name: /保存/i }))
 
@@ -156,7 +156,7 @@ describe('MemberDetailAdmin', () => {
           'user-123',
           expect.objectContaining({
             name: '変更 太郎',
-            roles: ROLES.VICE_PRESIDENT
+            roles: [ROLES.VICE_PRESIDENT]
           })
         )
       })
@@ -167,17 +167,17 @@ describe('MemberDetailAdmin', () => {
     it('会長: 全ての役職への変更を許可する', async () => {
       vi.mocked(useAuthCheck).mockReturnValue({
         isLoading: false,
-        user: { id: 'admin-1', roles: ROLES.PRESIDENT },
-        userRoles: ROLES.PRESIDENT,
+        user: { id: 'admin-1', roles: [ROLES.PRESIDENT] },
+        userRoles: [ROLES.PRESIDENT],
       } as any)
       api.updateMember.mockResolvedValue({ success: true })
 
       render(<MemberDetailAdmin params={Promise.resolve({ id: 'user-123' })} />)
 
       const roleSelect = await screen.findByLabelText(/役職/i)
-      fireEvent.change(roleSelect, { target: { value: ROLES.PRESIDENT } })
+      fireEvent.change(roleSelect, { target: { value: [ROLES.PRESIDENT] } })
       fireEvent.click(screen.getByRole('button', { name: /保存/i }))
-      
+
       await waitFor(() => {
         expect(api.updateMember).toHaveBeenCalled()
       })
@@ -186,14 +186,14 @@ describe('MemberDetailAdmin', () => {
     it('副会長: 会長への変更は注意喚起され実行できない', async () => {
       vi.mocked(useAuthCheck).mockReturnValue({
         isLoading: false,
-        user: { id: 'admin-1', roles: ROLES.VICE_PRESIDENT },
-        userRoles: ROLES.VICE_PRESIDENT,
+        user: { id: 'admin-1', roles: [ROLES.VICE_PRESIDENT] },
+        userRoles: [ROLES.VICE_PRESIDENT],
       } as any)
 
       render(<MemberDetailAdmin params={Promise.resolve({ id: 'user-123' })} />)
 
       const roleSelect = await screen.findByLabelText(/役職/i)
-      fireEvent.change(roleSelect, { target: { value: ROLES.PRESIDENT } })
+      fireEvent.change(roleSelect, { target: { value: [ROLES.PRESIDENT] } })
       fireEvent.click(screen.getByRole('button', { name: /保存/i }))
 
       await waitFor(() => {
@@ -207,14 +207,14 @@ describe('MemberDetailAdmin', () => {
     it('会員管理担当: 会長・副会長への変更は注意喚起され実行できない', async () => {
       vi.mocked(useAuthCheck).mockReturnValue({
         isLoading: false,
-        user: { id: 'admin-1', roles: ROLES.MEMBER_MANAGER },
-        userRoles: ROLES.MEMBER_MANAGER,
+        user: { id: 'admin-1', roles: [ROLES.MEMBER_MANAGER] },
+        userRoles: [ROLES.MEMBER_MANAGER],
       } as any)
 
       render(<MemberDetailAdmin params={Promise.resolve({ id: 'user-123' })} />)
 
       const roleSelect = await screen.findByLabelText(/役職/i)
-      fireEvent.change(roleSelect, { target: { value: ROLES.VICE_PRESIDENT } })
+      fireEvent.change(roleSelect, { target: { value: [ROLES.VICE_PRESIDENT] } })
       fireEvent.click(screen.getByRole('button', { name: /保存/i }))
 
       await waitFor(() => {
@@ -224,5 +224,89 @@ describe('MemberDetailAdmin', () => {
       })
       expect(api.updateMember).not.toHaveBeenCalled()
     })
+
+    it('会長が複数役職を持つ場合でも、会員管理担当は変更できない', async () => {
+      vi.mocked(useAuthCheck).mockReturnValue({
+        isLoading: false,
+        user: { id: 'admin-1', roles: [ROLES.MEMBER_MANAGER] },
+        userRoles: [ROLES.MEMBER_MANAGER],
+      } as any)
+
+      // 会長 + イベント担当
+      api.fetchMemberById.mockResolvedValue({
+        success: true,
+        data: {
+          ...mockFullMember,
+          roles: [ROLES.PRESIDENT, ROLES.EVENT_MANAGER],
+        },
+      })
+
+      render(<MemberDetailAdmin params={Promise.resolve({ id: 'user-123' })} />)
+
+      const roleSelect = await screen.findByLabelText(/役職/i)
+      fireEvent.change(roleSelect, { target: { value: [ROLES.MEMBER_MANAGER] } })
+      fireEvent.click(screen.getByRole('button', { name: /保存/i }))
+
+      await waitFor(() => {
+        expect(window.alert).toHaveBeenCalledWith(
+          expect.stringContaining('権限がありません')
+        )
+      })
+      expect(api.updateMember).not.toHaveBeenCalled()
+    })
+
+    it('副会長が複数役職を持つ場合でも、会員管理担当は変更できない', async () => {
+      vi.mocked(useAuthCheck).mockReturnValue({
+        isLoading: false,
+        user: { id: 'admin-1', roles: [ROLES.MEMBER_MANAGER] },
+        userRoles: [ROLES.MEMBER_MANAGER],
+      } as any)
+
+      api.fetchMemberById.mockResolvedValue({
+        success: true,
+        data: {
+          ...mockFullMember,
+          roles: [ROLES.VICE_PRESIDENT, ROLES.MEMBER_MANAGER],
+        },
+      })
+
+      render(<MemberDetailAdmin params={Promise.resolve({ id: 'user-123' })} />)
+
+      const roleSelect = await screen.findByLabelText(/役職/i)
+      fireEvent.change(roleSelect, { target: { value: [ROLES.EVENT_MANAGER] } })
+      fireEvent.click(screen.getByRole('button', { name: /保存/i }))
+
+      await waitFor(() => {
+        expect(window.alert).toHaveBeenCalledWith(
+          expect.stringContaining('権限がありません')
+        )
+      })
+      expect(api.updateMember).not.toHaveBeenCalled()
+    })
+
+    it('会員管理担当は複数役職の付与（副会長を含む）を実行できない', async () => {
+      vi.mocked(useAuthCheck).mockReturnValue({
+        isLoading: false,
+        user: { id: 'admin-1', roles: [ROLES.MEMBER_MANAGER] },
+        userRoles: [ROLES.MEMBER_MANAGER],
+      } as any)
+
+      render(<MemberDetailAdmin params={Promise.resolve({ id: 'user-123' })} />)
+
+      const roleSelect = await screen.findByLabelText(/役職/i)
+
+      // UI は単一選択なので、副会長を選択した時点でアウト
+      fireEvent.change(roleSelect, { target: { value: [ROLES.VICE_PRESIDENT] } })
+      fireEvent.click(screen.getByRole('button', { name: /保存/i }))
+
+      await waitFor(() => {
+        expect(window.alert).toHaveBeenCalledWith(
+          expect.stringContaining('権限がありません')
+        )
+      })
+      expect(api.updateMember).not.toHaveBeenCalled()
+    })
+
+
   })
 })

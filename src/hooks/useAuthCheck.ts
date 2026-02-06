@@ -16,7 +16,7 @@ import liff from '@line/liff'
 export const useAuthCheck = () => {
   const pathname = usePathname()
   const [isLoading, setIsLoading] = useState(true)
-  const [userRoles, setUserRoles] = useState<string | null>(null)
+  const [userRoles, setUserRoles] = useState<string[] | null>(null)
   const [currentLineId, setCurrentLineId] = useState<string | null>(null)
   const [lineNickname, setLineNickname] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
@@ -46,7 +46,7 @@ export const useAuthCheck = () => {
 
           if (member) {
             setUser(member)
-            setUserRoles(member.roles)
+            setUserRoles(member.roles || [])
           }
           // Hook内でのリダイレクトは削除。案内係(page.tsx)に任せる。
           setIsLoading(false)
@@ -67,7 +67,7 @@ export const useAuthCheck = () => {
 
           if (member) {
             setUser(member)
-            setUserRoles(member.roles || '')
+            setUserRoles(member.roles || [])
             setCurrentLineId(member.line_id || null)
           }
         }

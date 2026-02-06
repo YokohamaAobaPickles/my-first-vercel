@@ -1,107 +1,113 @@
 /**
  * src/utils/auth.ts
- * Version : V2.1.1
- * Update  : 2026-01-27
+ * Version : V2.2.0
+ * Update  : 2026-02-XX
  * 内容：
- * - 権限・ログイン可否判定ロジック。
- * - 以前このファイルにあった ROLES 定義を削除し、@/types/member に一本化。
+ * - roles を string[] に完全対応
+ * - 代表役職（先頭）を使った認可ロジックに統一
  */
+
 import { Member, MemberStatus, ROLES } from '@/types/member';
 
 /**
+ * 代表役職を取得する
+ * roles が null/空配列なら '' を返す
+ */
+export const getPrimaryRole = (roles?: string[] | null): string =>
+  roles?.[0] ?? '';
+
+/**
  * 内部共通：権限判定コア
- * 配列に含まれているロールのみを許可する（隠れた判定を持たない）
- * @param userRoles - 会員が持つカンマ区切りのロール文字列
- * @param allowedRoles - 許可されるロールの配列
+ * allowedRoles に primaryRole が含まれているかを判定
  */
 const hasPermission = (
-  userRoles: string | null,
+  primaryRole: string,
   allowedRoles: string[]
 ): boolean => {
-  if (!userRoles) return false;
-  
-  // カンマ区切りの文字列を配列に変換
-  const userRolesArray = userRoles.split(',').map((r) => r.trim());
-  
-  // allowedRoles 配列に含まれているかどうかをチェック
-  return allowedRoles.some((role) => userRolesArray.includes(role));
+  if (!primaryRole) return false;
+  return allowedRoles.includes(primaryRole);
 };
 
 /**
  * ログイン可否判定
- * * ステータスに基づいてログインを許可するかを決定する
  */
 export const canLogin = (status: MemberStatus | null): boolean => {
   if (!status) return false;
   const allowedStatuses: MemberStatus[] = [
-    'active', 
-    'new_req', 
-    'suspended', 
-    'suspend_req', 
-    'rejoin_req', 
+    'active',
+    'new_req',
+    'suspended',
+    'suspend_req',
+    'rejoin_req',
     'withdraw_req'
   ];
   return allowedStatuses.includes(status);
 };
 
 /**
- * 特定ロール保持判定 (単体チェック用)
+ * 特定ロール保持判定
  */
 export const hasRole = (user: Member | null, role: string): boolean => {
-  if (!user || !user.roles) return false;
-  const userRolesArray = user.roles.split(',').map((r) => r.trim());
-  return userRolesArray.includes(role);
+  if (!user || !Array.isArray(user.roles)) return false;
+  return user.roles.includes(role);
 };
 
 // --- 機能別権限チェック ---
-// ROLES オブジェクトは @/types/member から提供されるものを使用
+// 代表役職を使って判定する
 
-export const canManageMembers = (roles: string | null) =>
-  hasPermission(roles, [
-    ROLES.SYSTEM_ADMIN,
-    ROLES.PRESIDENT, 
-    ROLES.VICE_PRESIDENT, 
-    ROLES.MEMBER_MANAGER
-  ]);
+export const canManageMembers = (roles: string[] | null | undefined): boolean => {
+  if (!roles || roles.length === 0) return false;
 
-export const canManageAnnouncements = (roles: string | null) =>
-  hasPermission(roles, [
+  const allowed: string[] = [
     ROLES.SYSTEM_ADMIN,
-    ROLES.PRESIDENT, 
-    ROLES.VICE_PRESIDENT, 
+    ROLES.PRESIDENT,
+    ROLES.VICE_PRESIDENT,
+    ROLES.MEMBER_MANAGER,
+  ];
+
+  return roles.some((r) => allowed.includes(r));
+};
+
+
+export const canManageAnnouncements = (roles: string[] | null) =>
+  hasPermission(getPrimaryRole(roles), [
+    ROLES.SYSTEM_ADMIN,
+    ROLES.PRESIDENT,
+    ROLES.VICE_PRESIDENT,
     ROLES.ANNOUNCEMENT_MANAGER
-  ]);
+  ] as string[]);
 
-export const canManageEvents = (roles: string | null) =>
-  hasPermission(roles, [
+
+export const canManageEvents = (roles: string[] | null) =>
+  hasPermission(getPrimaryRole(roles), [
     ROLES.SYSTEM_ADMIN,
-    ROLES.PRESIDENT, 
+    ROLES.PRESIDENT,
     ROLES.EVENT_MANAGER
-  ]);
+  ] as string[]);
 
-export const canManageAccounts = (roles: string | null) =>
-  hasPermission(roles, [
+export const canManageAccounts = (roles: string[] | null) =>
+  hasPermission(getPrimaryRole(roles), [
     ROLES.SYSTEM_ADMIN,
-    ROLES.PRESIDENT, 
+    ROLES.PRESIDENT,
     ROLES.ACCOUNTANT
-  ]);
+  ] as string[]);
 
-export const canManageAudits = (roles: string | null) =>
-  hasPermission(roles, [
+export const canManageAudits = (roles: string[] | null) =>
+  hasPermission(getPrimaryRole(roles), [
     ROLES.SYSTEM_ADMIN,
-    ROLES.PRESIDENT, 
+    ROLES.PRESIDENT,
     ROLES.AUDITOR
-  ]);
+  ] as string[]);
 
-export const canManageAssets = (roles: string | null) =>
-  hasPermission(roles, [
+export const canManageAssets = (roles: string[] | null) =>
+  hasPermission(getPrimaryRole(roles), [
     ROLES.SYSTEM_ADMIN,
-    ROLES.PRESIDENT, 
+    ROLES.PRESIDENT,
     ROLES.ASSET_MANAGER
-  ]);
+  ] as string[]);
 
-export const canManageRoles = (roles: string | null) =>
-  hasPermission(roles, [
+export const canManageRoles = (roles: string[] | null) =>
+  hasPermission(getPrimaryRole(roles), [
     ROLES.SYSTEM_ADMIN,
     ROLES.PRESIDENT
-  ]);
+  ] as string[]);

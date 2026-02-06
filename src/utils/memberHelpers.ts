@@ -128,8 +128,9 @@ export const formatMemberName = (name: string | null) => {
  * @param member - roles プロパティを持つオブジェクト
  * @returns 枠割ありなら true
  */
-export const hasOfficerRole = (member: { roles?: string | null }): boolean => {
-  if (!member.roles || !member.roles.trim()) return false;
-  const rolesArray = member.roles.split(',').map((r) => r.trim());
-  return rolesArray.some((r) => r && r !== ROLES.MEMBER);
+export const hasOfficerRole = (member: { roles?: string[] | null }): boolean => {
+  if (!member.roles || member.roles.length === 0) return false;
+
+  // ROLES.MEMBER（役職なし）以外が含まれていれば officer 扱い
+  return member.roles.some((r) => r !== ROLES.MEMBER);
 };

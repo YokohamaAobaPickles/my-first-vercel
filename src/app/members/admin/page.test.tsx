@@ -37,8 +37,8 @@ describe('AdminDashboard - 会員管理パネル新仕様の検証 V2.2.1', () =
     async () => {
       vi.mocked(useAuthCheck).mockReturnValue({
         isLoading: false,
-        user: { roles: ROLES.MEMBER },
-        userRoles: ROLES.MEMBER,
+        user: { roles: [ROLES.MEMBER] },
+        userRoles: [ROLES.MEMBER],
       } as any)
 
       render(<AdminDashboard />)
@@ -52,8 +52,8 @@ describe('AdminDashboard - 会員管理パネル新仕様の検証 V2.2.1', () =
     async () => {
       vi.mocked(useAuthCheck).mockReturnValue({
         isLoading: false,
-        user: { roles: ROLES.SYSTEM_ADMIN },
-        userRoles: ROLES.SYSTEM_ADMIN,
+        user: { roles: [ROLES.SYSTEM_ADMIN] },
+        userRoles: [ROLES.SYSTEM_ADMIN],
       } as any)
 
       const mockMembers = [
@@ -91,8 +91,8 @@ describe('AdminDashboard - 会員管理パネル新仕様の検証 V2.2.1', () =
   it('【操作】ステータスフィルタで表示対象が切り替わること', async () => {
     vi.mocked(useAuthCheck).mockReturnValue({
       isLoading: false,
-      user: { roles: ROLES.SYSTEM_ADMIN },
-      userRoles: ROLES.SYSTEM_ADMIN,
+      user: { roles: [ROLES.SYSTEM_ADMIN] },
+      userRoles: [ROLES.SYSTEM_ADMIN],
     } as any)
 
     const mockMembers = [
@@ -122,13 +122,14 @@ describe('AdminDashboard - 会員管理パネル新仕様の検証 V2.2.1', () =
     })
   })
 
-it('【ナビ】エキストラ画面へのリンクが「管理権限を持つユーザー」に表示されること',
+  it('【ナビ】エキストラ画面へのリンクが「管理権限を持つユーザー」に表示されること',
     async () => {
       vi.mocked(useAuthCheck).mockReturnValue({
         isLoading: false,
-        user: { roles: 'president' },
-        userRoles: 'president',
+        user: { roles: [ROLES.PRESIDENT] },
+        userRoles: [ROLES.PRESIDENT],
       } as any)
+
 
       vi.mocked(memberApi.fetchMembers).mockResolvedValue({
         success: true,
@@ -140,8 +141,8 @@ it('【ナビ】エキストラ画面へのリンクが「管理権限を持つ�
 
       // getByRole ではなく findByRole を使用して非同期の出現を待つ
       // これにより「読み込み中...」が消えた後のDOMを検証できる
-      const extraLink = await screen.findByRole('link', { 
-        name: /エキストラ/i 
+      const extraLink = await screen.findByRole('link', {
+        name: /エキストラ/i
       })
 
       expect(extraLink).toBeTruthy()
