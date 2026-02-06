@@ -52,9 +52,15 @@ export const useAuthCheck = () => {
           await liff.init({ liffId: liffId || 'DUMMY_ID' })
 
           // ログアウト直後は liff.isLoggedIn() が false
+          //if (!liff.isLoggedIn()) {
+          //  setIsLoading(false)
+          //  return
+          //}
+          // 以下はGEMINIが修正指示をした部分
+          // 修正ポイント：ログインしていなければログイン画面へ飛ばす
           if (!liff.isLoggedIn()) {
-            setIsLoading(false)
-            return
+            liff.login() // これによりLINE認証画面へ遷移し、戻ってきたらログイン済みになる
+            return // login() はリダイレクトを伴うため、ここで終了
           }
 
           const profile = await liff.getProfile()
