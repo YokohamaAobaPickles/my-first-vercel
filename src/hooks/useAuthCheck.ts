@@ -52,9 +52,10 @@ export const useAuthCheck = () => {
                   ? [member.roles]
                   : [];
 
-            setUser(member);
+            setUser({ ...member, roles: fixedRoles });
             setUserRoles(fixedRoles);
           }
+
 
           // Hook内でのリダイレクトは削除。案内係(page.tsx)に任せる。
           setIsLoading(false)
@@ -81,10 +82,11 @@ export const useAuthCheck = () => {
                   ? [member.roles]
                   : [];
 
-            setUser(member);
+            setUser({ ...member, roles: fixedRoles });
             setUserRoles(fixedRoles);
             setCurrentLineId(member.line_id || null);
           }
+
 
         }
 
