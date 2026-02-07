@@ -1,5 +1,6 @@
-# Supabeseテーブル構造
-## announcements お知らせ管理
+# supabaseテーブル構造
+
+## announcements お知らせ管理テーブル
 | column_name  | data_type                | is_nullable |
 | ------------ | ------------------------ | ----------- |
 | id           | bigint                   | NO          |
@@ -14,7 +15,7 @@
 | updated_at   | timestamp with time zone | YES         |
 | end_date     | date                     | YES         |
 
-## announcement_reads 既読管理
+## announcement_reads 既読管理テーブル
 | column_name     | data_type                | is_nullable |
 | --------------- | ------------------------ | ----------- |
 | id              | uuid                     | NO          |

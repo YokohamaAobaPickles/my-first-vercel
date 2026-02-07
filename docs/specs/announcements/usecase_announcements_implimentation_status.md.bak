@@ -1,0 +1,8 @@
+# お知らせ管理ユースケース実装状況一覧
+
+`docs/specs/announcements/specs_announcements.md` に記載のユースケースについて、  
+`src/app/announcements` 配下および関連ファイルの実装状況をリストアップしたものです。
+
+---
+
+## 1. 一般会員向け操作

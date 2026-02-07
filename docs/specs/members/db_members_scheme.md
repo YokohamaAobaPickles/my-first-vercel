@@ -1,5 +1,5 @@
 # supabaseテーブル構造
-## members
+## members 会員管理
 | column_name            | data_type                | is_nullable |
 | ---------------------- | ------------------------ | ----------- |
 | id                     | uuid                     | NO          |
