@@ -322,6 +322,12 @@ export default function ProfilePage() {
             </p>
           )}
         </div>
+        <footer style={footerStyle}>
+          YAPMS V1.0.1 Copyright 2026
+          {' '}
+          Yokohama Aoba Pickles
+        </footer>
+
       </div>
 
       {/* 確認用モーダル */}
@@ -545,4 +551,13 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     padding: '8px 16px',
   },
+  
+}
+
+const footerStyle: React.CSSProperties = {
+  textAlign: 'center',
+  marginTop: '40px',
+  fontSize: '0.7rem',
+  color: '#666',
+  letterSpacing: '0.05em',
 }
