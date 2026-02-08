@@ -1,8 +1,9 @@
 /**
  * Filename: src/app/members/profile/page.tsx
- * Version : V2.8.0
- * Update  : 2026-02-01
+ * Version : V2.9.0
+ * Update  : 2026-02-08
  * Remarks :
+ * V2.9.0 - 追加：デバッグ用お知らせ一覧リンク
  * V2.8.0 - 追加：検索用ボタン
  * V2.7.9 - 追加：基本情報にメールアドレスをニックネームの下に表示。
  * V2.7.8 - 修正：emergency_memo を emg_memo に修正。
@@ -310,16 +311,32 @@ export default function ProfilePage() {
           */}
           {!(typeof window !== 'undefined' &&
             navigator.userAgent.toLowerCase().includes('line')) ? (
-            <button
-              onClick={(e) => handleLogout(e)}
-              style={styles.logoutButton}
-            >
-              ログアウト
-            </button>
+            <>
+              <button
+                onClick={(e) => handleLogout(e)}
+                style={styles.logoutButton}
+              >
+                ログアウト
+              </button>
+              {/* デバッグ用：お知らせ一覧へのリンクを追加 */}
+              <div style={{ marginTop: '24px' }}>
+                <Link href="/announcements" style={styles.debugLink}>
+                  【デバッグ用】お知らせ一覧
+                </Link>
+              </div>
+            </>
           ) : (
-            <p style={{ color: '#666', fontSize: '0.8rem' }}>
-              ※ LINEアプリでお使いの方は、右上の「×」で閉じてください。
-            </p>
+            <>
+              <p style={{ color: '#666', fontSize: '0.8rem' }}>
+                ※ LINEアプリでお使いの方は、右上の「×」で閉じてください。
+              </p>
+              {/* LINE環境でもデバッグしやすいようリンクのみ表示 */}
+              <div style={{ marginTop: '24px' }}>
+                <Link href="/announcements" style={styles.debugLink}>
+                  【デバッグ用】お知らせ一覧
+                </Link>
+              </div>
+            </>
           )}
         </div>
         <footer style={footerStyle}>
@@ -551,7 +568,14 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     padding: '8px 16px',
   },
-  
+
+  // デバッグ用リンクのスタイルを追加
+  debugLink: {
+    color: '#3b82f6',
+    fontSize: '0.8rem',
+    textDecoration: 'underline',
+    opacity: 0.7,
+  },
 }
 
 const footerStyle: React.CSSProperties = {

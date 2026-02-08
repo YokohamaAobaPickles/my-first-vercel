@@ -45,7 +45,8 @@ export default function AnnouncementDetailPage() {
         setAnnouncement(result.data)
         
         // 2. 既読の記録 (会員ID user.id を使用)
-        recordRead(announcementId, user.id)
+        // 確実に記録を完了させてから次の処理へ（または順序を意識）
+        await recordRead(announcementId, user.id)
       } else {
         setError('お知らせが見つかりません。')
       }
