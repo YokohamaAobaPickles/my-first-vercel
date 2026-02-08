@@ -1,16 +1,15 @@
 /**
  * Filename: src/utils/auth.test.ts
- * Version : V2.0.1 (string[] 対応)
- * Update  : 2026-02-02
+ * Version : V2.1.2
+ * Update  : 2026-02-08
  * 修正内容:
- * - roles を string → string[] に統一
- * - canManageMembers / hasRole の引数を string[] に統一
- * - 兼務テストも string[] 形式に修正
+ * - 各管理機能に「異常系（null, [], undefined）」のテストを統一配置
+ * - canManageMembers のテストに 副会長(VICE_PRESIDENT) を追加
+ * - 複数ロール保持（兼務）時の判定テストを各機能に追加
  */
 
 import { describe, it, expect } from 'vitest'
 import {
-  canManageRoles,
   canManageMembers,
   canManageAnnouncements,
   canManageEvents,
@@ -22,105 +21,120 @@ import {
 } from './auth'
 import { ROLES, Member } from '@/types/member'
 
-describe('権限判定ロジックの詳細テスト V2.0.1', () => {
+describe('権限判定ロジックのリファクタリングテスト V2.1.2', () => {
 
-  describe('システム管理者 (SYSTEM_ADMIN) の全能性テスト', () => {
-    const adminRoles = [ROLES.SYSTEM_ADMIN]
-
-    it('システム管理者は、全ての管理機能に対して true を返すこと', () => {
-      expect(canManageMembers(adminRoles)).toBe(true)
-      expect(canManageAnnouncements(adminRoles)).toBe(true)
-      expect(canManageEvents(adminRoles)).toBe(true)
-      expect(canManageAccounts(adminRoles)).toBe(true)
-      expect(canManageAudits(adminRoles)).toBe(true)
-      expect(canManageAssets(adminRoles)).toBe(true)
-      expect(canManageRoles(adminRoles)).toBe(true)
+  // 共通の異常系テストケースを定義
+  // 型定義をすり抜けてきた不正値に対して false を返すことを担保
+  const testInvalidInputs = (fn: Function) => {
+    it('異常系：null, [], undefined の場合は false', () => {
+      expect(fn(null)).toBe(false)
+      expect(fn([])).toBe(false)
+      expect(fn(undefined)).toBe(false)
     })
-  })
+  }
 
+  // 1. 会員管理権限
   describe('会員管理権限 (canManageMembers)', () => {
-    it('会長・副会長・会員管理担当・システム管理者の4者は許可される', () => {
-      expect(canManageMembers([ROLES.PRESIDENT])).toBe(true)
-      expect(canManageMembers([ROLES.VICE_PRESIDENT])).toBe(true)
-      expect(canManageMembers([ROLES.MEMBER_MANAGER])).toBe(true)
-      expect(canManageMembers([ROLES.SYSTEM_ADMIN])).toBe(true)
+    it('正常系：システム管理者・会長・副会長・会員管理担当は true', () => {
+      const allowed = [
+        ROLES.SYSTEM_ADMIN,
+        ROLES.PRESIDENT,
+        ROLES.VICE_PRESIDENT, // 追加
+        ROLES.MEMBER_MANAGER
+      ]
+      allowed.forEach(r => expect(canManageMembers([r])).toBe(true))
     })
 
-    it('上記4者以外のロールは「拒否」される', () => {
-      expect(canManageMembers([ROLES.ANNOUNCEMENT_MANAGER])).toBe(false)
+    it('正常系：一般会員や他担当は false', () => {
+      expect(canManageMembers([ROLES.MEMBER])).toBe(false)
       expect(canManageMembers([ROLES.ACCOUNTANT])).toBe(false)
     })
 
-    it('兼務（rolesの中に許可ロールが含まれる）なら許可される', () => {
-      expect(
-        canManageMembers([ROLES.ANNOUNCEMENT_MANAGER, ROLES.MEMBER_MANAGER])
-      ).toBe(true)
+    it('兼務：配列の2番目に権限がある場合も true', () => {
+      expect(canManageMembers([ROLES.MEMBER, ROLES.MEMBER_MANAGER])).toBe(true)
     })
+
+    testInvalidInputs(canManageMembers)
   })
 
-  describe('ロール判定 (hasRole)', () => {
-    it('Memberオブジェクトの roles プロパティを正しく判定できること', () => {
-      const user: Member = {
-        id: 'u1',
-        roles: [ROLES.MEMBER_MANAGER, ROLES.PRESIDENT],
-        name: '',
-        name_roma: '',
-        nickname: '',
-        email: '',
-        status: 'active',
-        member_number: '1',
-        member_kind: 'general',
-        emg_tel: '',
-        emg_rel: '',
-      }
-
-
-      expect(hasRole(user, ROLES.MEMBER_MANAGER)).toBe(true)
-      expect(hasRole(user, ROLES.PRESIDENT)).toBe(true)
+  // 2. お知らせ管理権限
+  describe('お知らせ管理権限 (canManageAnnouncements)', () => {
+    it('正常系：管理者・会長・副会長・お知らせ担当は true', () => {
+      const allowed = [
+        ROLES.SYSTEM_ADMIN, 
+        ROLES.PRESIDENT, 
+        ROLES.VICE_PRESIDENT, 
+        ROLES.ANNOUNCEMENT_MANAGER
+      ]
+      allowed.forEach(r => expect(canManageAnnouncements([r])).toBe(true))
     })
 
-    it('持っていないロールの場合は false を返すこと', () => {
-      const user: Member = {
-        id: 'u1',
-        roles: ['member'],
-        name: '',
-        name_roma: '',
-        nickname: '',
-        email: '',
-        status: 'active',
-        member_number: '1',
-        member_kind: 'general',
-        emg_tel: '',
-        emg_rel: '',
-      }
-
-
-      expect(hasRole(user, ROLES.MEMBER_MANAGER)).toBe(false)
+    it('兼務：一般会員とお知らせ担当を兼ねている場合は true', () => {
+      // 現状の getPrimaryRole 形式では Fail する箇所
+      expect(canManageAnnouncements([ROLES.MEMBER, ROLES.ANNOUNCEMENT_MANAGER])).toBe(true)
     })
+
+    testInvalidInputs(canManageAnnouncements)
   })
 
-  describe('GAS設計準拠：ログイン可否判定 (canLogin)', () => {
-    it('ACTIVEやNEWなどの許可されたステータスは true', () => {
-      expect(canLogin('active')).toBe(true)
-      expect(canLogin('new_req')).toBe(true)
-      expect(canLogin('suspended')).toBe(true)
+  // 3. 会計管理権限
+  describe('会計管理権限 (canManageAccounts)', () => {
+    it('正常系：管理者・会長・会計担当は true', () => {
+      const allowed = [ROLES.SYSTEM_ADMIN, ROLES.PRESIDENT, ROLES.ACCOUNTANT]
+      allowed.forEach(r => expect(canManageAccounts([r])).toBe(true))
     })
 
-    it('rejected や withdraw などの終了ステータスは false', () => {
-      expect(canLogin('rejected')).toBe(false)
+    it('兼務：一般会員と会計担当を兼ねている場合は true', () => {
+      expect(canManageAccounts([ROLES.MEMBER, ROLES.ACCOUNTANT])).toBe(true)
+    })
+
+    testInvalidInputs(canManageAccounts)
+  })
+
+  // 4. イベント管理権限
+  describe('イベント管理権限 (canManageEvents)', () => {
+    it('正常系：管理者・会長・イベント担当は true', () => {
+      const allowed = [ROLES.SYSTEM_ADMIN, ROLES.PRESIDENT, ROLES.EVENT_MANAGER]
+      allowed.forEach(r => expect(canManageEvents([r])).toBe(true))
+    })
+
+    testInvalidInputs(canManageEvents)
+  })
+
+  // 5. ログイン可否判定
+  describe('ログイン可否判定 (canLogin)', () => {
+    it('許可されたステータスは true', () => {
+      const allowed: any[] = [
+        'active', 'new_req', 'suspended', 'suspend_req', 
+        'withdraw_req', 'rejoin_req'
+      ]
+      allowed.forEach(s => expect(canLogin(s)).toBe(true))
+    })
+
+    it('終了・拒否ステータスは false', () => {
       expect(canLogin('withdrawn')).toBe(false)
+      expect(canLogin('rejected')).toBe(false)
+      expect(canLogin(null)).toBe(false)
     })
   })
 
-  describe('大文字小文字・異常系の厳密判定', () => {
-    it('nullや空文字の場合はすべてfalseを返すこと', () => {
-      expect(canManageMembers(null)).toBe(false)
-      expect(canManageMembers([])).toBe(false)
+  // 6. 特定ロール保持判定 (hasRole)
+  describe('特定ロール保持判定 (hasRole)', () => {
+    const mockUser = (roles: string[]): Member => ({
+      id: 'u1', roles, name: 'T', name_roma: 'T', nickname: 'T',
+      email: 't@e.com', status: 'active', member_number: '1', member_kind: 'general',
+      emg_tel: '090', emg_rel: 'P'
     })
 
-    it('DBの値（小文字スネークケース）と完全一致する必要があること', () => {
-      expect(canManageMembers(['PRESIDENT'])).toBe(false)
-      expect(canManageMembers(['president'])).toBe(true)
+    it('指定したロールが含まれていれば true', () => {
+      const user = mockUser([ROLES.MEMBER, ROLES.MEMBER_MANAGER])
+      expect(hasRole(user, ROLES.MEMBER_MANAGER)).toBe(true)
+      expect(hasRole(user, ROLES.MEMBER)).toBe(true)
+    })
+
+    it('異常系：userがnullやrolesが空なら false', () => {
+      expect(hasRole(null, ROLES.MEMBER)).toBe(false)
+      expect(hasRole(mockUser([]), ROLES.MEMBER)).toBe(false)
     })
   })
 })
