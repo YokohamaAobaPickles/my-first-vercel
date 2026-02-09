@@ -118,12 +118,11 @@ export default function AnnouncementAdminPage() {
                 {ANNOUNCEMENT_STATUS_LABELS[ann.status]}
               </div>
               {ann.is_pinned && <span style={pinBadgeStyle}>重要</span>}
-              <div style={cardMetaStyle}> 公開: {ann.publish_date}</div>
+              <div style={cardMetaStyle}> 公開日: {ann.publish_date}</div>
             </div>
             <h3 style={cardTitleStyle}>{ann.title}</h3>
             <div style={cardMetaStyle}>
-              作成: {ann.created_at?.slice(0, 10)}
-              更新: {ann.updated_at?.slice(0, 10)}
+              作成: {ann.created_at?.slice(0, 10)} 更新: {ann.updated_at?.slice(0, 10)}
             </div>
           </div>
 
