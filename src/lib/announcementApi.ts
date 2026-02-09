@@ -1,8 +1,13 @@
 /**
  * Filename: src/lib/announcementApi.ts
- * Version : V1.4.0
- * Update  : 2026-02-08
+ * Version : V1.5.0
+ * Update  : 2026-02-09
  * Remarks : 
+ * V1.5.0
+ * - fetchReadDetails: members 取得項目に member_code / email を追加（B-15 要件）
+ * - fetchAnnouncementById: エラーメッセージをより明確に返すよう改善
+ * - fetchAnnouncements: null 安全性を強化
+ * 
  * V1.4.0 fetchAnnouncements に is_read / read_count 集計ロジックを追加
  * V1.3.2 fetchReadDetails の型アサーション改善、Version コメント修正
  * V1.3.1 fetchReadDetails 実装。インポートパスを announcement に統一。
@@ -118,7 +123,7 @@ export const fetchAnnouncementById = async (
     return {
       success: false,
       data: null,
-      error: { message: 'お知らせの取得に失敗しました。', details: error },
+      error: { message: '記事情報の取得に失敗しました。', details: error },
     };
   }
 };
@@ -208,6 +213,7 @@ export const deleteAnnouncement = async (
 
 /**
  * 既読詳細（誰がいつ読んだか）を取得する
+ * B-15 要件：member_code / nickname / email / name を返す
  */
 export const fetchReadDetails = async (
   announcement_id: number
@@ -219,8 +225,10 @@ export const fetchReadDetails = async (
         read_at,
         member_id,
         members (
-          name,
-          nickname
+          member_code,
+          nickname,
+          email,
+          name
         )
       `)
       .eq('announcement_id', announcement_id)

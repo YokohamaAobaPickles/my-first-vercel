@@ -65,14 +65,17 @@ export interface AnnouncementRead {
 /**
  * 既読詳細（会員情報付き）
  */
-export interface AnnouncementReadDetail {
+export type AnnouncementReadDetail = {
   read_at: string;
   member_id: string;
   members: {
-    name: string;
+    member_code: string;   // ← 追加
     nickname: string;
-  } | null;
-}
+    email: string;         // ← 追加
+    name: string;
+  };
+};
+
 
 /**
  * お知らせ作成・更新時の入力型
