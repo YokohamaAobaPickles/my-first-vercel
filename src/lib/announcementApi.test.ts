@@ -108,18 +108,18 @@ describe('announcementApi', () => {
     });
   });
 
-  // -------------------------------------------------------
+// -------------------------------------------------------
   // 既読記録
   // -------------------------------------------------------
   describe('recordRead (既読記録)', () => {
-    it('既読レコードを正しく挿入できること', async () => {
+    it('既読レコードを upsert で正しく処理できること', async () => {
       const mockAnnouncementId = 101;
       const mockMemberId = 'user-uuid-123';
 
-      const insertMock = vi.fn().mockResolvedValue({ error: null });
+      const upsertMock = vi.fn().mockResolvedValue({ error: null });
 
       vi.mocked(supabase.from).mockReturnValue({
-        insert: insertMock,
+        upsert: upsertMock,
       } as any);
 
       const result = await announcementApi.recordRead(
@@ -128,15 +128,22 @@ describe('announcementApi', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(insertMock).toHaveBeenCalledWith([
+      
+      // 第1引数: データの検証（read_at は任意の文字列を許容）
+      // 第2引数: オプションの検証
+      expect(upsertMock).toHaveBeenCalledWith(
         {
           announcement_id: mockAnnouncementId,
           member_id: mockMemberId,
+          read_at: expect.any(String), // 生成される日時は不問とする
+        },
+        {
+          onConflict: 'announcement_id, member_id',
         }
-      ]);
+      );
     });
   });
-
+  
   // -------------------------------------------------------
   // 詳細取得
   // -------------------------------------------------------
