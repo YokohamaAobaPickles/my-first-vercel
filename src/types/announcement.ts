@@ -22,6 +22,12 @@ export type AnnouncementStatus =
   | 'published'  // 公開
   | 'disabled';  // 無効（論理削除）
 
+export const ANNOUNCEMENT_STATUS_LABELS: Record<AnnouncementStatus, string> = {
+  draft: '下書き',
+  published: '公開',
+  disabled: '無効'
+};
+
 /**
  * お知らせ公開対象
  */

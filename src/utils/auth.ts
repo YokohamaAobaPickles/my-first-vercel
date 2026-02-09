@@ -1,8 +1,10 @@
 /**
  * Filename: src/utils/auth.ts
- * Version : V2.3.0
+ * Version : V2.3.1
  * Update  : 2026-02-08
- * Remarks : 2.3.0 - 複数ロール（兼務）に完全対応するため hasPermission を some 判定に刷新
+ * Remarks : 
+ * 2.3.1 - 副会長をイベント担当、会計担当、監査担当、資産担当に追加
+ * 2.3.0 - 複数ロール（兼務）に完全対応するため hasPermission を some 判定に刷新
  */
 
 import { Member, MemberStatus, ROLES } from '@/types/member';
@@ -74,6 +76,7 @@ export const canManageEvents = (roles: string[] | null | undefined): boolean =>
   hasPermission(roles, [
     ROLES.SYSTEM_ADMIN,
     ROLES.PRESIDENT,
+    ROLES.VICE_PRESIDENT,
     ROLES.EVENT_MANAGER
   ]);
 
@@ -81,6 +84,7 @@ export const canManageAccounts = (roles: string[] | null | undefined): boolean =
   hasPermission(roles, [
     ROLES.SYSTEM_ADMIN,
     ROLES.PRESIDENT,
+    ROLES.VICE_PRESIDENT,
     ROLES.ACCOUNTANT
   ]);
 
@@ -88,6 +92,7 @@ export const canManageAudits = (roles: string[] | null | undefined): boolean =>
   hasPermission(roles, [
     ROLES.SYSTEM_ADMIN,
     ROLES.PRESIDENT,
+    ROLES.VICE_PRESIDENT,
     ROLES.AUDITOR
   ]);
 
@@ -95,6 +100,7 @@ export const canManageAssets = (roles: string[] | null | undefined): boolean =>
   hasPermission(roles, [
     ROLES.SYSTEM_ADMIN,
     ROLES.PRESIDENT,
+    ROLES.VICE_PRESIDENT,
     ROLES.ASSET_MANAGER
   ]);
 
