@@ -88,7 +88,16 @@ export type AnnouncementInput = Omit<
 /**
  * お知らせ一覧取得時のレスポンス（既読フラグ付き）
  */
-export interface AnnouncementListItem extends Announcement {
-  is_read: boolean;            // 閲覧中のユーザーが既読済みか
-  read_count?: number;         // 管理者用：既読数
+export type AnnouncementListItem = {
+  announcement_id: number
+  title: string
+  content: string | null
+  publish_date: string | null
+  is_pinned: boolean
+  status: AnnouncementStatus
+  is_read: boolean            // 閲覧中のユーザーが既読済みか
+  read_count: number          // 管理者用：既読数
+  target_role: string
+  created_at: string
+  updated_at: string
 }

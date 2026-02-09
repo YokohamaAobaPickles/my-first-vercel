@@ -82,7 +82,7 @@ export default function AnnouncementAdminPage() {
     // 2. publish_date の降順（null は "" として扱う）
     const dateA = a.publish_date ? new Date(a.publish_date).getTime() : 0;
     const dateB = b.publish_date ? new Date(b.publish_date).getTime() : 0;
-    
+
     return dateB - dateA;
   });
 
@@ -118,9 +118,13 @@ export default function AnnouncementAdminPage() {
                 {ANNOUNCEMENT_STATUS_LABELS[ann.status]}
               </div>
               {ann.is_pinned && <span style={pinBadgeStyle}>重要</span>}
+              <div style={cardMetaStyle}> 公開: {ann.publish_date}</div>
             </div>
             <h3 style={cardTitleStyle}>{ann.title}</h3>
-            <div style={cardMetaStyle}>{ann.publish_date}</div>
+            <div style={cardMetaStyle}>
+              作成: {ann.created_at?.slice(0, 10)}
+              更新: {ann.updated_at?.slice(0, 10)}
+            </div>
           </div>
 
           <div style={actionGroupStyle}>
