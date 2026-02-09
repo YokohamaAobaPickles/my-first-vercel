@@ -5,7 +5,7 @@
  * Remarks : 
  * V1.6.0
  * - fetchAnnouncementById のエラーも UI に表示するよう改善（コパ提案）
- * - fetchReadDetails の members 取得項目追加に対応（member_code / email）
+ * - fetchReadDetails の members 取得項目追加に対応（member_number / email）
  * - readers エラー時に readers をクリアするよう安全性向上
  * 
  * V1.5.0 B-15 既読詳細表示。新API/スキーマ対応。
@@ -132,7 +132,7 @@ export default function AnnouncementReadDetailPage() {
                 <tr key={i} style={rowStyle}>
                   <td style={tdStyle}>
                     <div style={memberCodeStyle}>
-                      #{r.members?.member_code || '----'}
+                      #{r.members?.member_number || '----'}
                     </div>
                     <div style={memberNameStyle}>
                       {r.members?.nickname} ({r.members?.name})

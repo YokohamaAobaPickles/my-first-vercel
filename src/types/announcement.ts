@@ -69,9 +69,9 @@ export type AnnouncementReadDetail = {
   read_at: string;
   member_id: string;
   members: {
-    member_code: string;   // ← 追加
+    member_number: string | null;
     nickname: string;
-    email: string;         // ← 追加
+    email: string;
     name: string;
   };
 };

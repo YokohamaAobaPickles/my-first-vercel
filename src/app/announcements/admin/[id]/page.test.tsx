@@ -79,7 +79,7 @@ describe('AnnouncementReadDetailPage (UI Test)', () => {
         read_at: '2026-02-09T10:00:00Z',
         member_id: 'user-uuid-1',
         members: {
-          member_code: '0015', // 会員番号
+          member_number: '0015', // 会員番号
           nickname: 'テニス太郎',
           email: 'taro@example.com',
           name: '山田太郎'

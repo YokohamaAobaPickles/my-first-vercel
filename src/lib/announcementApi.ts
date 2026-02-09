@@ -59,7 +59,7 @@ export const fetchAnnouncements = async (
 
       return {
         ...item,
-        is_read: memberId 
+        is_read: memberId
           ? readsForThisItem.some((r) => r.member_id === memberId)
           : false,
         read_count: readsForThisItem.length,
@@ -85,10 +85,13 @@ export const recordRead = async (
   member_id: string
 ): Promise<ApiResponse> => {
   try {
+    // upsertを使用し、重複時は何もしない(または更新する)設定にする
     const { error } = await supabase
       .from('announcement_reads')
-      .insert([{ announcement_id, member_id }]);
-
+      .upsert(
+        { announcement_id, member_id, read_at: new Date().toISOString() },
+        { onConflict: 'announcement_id, member_id' }
+      );
     if (error) throw error;
 
     return { success: true, data: null };
@@ -225,7 +228,7 @@ export const fetchReadDetails = async (
         read_at,
         member_id,
         members (
-          member_code,
+          member_number,
           nickname,
           email,
           name
