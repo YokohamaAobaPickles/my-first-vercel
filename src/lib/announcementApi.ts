@@ -168,7 +168,10 @@ export const updateAnnouncement = async (
   try {
     const { data, error } = await supabase
       .from('announcements')
-      .update(input)
+      .update({
+        ...input,
+        updated_at: new Date().toISOString(),
+        })
       .eq('announcement_id', announcement_id)
       .select()
       .single();

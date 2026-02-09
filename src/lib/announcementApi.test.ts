@@ -108,7 +108,7 @@ describe('announcementApi', () => {
     });
   });
 
-// -------------------------------------------------------
+  // -------------------------------------------------------
   // 既読記録
   // -------------------------------------------------------
   describe('recordRead (既読記録)', () => {
@@ -128,7 +128,7 @@ describe('announcementApi', () => {
       );
 
       expect(result.success).toBe(true);
-      
+
       // 第1引数: データの検証（read_at は任意の文字列を許容）
       // 第2引数: オプションの検証
       expect(upsertMock).toHaveBeenCalledWith(
@@ -143,7 +143,7 @@ describe('announcementApi', () => {
       );
     });
   });
-  
+
   // -------------------------------------------------------
   // 詳細取得
   // -------------------------------------------------------
@@ -213,7 +213,10 @@ describe('announcementApi', () => {
         update: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         select: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: { ...mockInput }, error: null }),
+        single: vi.fn().mockResolvedValue({
+          data: { ...mockInput, updated_at: '2026-02-09T00:00:00.000Z' },
+          error: null,
+        }),
       };
 
       vi.mocked(supabase.from).mockReturnValue(mockQuery as any);
@@ -221,8 +224,52 @@ describe('announcementApi', () => {
       const result = await announcementApi.updateAnnouncement(mockId, mockInput);
 
       expect(result.success).toBe(true);
-      expect(mockQuery.update).toHaveBeenCalledWith(mockInput);
+
+      // ★ updated_at が追加されるため、objectContaining に変更
+      expect(mockQuery.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: '更新後',
+          updated_at: expect.any(String),
+        })
+      );
+
       expect(mockQuery.eq).toHaveBeenCalledWith('announcement_id', mockId);
+    });
+
+    it('指定したIDの記事を更新し、更新日がセットされること', async () => {
+      const mockId = 1;
+      const mockInput = { title: '更新タイトル' };
+
+      const updateMock = vi.fn().mockReturnThis();
+      const eqMock = vi.fn().mockReturnThis();
+      const selectMock = vi.fn().mockReturnThis();
+      const singleMock = vi.fn().mockResolvedValue({
+        data: {
+          announcement_id: mockId,
+          title: '更新タイトル',
+          updated_at: '2026-02-09T00:00:00.000Z',
+        },
+        error: null,
+      });
+
+      vi.mocked(supabase.from).mockReturnValue({
+        update: updateMock,
+        eq: eqMock,
+        select: selectMock,
+        single: singleMock,
+      } as any);
+
+      const result = await announcementApi.updateAnnouncement(mockId, mockInput);
+
+      expect(result.success).toBe(true);
+
+      // ★ updated_at が含まれていることを検証
+      expect(updateMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: '更新タイトル',
+          updated_at: expect.any(String),
+        })
+      );
     });
   });
 
