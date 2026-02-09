@@ -1,146 +1,172 @@
 /**
- * Filename: announcements/new/page.tsx
- * Version : V1.3.0
- * Update  : 2026-01-25
- * 内容：
- * V1.3.0
- * - レイアウト修正(800px、中央寄せ)
- * - ダークモードでの入力欄視認性向上
- * - 公開日・ステータス設定のスタイル崩れを修正
- * V1.2.0
- * - hook/authCheckに対応
- * V1.1.0
- * - DBカラム名に合わせて target_role に修正
- * - author_id (LINE ID) を保存するように追加
+ * Filename: src/app/announcements/new/page.tsx
+ * Version : V1.4.0
+ * Update  : 2026-02-09
+ * Remarks : 
+ * V1.4.0
+ * - announcementApi.createAnnouncement を使用した実装へ刷新 (B-11)
+ * - 権限チェックによる不正アクセス防止を強化
+ * - 投稿成功後の遷移先を管理一覧 (/announcements/admin) へ変更
  */
 
-'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
-import Link from 'next/link'
-import { canManageAnnouncements } from '@/utils/auth'
-import { useAuthCheck } from '@/hooks/useAuthCheck'
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useAuthCheck } from '@/hooks/useAuthCheck';
+import { canManageAnnouncements } from '@/utils/auth';
+import { createAnnouncement } from '@/lib/announcementApi';
+import { AnnouncementInput, AnnouncementStatus } from '@/types/announcement';
 
 export default function NewAnnouncementPage() {
-  const router = useRouter()
-  const { 
-    isLoading: isAuthLoading, 
-    userRoles, 
-    currentLineId, 
-    user 
-  } = useAuthCheck()
-  
-  const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ 
-    title: '', 
-    content: '', 
-    date: new Date().toISOString().split('T')[0], 
-    isPinned: false,
-    status: 'published'
-  })
+  const router = useRouter();
+  const { isLoading: isAuthLoading, userRoles, user } = useAuthCheck();
+
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    title: '',
+    content: '',
+    publish_date: new Date().toISOString().split('T')[0],
+    is_pinned: false,
+    status: 'published' as AnnouncementStatus,
+    target_role: 'all' as const,
+  });
+
+  // 権限チェック：管理者以外は一般一覧へ戻す
+  useEffect(() => {
+    if (!isAuthLoading && !canManageAnnouncements(userRoles)) {
+      router.push('/announcements');
+    }
+  }, [isAuthLoading, userRoles, router]);
+
+  if (isAuthLoading) return <div style={containerStyle}>読み込み中...</div>;
+  if (!canManageAnnouncements(userRoles)) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSaving(true)
-    const { error } = await supabase.from('announcements').insert({
-      title: form.title, 
-      content: form.content, 
-      publish_date: form.date, 
-      is_pinned: form.isPinned, 
-      author_id: currentLineId || user?.email,
-      status: form.status
-    })
-    
-    if (!error) {
-      router.push('/announcements/admin')
-    } else {
-      alert(error.message)
-    }
-    setSaving(false)
-  }
+    e.preventDefault();
+    if (!user?.id) return;
 
-  if (isAuthLoading) return <div style={containerStyle}>読み込み中...</div>
-  if (!canManageAnnouncements(userRoles)) {
-    return <div style={containerStyle}>権限がありません</div>
-  }
+    setSaving(true);
+    setError(null);
+
+    const input: AnnouncementInput = {
+      title: form.title,
+      content: form.content,
+      publish_date: form.publish_date,
+      status: form.status,
+      is_pinned: form.is_pinned,
+      target_role: form.target_role,
+      author_id: user.id,
+      end_date: null,
+    };
+
+    const result = await createAnnouncement(input);
+
+    if (result.success) {
+      router.push('/announcements/admin');
+    } else {
+      setError(result.error?.message || '保存に失敗しました');
+      setSaving(false);
+    }
+  };
 
   return (
     <div style={containerStyle}>
       <div style={{ marginBottom: '20px' }}>
-        <Link href="/announcements/admin" style={cancelLinkStyle}>
-          ← キャンセル
+        <Link href="/announcements/admin" style={backLinkStyle}>
+          ← 管理一覧へ戻る
         </Link>
       </div>
 
-      <h2 style={formTitleStyle}>新規お知らせ投稿</h2>
+      <h1 style={formTitleStyle}>お知らせ新規作成</h1>
+
+      {error && (
+        <p style={{ color: 'red', marginBottom: '20px' }}>
+          {error}
+        </p>
+      )}
 
       <form onSubmit={handleSubmit} style={formStyle}>
         <div style={fieldGroupStyle}>
-          <label style={labelStyle}>タイトル *</label>
-          <input 
-            type="text" 
-            required 
-            placeholder="記事のタイトル" 
-            value={form.title} 
-            onChange={e => setForm({...form, title: e.target.value})} 
-            style={inputStyle} 
+          <label htmlFor="title" style={labelStyle}>タイトル</label>
+          <input
+            id="title"
+            type="text"
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+            style={inputStyle}
+            required
           />
         </div>
 
         <div style={fieldGroupStyle}>
-          <label style={labelStyle}>本文 *</label>
-          <textarea 
-            required 
-            placeholder="本文を入力" 
-            value={form.content} 
-            onChange={e => setForm({...form, content: e.target.value})} 
-            style={{ ...inputStyle, height: '250px', resize: 'vertical' }} 
+          <label htmlFor="content" style={labelStyle}>本文</label>
+          <textarea
+            id="content"
+            rows={8}
+            value={form.content}
+            onChange={(e) => setForm({ ...form, content: e.target.value })}
+            style={{ ...inputStyle, resize: 'vertical' }}
           />
         </div>
 
         <div style={rowStyle}>
           <div style={{ flex: 1 }}>
-            <label style={labelStyle}>公開開始日</label>
-            <input 
-              type="date" 
-              value={form.date} 
-              onChange={e => setForm({...form, date: e.target.value})} 
-              style={inputStyle} 
+            <label htmlFor="publish_date" style={labelStyle}>公開開始日</label>
+            <input
+              id="publish_date"
+              type="date"
+              value={form.publish_date}
+              onChange={(e) => setForm({ ...form, publish_date: e.target.value })}
+              style={inputStyle}
             />
           </div>
           <div style={{ flex: 1 }}>
-            <label style={labelStyle}>公開状況</label>
-            <select 
-              value={form.status} 
-              onChange={e => setForm({...form, status: e.target.value})} 
+            <label htmlFor="status" style={labelStyle}>ステータス</label>
+            <select
+              id="status"
+              value={form.status}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  status: e.target.value as AnnouncementStatus, // ★修正
+                })
+              }
               style={inputStyle}
             >
               <option value="published">公開</option>
               <option value="draft">下書き</option>
-              <option value="disabled">無効</option>
             </select>
           </div>
+
         </div>
 
         <div style={checkboxWrapperStyle}>
           <label style={checkboxLabelStyle}>
-            <input 
-              type="checkbox" 
-              checked={form.isPinned} 
-              onChange={e => setForm({...form, isPinned: e.target.checked})} 
+            <input
+              type="checkbox"
+              checked={form.is_pinned}
+              onChange={(e) => setForm({ ...form, is_pinned: e.target.checked })}
             />
-            <span>重要記事としてトップに固定する</span>
+            重要記事としてピン留めする
           </label>
         </div>
 
-        <button disabled={saving} style={submitBtnStyle}>
-          {saving ? '保存中...' : '登録する'}
+        <button
+          type="submit"
+          disabled={saving}
+          style={saving ? { ...submitBtnStyle, opacity: 0.6 } : submitBtnStyle}
+        >
+          {saving ? '投稿中...' : '投稿する'}
         </button>
       </form>
     </div>
-  )
+  );
 }
+
+// --- スタイル定義 (1行1定義、ワードラップ80カラム) ---
 
 const containerStyle: React.CSSProperties = {
   backgroundColor: '#000',
@@ -148,45 +174,45 @@ const containerStyle: React.CSSProperties = {
   minHeight: '100vh',
   padding: '20px',
   maxWidth: '800px',
-  margin: '0 auto'
-}
+  margin: '0 auto',
+};
 
-const cancelLinkStyle: React.CSSProperties = {
-  color: '#888',
+const backLinkStyle: React.CSSProperties = {
+  color: '#aaa',
   textDecoration: 'none',
-  fontSize: '0.9rem'
-}
+  fontSize: '0.9rem',
+};
 
 const formTitleStyle: React.CSSProperties = {
   fontSize: '1.4rem',
   marginBottom: '25px',
-  textAlign: 'center'
-}
+  textAlign: 'center',
+};
 
 const formStyle: React.CSSProperties = {
   backgroundColor: '#111',
   padding: '25px',
   borderRadius: '12px',
-  border: '1px solid #222'
-}
+  border: '1px solid #222',
+};
 
 const fieldGroupStyle: React.CSSProperties = {
-  marginBottom: '20px'
-}
+  marginBottom: '20px',
+};
 
 const rowStyle: React.CSSProperties = {
   display: 'flex',
   gap: '20px',
-  marginBottom: '20px'
-}
+  marginBottom: '20px',
+};
 
 const labelStyle: React.CSSProperties = {
   display: 'block',
   fontSize: '0.8rem',
   color: '#aaa',
   marginBottom: '8px',
-  fontWeight: 'bold'
-}
+  fontWeight: 'bold',
+};
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -196,33 +222,33 @@ const inputStyle: React.CSSProperties = {
   borderRadius: '8px',
   color: '#fff',
   fontSize: '1rem',
-  boxSizing: 'border-box'
-}
+  boxSizing: 'border-box',
+};
 
 const checkboxWrapperStyle: React.CSSProperties = {
   backgroundColor: '#1a1a1a',
   padding: '15px',
   borderRadius: '8px',
   marginBottom: '25px',
-  border: '1px solid #333'
-}
+  border: '1px solid #333',
+};
 
 const checkboxLabelStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: '12px',
   cursor: 'pointer',
-  fontSize: '0.9rem'
-}
+  fontSize: '0.9rem',
+};
 
 const submitBtnStyle: React.CSSProperties = {
   width: '100%',
-  padding: '16px',
+  padding: '15px',
   backgroundColor: '#0070f3',
   color: 'white',
   border: 'none',
-  borderRadius: '30px',
+  borderRadius: '8px',
+  fontSize: '1rem',
   fontWeight: 'bold',
   cursor: 'pointer',
-  fontSize: '1rem'
-}
+};

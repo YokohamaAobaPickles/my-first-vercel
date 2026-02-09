@@ -135,13 +135,12 @@ export const fetchAnnouncementById = async (
  * お知らせを新規作成する
  */
 export const createAnnouncement = async (
-  input: AnnouncementInput,
-  authorId: string
+  input: AnnouncementInput
 ): Promise<ApiResponse<Announcement>> => {
   try {
     const { data, error } = await supabase
       .from('announcements')
-      .insert([{ ...input, author_id: authorId }])
+      .insert([input])
       .select()
       .single();
 

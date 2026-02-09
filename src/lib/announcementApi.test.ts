@@ -187,17 +187,18 @@ describe('announcementApi', () => {
       } as any);
 
       const result = await announcementApi.createAnnouncement(
-        mockInput as any,
-        mockAuthorId
+        mockInput as any
       );
 
       expect(result.success).toBe(true);
       expect(insertMock).toHaveBeenCalledWith([
         expect.objectContaining({
           title: mockInput.title,
-          author_id: mockAuthorId,
+          content: mockInput.content,
+          status: mockInput.status,
         }),
       ]);
+
     });
   });
 
