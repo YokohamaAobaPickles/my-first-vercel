@@ -82,7 +82,11 @@ export default function MemberLoginPage() {
       }
 
       // --- PC / スマホブラウザログイン ---
-      if (member && password && member.password === password) {
+      if (
+        member &&
+        password &&
+        member.password === password
+      ) {
         sessionStorage.setItem('auth_member_id', member.id)
         router.replace('/members/profile')
       } else {
@@ -101,14 +105,52 @@ export default function MemberLoginPage() {
   }
 
   return (
-    <div style={{ ...baseStyles.containerLogin, justifyContent: 'center', padding: '20px' }}>
-      <div style={{ width: '100%', maxWidth: '400px', ...baseStyles.cardLogin }}>
-        <h1 style={{ textAlign: 'center', ...baseStyles.headerTitle }}>
+    <div
+      style={{
+        ...baseStyles.containerLogin,
+        justifyContent: 'center',
+        padding: '20px'
+      }}
+    >
+      {/* プレースホルダーのスタイル定義 */}
+      <style jsx>{`
+        input::placeholder {
+          color: #777 !important;
+          background: '#08191e';
+          border: '1px solid #1E5E70';
+          font-size: 0.9rem;
+          font-family: sans-serif;
+        }
+      `}</style>
+
+      <div
+        style={{
+          width: '100%',
+          maxWidth: '400px',
+          ...baseStyles.cardLogin
+        }}
+      >
+        <h1
+          style={{
+            textAlign: 'center',
+            ...baseStyles.headerTitle
+          }}
+        >
           {currentLineId ? 'LINE会員確認' : 'ログイン'}
         </h1>
 
-        <form onSubmit={handleAction} style={{ display: 'flex', flexDirection: 'column' }}>
-          <p style={{ fontSize: '0.85rem', marginBottom: '15px', color: '#ccc' }}>
+        <form
+          onSubmit={handleAction}
+          style={{ display: 'flex', flexDirection: 'column' }}
+        >
+          <p
+            style={{
+              fontSize: '0.85rem',
+              marginBottom: '15px',
+              color: '#ccc',
+              textAlign: 'center'
+            }}
+          >
             {currentLineId
               ? '登録状況を確認します。メールアドレスを入力してください。'
               : 'メールアドレスとパスワードを入力してください。'}
@@ -119,7 +161,7 @@ export default function MemberLoginPage() {
             placeholder="メールアドレスを入力"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            style={baseStyles.inputBox}
+            style={baseStyles.inputBoxLogin}
           />
 
           {!currentLineId && (
@@ -128,7 +170,7 @@ export default function MemberLoginPage() {
               placeholder="パスワードを入力"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              style={baseStyles.inputBox}
+              style={baseStyles.inputBoxLogin}
             />
           )}
 
@@ -140,7 +182,11 @@ export default function MemberLoginPage() {
               backgroundColor: isSubmitting ? '#444' : '#08A5EF',
             }}
           >
-            {isSubmitting ? '処理中...' : currentLineId ? '連携する' : 'ログイン'}
+            {isSubmitting ?
+              '処理中...'
+              : currentLineId ?
+                '連携する'
+                : 'ログイン'}
           </button>
 
           {!currentLineId && (
@@ -149,7 +195,10 @@ export default function MemberLoginPage() {
                 新規会員登録はこちら
               </Link>
               <div style={{ marginTop: '8px' }}>
-                <Link href="/members/password-reset" style={baseStyles.link}>
+                <Link
+                  href="/members/password-reset"
+                  style={baseStyles.link}
+                >
                   パスワード忘却時のリセットはこちら
                 </Link>
               </div>

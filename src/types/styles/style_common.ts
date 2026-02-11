@@ -20,33 +20,12 @@ export const baseStyles: Record<string, React.CSSProperties> = {
     minHeight: '100vh',
     boxSizing: 'border-box',
   },
-
-  // ログイン専用コンテナ&カード
-  containerLogin: {
-    minHeight: '100vh',
-    backgroundColor: '#194E5D',
-    color: '#fff',
-    padding: '0px',
-    display: 'flex',
-    justifyContent: 'center',
-    boxSizing: 'border-box',
-  },
-  cardLogin: {
-    backgroundColor: '#194E5D',
-    border: '1px solid #194E5D',
-    borderRadius: '12px',
-    padding: '10px',
-    width: '100%',
-    boxSizing: 'border-box',
-  },
-
   // ページ内の本文幅を制御
   content: {
     width: '100%',
     maxWidth: '500px',
     boxSizing: 'border-box',
   },
-
   // UI のまとまり（カード）
   card: {
     backgroundColor: '#194E5D',
@@ -56,14 +35,12 @@ export const baseStyles: Record<string, React.CSSProperties> = {
     width: '100%',
     boxSizing: 'border-box',
   },
-
-  // リンク
+  // リンク(共通)
   link: {
     color: '#08A5EF',
     fontSize: '0.9rem',
     textDecoration: 'none',
   },
-
   // ボタン（共通）
   primaryButton: {
     width: '100%',
@@ -96,7 +73,68 @@ export const baseStyles: Record<string, React.CSSProperties> = {
     border: 'none',
     cursor: 'pointer',
   },
-
+  // 入力ボックス
+  inputBox: {
+    color: '#fff',
+    backgroundColor: '#222',
+    width: '100%',
+    border: '1px solid #444',
+    borderRadius: '8px',
+    padding: '12px',
+    marginBottom: '12px',
+    boxSizing: 'border-box',
+  },
+  // ヘッダー
+  headerContainer: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '30px',
+  },
+  // ヘッダータイトル
+  headerTitle: {
+    fontSize: '2rem',
+    fontWeight: 'bold',
+    margin: '0 0 30px 0',
+  },
+  // Copyright
+  copyright: {
+    textAlign: 'center',
+    marginTop: '40px',
+    fontSize: '0.7rem',
+    color: '#bfbfbf',
+    letterSpacing: '0.05em',
+  },
+  // ログイン専用コンテナ&カード
+  containerLogin: {
+    minHeight: '100vh',
+    backgroundColor: '#194E5D',
+    color: '#fff',
+    padding: '0px',
+    display: 'flex',
+    justifyContent: 'center',
+    boxSizing: 'border-box',
+  },
+  cardLogin: {
+    backgroundColor: '#194E5D',
+    border: '1px solid #194E5D',
+    borderRadius: '12px',
+    padding: '10px',
+    width: '100%',
+    boxSizing: 'border-box',
+  },
+    // 入力ボックス
+  inputBoxLogin: {
+    color: '#fff',
+    backgroundColor: '#08191E',
+    width: '100%',
+    border: '1px solid #1E5E70',
+    borderRadius: '8px',
+    padding: '12px',
+    marginBottom: '12px',
+    boxSizing: 'border-box',
+    outline: 'none',
+  },
   // ログインボタン（角丸大）
   loginButton: {
     width: '100%',
@@ -112,39 +150,4 @@ export const baseStyles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
   },
 
-  // 入力ボックス
-  inputBox: {
-    color: '#fff',
-    backgroundColor: '#222',
-    width: '100%',
-    border: '1px solid #444',
-    borderRadius: '8px',
-    padding: '12px',
-    marginBottom: '12px',
-    boxSizing: 'border-box',
-  },
-
-  // ヘッダー
-  headerContainer: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '30px',
-  },
-
-  headerTitle: {
-    fontSize: '2rem',
-    fontWeight: 'bold',
-    margin: '0 0 30px 0',
-  },
-
-
-  // Copyright
-  copyright: {
-    textAlign: 'center',
-    marginTop: '40px',
-    fontSize: '0.7rem',
-    color: '#bfbfbf',
-    letterSpacing: '0.05em',
-  },
 };
