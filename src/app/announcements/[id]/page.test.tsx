@@ -16,9 +16,6 @@ import AnnouncementDetailPage from './page';
 import * as announcementApi from '@/lib/announcementApi';
 import { useAuthCheck } from '@/hooks/useAuthCheck';
 
-// matcher 拡張
-import '@testing-library/jest-dom/vitest';
-
 // モック
 vi.mock('@/lib/announcementApi');
 vi.mock('@/hooks/useAuthCheck');

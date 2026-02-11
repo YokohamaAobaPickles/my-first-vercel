@@ -18,8 +18,6 @@ import * as announcementApi from '@/lib/announcementApi';
 import { useAuthCheck } from '@/hooks/useAuthCheck';
 import { useRouter } from 'next/navigation';
 
-import '@testing-library/jest-dom/vitest';
-
 // モック
 vi.mock('@/lib/announcementApi');
 vi.mock('@/hooks/useAuthCheck');

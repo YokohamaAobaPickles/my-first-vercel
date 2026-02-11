@@ -13,9 +13,6 @@ import * as announcementApi from '@/lib/announcementApi';
 import { useAuthCheck } from '@/hooks/useAuthCheck';
 import { useRouter } from 'next/navigation';
 
-// matcher 拡張
-import '@testing-library/jest-dom/vitest';
-
 // モック設定
 vi.mock('@/lib/announcementApi');
 vi.mock('@/hooks/useAuthCheck');

@@ -1,0 +1,12 @@
+<svg x="0" y="0" width="512" height="512" version="1.1"
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512">
+    <title>export icon</title>
+    <desc>export icon from the IconExperience.com G-Collection. Copyright by INCORS GmbH (www.incors.com).</desc>
+    <g>
+        <path d="M80,336l352,0c8.8,0 16,7.2 16,16l0,144c0,8.8 -7.2,16 -16,16l-352,0c-8.8,0 -16,-7.2 -16,-16l0,-144c0,-8.8 7.2,-16 16,-16z" fill="#cdd7db"/>
+        <path d="M256,336l176,0c8.8,0 16,7.2 16,16l0,144c0,8.8 -7.2,16 -16,16l-176,0z" fill="#afbdc3"/>
+        <polygon points="192,304 320,304 320,160 416,160 256,0 96,160 192,160" fill="#ff7042"/>
+        <polygon points="256,304 320,304 320,160 416,160 256,0" fill="#f3501e"/>
+    </g>
+</svg>
