@@ -89,6 +89,21 @@ export const baseStyles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
   },
 
+  // ログインボタン（角丸大）
+  loginButton: {
+    width: '100%',
+    color: 'white',
+    backgroundColor: '#08A5EF',
+    border: 'none',
+    borderRadius: '30px',
+    padding: '16px',
+    fontWeight: 'bold',
+    fontSize: '1rem',
+    marginTop: '10px',
+    marginBottom: '20px',
+    cursor: 'pointer',
+  },
+
   // 入力ボックス
   inputBox: {
     color: '#fff',
@@ -110,9 +125,11 @@ export const baseStyles: Record<string, React.CSSProperties> = {
   },
 
   headerTitle: {
-    fontSize: '1.5rem',
-    margin: 0,
+    fontSize: '2rem',
+    fontWeight: 'bold',
+    margin: '0 0 30px 0',
   },
+
 
   // Copyright
   copyright: {
