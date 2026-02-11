@@ -102,7 +102,7 @@ export default function MemberLoginPage() {
 
   return (
     <div style={{ ...baseStyles.containerLogin, justifyContent: 'center', padding: '20px' }}>
-      <div style={{ width: '100%', maxWidth: '400px', ...baseStyles.card }}>
+      <div style={{ width: '100%', maxWidth: '400px', ...baseStyles.cardLogin }}>
         <h1 style={{ textAlign: 'center', ...baseStyles.headerTitle }}>
           {currentLineId ? 'LINE会員確認' : 'ログイン'}
         </h1>

@@ -21,14 +21,22 @@ export const baseStyles: Record<string, React.CSSProperties> = {
     boxSizing: 'border-box',
   },
 
-  // ログイン専用コンテナ
+  // ログイン専用コンテナ&カード
   containerLogin: {
     minHeight: '100vh',
-    backgroundColor: '#194e5d',
+    backgroundColor: '#194E5D',
     color: '#fff',
     padding: '0px',
     display: 'flex',
     justifyContent: 'center',
+    boxSizing: 'border-box',
+  },
+  cardLogin: {
+    backgroundColor: '#194E5D',
+    border: '1px solid #194E5D',
+    borderRadius: '12px',
+    padding: '10px',
+    width: '100%',
     boxSizing: 'border-box',
   },
 
