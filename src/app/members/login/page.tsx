@@ -1,14 +1,3 @@
-/**
- * Filename: src/app/members/login/page.tsx
- * Version : V2.0.6
- * Update  : 2026-02-06
- * Remarks :
- * V2.0.6
- * - logout フラグを LINE / ブラウザ共通でクリア
- * - useAuthCheck の logout 判定と整合
- * - LINE 自動ログイン復活の不具合を修正
- */
-
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -16,25 +5,20 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
+import { baseStyles } from '@/types/styles/style_common'
 
 export default function MemberLoginPage() {
   const router = useRouter()
-  //const { user, isLoading, currentLineId } = useAuthCheck()
-  //デバッグのためにlineNickname なども取得して表示対象にする
   const { user, isLoading, currentLineId, lineNickname } = useAuthCheck()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // ---------------------------------------------------------
-  // ログイン画面に来たら logout フラグを必ずクリア
-  // LINE / ブラウザ共通
-  // ---------------------------------------------------------
+  // --- logout フラグクリア ---
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const ua = navigator.userAgent.toLowerCase()
       const isLine = ua.includes('line')
-
       if (isLine) {
         localStorage.removeItem('logout')
       } else {
@@ -43,9 +27,7 @@ export default function MemberLoginPage() {
     }
   }, [])
 
-  // ---------------------------------------------------------
-  // すでにログイン済みならプロフィールへ
-  // ---------------------------------------------------------
+  // --- すでにログイン済みならプロフィールへ ---
   useEffect(() => {
     if (!isLoading && user) {
       router.replace('/members/profile')
@@ -72,9 +54,7 @@ export default function MemberLoginPage() {
 
       if (fetchError) throw fetchError
 
-      // ---------------------------------------------------------
-      // LINE ログイン
-      // ---------------------------------------------------------
+      // --- LINE ログイン ---
       if (currentLineId) {
         if (member) {
           const { error: updateError } = await supabase
@@ -90,9 +70,7 @@ export default function MemberLoginPage() {
         return
       }
 
-      // ---------------------------------------------------------
-      // PC / スマホブラウザログイン
-      // ---------------------------------------------------------
+      // --- PC / スマホブラウザログイン ---
       if (member && password && member.password === password) {
         sessionStorage.setItem('auth_member_id', member.id)
         router.replace('/members/profile')
@@ -108,18 +86,18 @@ export default function MemberLoginPage() {
   }
 
   if (isLoading) {
-    return <div style={{ backgroundColor: '#000', minHeight: '100vh' }} />
+    return <div style={baseStyles.container} />
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#000', color: '#fff', padding: '20px', display: 'flex', justifyContent: 'center' }}>
-      <div style={{ width: '100%', maxWidth: '400px' }}>
-        <h1 style={{ textAlign: 'center', fontSize: '1.5rem', marginBottom: '30px' }}>
+    <div style={{ ...baseStyles.container, justifyContent: 'center', padding: '20px' }}>
+      <div style={{ width: '100%', maxWidth: '400px', ...baseStyles.card }}>
+        <h1 style={{ textAlign: 'center', ...baseStyles.title }}>
           {currentLineId ? 'LINE会員確認' : 'ログイン'}
         </h1>
 
         <form onSubmit={handleAction} style={{ display: 'flex', flexDirection: 'column' }}>
-          <p style={{ fontSize: '0.85rem', marginBottom: '15px', color: '#aaa' }}>
+          <p style={{ fontSize: '0.85rem', marginBottom: '15px', color: '#ccc' }}>
             {currentLineId
               ? '登録状況を確認します。メールアドレスを入力してください。'
               : 'メールアドレスとパスワードを入力してください。'}
@@ -130,7 +108,7 @@ export default function MemberLoginPage() {
             placeholder="メールアドレスを入力"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            style={inputStyle}
+            style={baseStyles.inputBox}
           />
 
           {!currentLineId && (
@@ -139,7 +117,7 @@ export default function MemberLoginPage() {
               placeholder="パスワードを入力"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              style={inputStyle}
+              style={baseStyles.inputBox}
             />
           )}
 
@@ -147,8 +125,8 @@ export default function MemberLoginPage() {
             type="submit"
             disabled={isSubmitting}
             style={{
-              ...buttonStyle,
-              backgroundColor: isSubmitting ? '#444' : '#0070f3',
+              ...baseStyles.loginButton,
+              backgroundColor: isSubmitting ? '#444' : '#08A5EF',
             }}
           >
             {isSubmitting ? '処理中...' : currentLineId ? '連携する' : 'ログイン'}
@@ -156,11 +134,11 @@ export default function MemberLoginPage() {
 
           {!currentLineId && (
             <div style={{ textAlign: 'center', marginTop: '10px' }}>
-              <a href="/members/new" style={{ color: '#0070f3', fontSize: '0.9rem', textDecoration: 'none' }}>
+              <Link href="/members/new" style={baseStyles.link}>
                 新規会員登録はこちら
-              </a>
+              </Link>
               <div style={{ marginTop: '8px' }}>
-                <Link href="/members/password-reset" style={passwordResetLinkStyle}>
+                <Link href="/members/password-reset" style={baseStyles.link}>
                   パスワード忘却時のリセットはこちら
                 </Link>
               </div>
@@ -168,14 +146,20 @@ export default function MemberLoginPage() {
           )}
         </form>
 
-        <footer style={footerStyle}>
-          YAPMS V1.0.1 Copyright 2026
-          {' '}
-          Yokohama Aoba Pickles
+        <footer style={baseStyles.copyright}>
+          YAPMS V1.0.1 Copyright 2026 Yokohama Aoba Pickles
         </footer>
 
-        {/* --- デバッグ情報セクション ここから --- */}
-        <div style={debugPanelStyle}>
+        {/* --- デバッグ情報 --- */}
+        <div style={{
+          marginTop: '40px',
+          padding: '15px',
+          backgroundColor: '#111',
+          border: '1px dashed #555',
+          borderRadius: '8px',
+          color: '#0f0',
+          fontFamily: 'monospace'
+        }}>
           <p style={{ borderBottom: '1px solid #444', paddingBottom: '4px', marginBottom: '8px', fontSize: '0.75rem', fontWeight: 'bold' }}>
             Debug Info (Development Only)
           </p>
@@ -189,58 +173,7 @@ export default function MemberLoginPage() {
             <li><strong>Logout Flag:</strong> {typeof window !== 'undefined' ? (localStorage.getItem('logout') || sessionStorage.getItem('logout') || 'none') : 'n/a'}</li>
           </ul>
         </div>
-        {/* --- デバッグ情報セクション ここまで --- */}
-
       </div>
     </div>
   )
-}
-
-const inputStyle = {
-  width: '100%',
-  padding: '12px',
-  marginBottom: '12px',
-  backgroundColor: '#222',
-  border: '1px solid #444',
-  borderRadius: '8px',
-  color: '#fff',
-  boxSizing: 'border-box' as const,
-}
-
-const buttonStyle = {
-  width: '100%',
-  padding: '16px',
-  color: 'white',
-  border: 'none',
-  borderRadius: '30px',
-  fontWeight: 'bold' as const,
-  cursor: 'pointer',
-  fontSize: '1rem',
-  marginTop: '10px',
-  marginBottom: '20px',
-}
-
-const passwordResetLinkStyle: React.CSSProperties = {
-  color: '#0070f3',
-  fontSize: '0.9rem',
-  textDecoration: 'none',
-}
-
-const footerStyle: React.CSSProperties = {
-  textAlign: 'center',
-  marginTop: '40px',
-  fontSize: '0.7rem',
-  color: '#666',
-  letterSpacing: '0.05em',
-}
-
-// デバッグ用スタイル
-const debugPanelStyle: React.CSSProperties = {
-  marginTop: '40px',
-  padding: '15px',
-  backgroundColor: '#111',
-  border: '1px dashed #555',
-  borderRadius: '8px',
-  color: '#0f0', // 緑色でデバッグ感を表示
-  fontFamily: 'monospace'
 }
