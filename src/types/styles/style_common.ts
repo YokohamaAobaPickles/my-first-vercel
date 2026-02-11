@@ -11,19 +11,29 @@ import React from 'react';
 export const baseStyles: Record<string, React.CSSProperties> = {
   // 表示領域全体
   container: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',          // 中央寄せ
+    padding: '40px 20px',          // 画面外側の余白を統一
     backgroundColor: '#1E5E70',
     color: '#FFFFFF',
     minHeight: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
+    boxSizing: 'border-box',       // スマホの余白問題を防ぐ
   },
-  // カード形式(一覧表示)
+  // 表示領域
+  content: {
+    width: '100%',
+    maxWidth: '400px',             // ログインは 400px
+  },
+  // 一覧表示
   card: {
     backgroundColor: '#194E5D',
     border: '1px solid #1E5E70',
     borderRadius: '12px',
     padding: '20px',
-    marginBottom: '16px',
+    width: '100%',
+    maxWidth: '400px',             // PC でもスマホでも中央に収まる
+    boxSizing: 'border-box',
   },
   // リンク
   link: {

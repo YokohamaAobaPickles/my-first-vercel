@@ -150,7 +150,7 @@ export default function MemberLoginPage() {
           YAPMS V1.0.1 Copyright 2026 Yokohama Aoba Pickles
         </footer>
 
-        {/* --- デバッグ情報 --- */}
+        {/* --- デバッグ情報 --- }
         <div style={{
           marginTop: '40px',
           padding: '15px',
@@ -173,6 +173,8 @@ export default function MemberLoginPage() {
             <li><strong>Logout Flag:</strong> {typeof window !== 'undefined' ? (localStorage.getItem('logout') || sessionStorage.getItem('logout') || 'none') : 'n/a'}</li>
           </ul>
         </div>
+        {*/}
+        
       </div>
     </div>
   )
