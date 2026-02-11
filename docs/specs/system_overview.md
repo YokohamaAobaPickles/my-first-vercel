@@ -87,3 +87,36 @@
 
 ---
 
+実装フォルダ
+F:\GitHub\my-first-vercel>tree | findstr /R /C:"^├" /C:"^│  ├" /C:"^│  └" /C:"^└"
+├─docs
+│  ├─dev_notes
+│  ├─specs
+│  └─temp
+├─public
+│  ├─icons
+│  └─images
+└─src
+   ├─app
+   │  ├─announcements
+   │  │  ├─admin
+   │  │  ├─edit
+   │  │  ├─new
+   │  │  └─[id]
+   │  ├─api
+   │  │  └─password-reset
+   │  │      ├─change
+   │  │      └─request
+   │  └─members
+   │      ├─admin
+   │      ├─login
+   │      ├─new
+   │      ├─password-reset
+   │      ├─profile
+   │      ├─search
+   │      └─[id]
+   ├─hooks
+   ├─lib
+   ├─types
+   │  └─styles
+   └─utils

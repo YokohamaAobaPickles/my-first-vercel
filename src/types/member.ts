@@ -114,7 +114,7 @@ export interface Member {
   req_date?: string | null;
   approval_date?: string | null;
   suspend_date?: string | null;
-  retire_date?: string | null;
+  withdraw_date?: string | null;
   reject_date?: string | null;
   create_date?: string | null;
   update_date?: string | null;

@@ -75,7 +75,7 @@ const MOCK_MEMBERS: Member[] = [
     req_date: null,
     approval_date: null,
     suspend_date: null,
-    retire_date: null,
+    withdraw_date: null,
     reject_date: null,
     create_date: null,
     update_date: null,

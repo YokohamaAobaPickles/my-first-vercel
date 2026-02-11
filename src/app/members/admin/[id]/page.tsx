@@ -162,7 +162,7 @@ export default function MemberDetailAdmin(
     const updateData: any = { status: nextStatus }
     if (email) updateData.email = email
     if (nextStatus === 'withdrawn') {
-      updateData.retire_date = new Date().toISOString()
+      updateData.withdraw_date = new Date().toISOString()
     }
     if (nextStatus === 'rejected') {
       updateData.reject_date = new Date().toISOString()

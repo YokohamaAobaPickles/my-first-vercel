@@ -19,5 +19,5 @@
 | --------------- | ------------------------ | ----------- |
 | read_id         | uuid                     | NO          |
 | announcement_id | bigint                   | YES         |
-| member_id       | text                     | YES         |
+| member_id       | uuid                     | YES         |
 | read_at         | timestamp with time zone | YES         |
