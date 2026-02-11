@@ -1,3 +1,14 @@
+/**
+ * Filename: src/app/members/login/page.tsx
+ * Version : V1.1.0
+ * Update  : 2026-02-11
+ * 修正内容：
+ * V1.1.0
+ * - 新デザイン
+ * V1.0.1 - デバッグ情報追加
+ * V1.0.0 - 初期デザイン
+ */
+
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -86,7 +97,7 @@ export default function MemberLoginPage() {
   }
 
   if (isLoading) {
-    return <div style={baseStyles.container} />
+    return <div style={baseStyles.loginContainer} />
   }
 
   return (
@@ -174,7 +185,7 @@ export default function MemberLoginPage() {
           </ul>
         </div>
         {*/}
-        
+
       </div>
     </div>
   )

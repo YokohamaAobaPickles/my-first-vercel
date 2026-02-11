@@ -9,56 +9,58 @@
 import React from 'react';
 
 export const baseStyles: Record<string, React.CSSProperties> = {
-  // 表示領域全体
-  container: {
+  // ページ全体の外枠（背景・余白・配置）
+  containerDefault: {
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'center',          // 中央寄せ
-    padding: '40px 20px',          // 画面外側の余白を統一
+    alignItems: 'center',
+    padding: '40px 20px',
     backgroundColor: '#1E5E70',
     color: '#FFFFFF',
     minHeight: '100vh',
-    boxSizing: 'border-box',       // スマホの余白問題を防ぐ
+    boxSizing: 'border-box',
   },
-  // 表示領域
+
+  // ログイン専用コンテナ
+  containerLogin: {
+    minHeight: '100vh',
+    backgroundColor: '#1E5E70',
+    color: '#fff',
+    padding: '20px',
+    display: 'flex',
+    justifyContent: 'center',
+    boxSizing: 'border-box',
+  },
+
+  // ページ内の本文幅を制御
   content: {
     width: '100%',
-    maxWidth: '400px',             // ログインは 400px
+    maxWidth: '500px',
+    boxSizing: 'border-box',
   },
-  // 一覧表示
+
+  // UI のまとまり（カード）
   card: {
     backgroundColor: '#194E5D',
     border: '1px solid #1E5E70',
     borderRadius: '12px',
     padding: '20px',
     width: '100%',
-    maxWidth: '400px',             // PC でもスマホでも中央に収まる
     boxSizing: 'border-box',
   },
+
   // リンク
   link: {
     color: '#08A5EF',
     fontSize: '0.9rem',
     textDecoration: 'none',
   },
-  // ボタン非アクティブ時：塗りつぶしは背景色と同じ
-  buttonInactive: {
-    backgroundColor: '#1E5E70',
-    border: '1px solid #194E5D',
-    color: 'white',
-    cursor: 'pointer',
-  },
-  // ボタンアクティブ時：背景色はボックス背景と同じ
-  buttonActive: {
-    backgroundColor: '#194E5D',
-    border: '1px solid white',
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  // ログインボタン
-  loginButton: {
+
+  // ボタン（共通）
+  primaryButton: {
     width: '100%',
     color: 'white',
+    backgroundColor: '#08A5EF',
     border: 'none',
     borderRadius: '30px',
     padding: '16px',
@@ -68,20 +70,29 @@ export const baseStyles: Record<string, React.CSSProperties> = {
     marginBottom: '20px',
     cursor: 'pointer',
   },
-  // ログアウトボタン
-  logoutButton: {
-    color: '#888',
-    backgroundColor: '#111',
-    textDecoration: 'none',
-    padding: '8px 16px',
-    border: '1px solid #333',
-    fontSize: '0.9rem',
+
+  secondaryButton: {
+    backgroundColor: '#194E5D',
+    border: '1px solid #fff',
+    color: '#fff',
+    padding: '10px 16px',
+    borderRadius: '8px',
     cursor: 'pointer',
   },
+
+  dangerButton: {
+    backgroundColor: '#ff4d4f',
+    color: '#fff',
+    padding: '10px 16px',
+    borderRadius: '8px',
+    border: 'none',
+    cursor: 'pointer',
+  },
+
   // 入力ボックス
   inputBox: {
-    color: '#fff',            // 入力文字色
-    backgroundColor: '#222',  // ボックス背景
+    color: '#fff',
+    backgroundColor: '#222',
     width: '100%',
     border: '1px solid #444',
     borderRadius: '8px',
@@ -89,21 +100,21 @@ export const baseStyles: Record<string, React.CSSProperties> = {
     marginBottom: '12px',
     boxSizing: 'border-box',
   },
+
   // ヘッダー
-  headerTitle: {
+  headerContainer: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    fontSize: '1.5rem',
-    margin: 0,
     marginBottom: '30px',
   },
-  // タイトル
-  title: {
+
+  headerTitle: {
     fontSize: '1.5rem',
     margin: 0,
   },
-  // Copyrightスタイル(通常フッターに表示)
+
+  // Copyright
   copyright: {
     textAlign: 'center',
     marginTop: '40px',
