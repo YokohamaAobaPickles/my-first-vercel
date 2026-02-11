@@ -1,6 +1,6 @@
 /**
  * Filename: src/app/members/login/page.tsx
- * Version : V1.1.0
+ * Version : V1.1.1
  * Update  : 2026-02-11
  * 修正内容：
  * V1.1.0
@@ -97,13 +97,13 @@ export default function MemberLoginPage() {
   }
 
   if (isLoading) {
-    return <div style={baseStyles.loginContainer} />
+    return <div style={baseStyles.containerLogin} />
   }
 
   return (
-    <div style={{ ...baseStyles.container, justifyContent: 'center', padding: '20px' }}>
+    <div style={{ ...baseStyles.containerLogin, justifyContent: 'center', padding: '20px' }}>
       <div style={{ width: '100%', maxWidth: '400px', ...baseStyles.card }}>
-        <h1 style={{ textAlign: 'center', ...baseStyles.title }}>
+        <h1 style={{ textAlign: 'center', ...baseStyles.headerTitle }}>
           {currentLineId ? 'LINE会員確認' : 'ログイン'}
         </h1>
 
