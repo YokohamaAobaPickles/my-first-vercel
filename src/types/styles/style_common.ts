@@ -26,7 +26,7 @@ export const baseStyles: Record<string, React.CSSProperties> = {
     minHeight: '100vh',
     backgroundColor: '#1E5E70',
     color: '#fff',
-    padding: '20px',
+    padding: '0px',
     display: 'flex',
     justifyContent: 'center',
     boxSizing: 'border-box',
