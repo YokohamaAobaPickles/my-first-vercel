@@ -144,7 +144,7 @@ export const baseStyles: Record<string, React.CSSProperties> = {
     borderRadius: '30px',
     padding: '16px',
     fontWeight: 'bold',
-    fontSize: '1rem',
+    fontSize: '1.2rem',
     marginTop: '10px',
     marginBottom: '20px',
     cursor: 'pointer',

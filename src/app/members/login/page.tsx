@@ -109,7 +109,6 @@ export default function MemberLoginPage() {
       style={{
         ...baseStyles.containerLogin,
         justifyContent: 'center',
-        padding: '20px'
       }}
     >
       {/* プレースホルダーのスタイル定義 */}
