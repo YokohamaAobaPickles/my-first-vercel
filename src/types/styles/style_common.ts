@@ -24,9 +24,9 @@ export const baseStyles: Record<string, React.CSSProperties> = {
   // ログイン専用コンテナ
   containerLogin: {
     minHeight: '100vh',
-    backgroundColor: '#1E5E70',
+    backgroundColor: '#194e5d',
     color: '#fff',
-    padding: '5px',
+    padding: '0px',
     display: 'flex',
     justifyContent: 'center',
     boxSizing: 'border-box',
