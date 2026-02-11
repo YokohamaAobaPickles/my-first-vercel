@@ -21,7 +21,7 @@ import {
 
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import { canManageMembers } from '@/utils/auth'
-import { styles } from '@/types/styles'
+import { styles } from '@/types/styles/style_members'
 
 export default function MemberDetailPage() {
   const { id } = useParams()

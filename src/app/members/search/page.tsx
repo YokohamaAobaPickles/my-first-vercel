@@ -18,7 +18,7 @@ import { useAuthCheck } from '@/hooks/useAuthCheck'
 import { canManageMembers } from '@/utils/auth'
 
 // プロフィールページと同じ styles を import
-import { styles } from '@/types/styles'
+import { styles } from '@/types/styles/style_members'
 
 export default function MemberSearchPage() {
   const [nickname, setNickname] = useState('')

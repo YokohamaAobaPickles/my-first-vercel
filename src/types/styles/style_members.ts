@@ -214,5 +214,46 @@ export const styles: Record<string, React.CSSProperties> = {
     border: '1px solid #555',
     cursor: 'pointer',
   },
-
 }
+
+/**
+ * Filename: src/types/styles/style_members.ts
+ * Version : V1.0.0
+ * Update  : 2026-02-09
+ * Remarks : 会員管理機能固有のスタイル定義
+ */
+
+export const memStyles: Record<string, React.CSSProperties> = {
+  adminPanel: {
+    color: '#00d1ff',
+    border: '1px solid #333',
+    padding: '15px',
+    borderRadius: '8px',
+    marginBottom: '20px',
+  },
+  statusBadge: {
+    fontSize: '0.7rem',
+    padding: '2px 8px',
+    borderRadius: '4px',
+    backgroundColor: '#222',
+  },
+  officerMark: {
+    color: '#f00',
+    marginLeft: '2px',
+    verticalAlign: 'super',
+    fontSize: '0.8rem',
+  },
+  memberNumber: {
+    fontFamily: 'monospace',
+    color: '#00d1ff',
+    fontWeight: 'bold',
+  },
+  withdrawButton: {
+    backgroundColor: '#ff4d4f',
+    color: '#fff',
+    border: 'none',
+    padding: '8px 16px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+  },
+};
