@@ -34,17 +34,24 @@ export default function AnnouncementDetailPage() {
     let isMounted = true
 
     const loadData = async () => {
+      // ログイン前のアクセスをガード
+      if (!isAuthLoading && !user) {
+        router.replace('/members/login')
+        return
+      }
+
       if (isAuthLoading || !user?.id || !params.id) return
 
       setIsDataLoading(true)
       const announcementId = Number(params.id)
-
+      // 記事詳細の取得
       const result = await fetchAnnouncementById(announcementId)
 
       if (!isMounted) return
 
       if (result.success && result.data) {
         setAnnouncement(result.data)
+        // 既読を記録
         await recordRead(announcementId, user.id)
       } else {
         setError('お知らせが見つかりません。')
@@ -55,9 +62,9 @@ export default function AnnouncementDetailPage() {
 
     loadData()
     return () => { isMounted = false }
-  }, [params.id, isAuthLoading, user?.id])
+  }, [params.id, isAuthLoading, user?.id, user, router])
 
-  if (isAuthLoading || isDataLoading) {
+  if (isAuthLoading || isDataLoading || !user) {
     return <div style={baseStyles.containerDefault}>読み込み中...</div>
   }
 
@@ -90,7 +97,7 @@ export default function AnnouncementDetailPage() {
             ＜ 戻る
           </button>
         </div>
-        
+
         {/* --- 記事カード --- */}
         <article style={annStyles.detailContentCard}>
           <div style={annStyles.publishDate}>

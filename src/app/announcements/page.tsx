@@ -10,6 +10,8 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+
 import { fetchAnnouncements } from '@/lib/announcementApi'
 import { AnnouncementListItem } from '@/types/announcement'
 import { canManageAnnouncements } from '@/utils/auth'
@@ -18,26 +20,39 @@ import { baseStyles } from '@/types/styles/style_common'
 import { annStyles } from '@/types/styles/style_announcements'
 
 export default function AnnouncementsPage() {
+  const router = useRouter()
   const { isLoading: isAuthLoading, userRoles, user } = useAuthCheck()
+
   const [announcements, setAnnouncements] = useState<AnnouncementListItem[]>([])
   const [isDataLoading, setIsDataLoading] = useState(true)
 
   useEffect(() => {
     let isMounted = true
+
     const loadData = async () => {
+      // 1. 認証チェックが終わり、ユーザーがいない場合はログイン画面へ
+      if (!isAuthLoading && !user) {
+        router.replace('/members/login')
+        return
+      }
+
+      // 2. 認証チェック中、またはユーザーIDがまだ確定していない場合はデータ取得を待つ
       if (isAuthLoading || !user?.id) return
+
       setIsDataLoading(true)
       const result = await fetchAnnouncements(user.id)
+
       if (isMounted) {
         setAnnouncements(result.data ?? [])
         setIsDataLoading(false)
       }
     }
+
     loadData()
     return () => { isMounted = false }
-  }, [isAuthLoading, user?.id])
+  }, [isAuthLoading, user?.id, user, router]) // 依存配列に user と router を追加
 
-  if (isAuthLoading || isDataLoading) {
+  if (isAuthLoading || isDataLoading || !user) {
     return <div style={baseStyles.containerDefault}>読み込み中...</div>
   }
 

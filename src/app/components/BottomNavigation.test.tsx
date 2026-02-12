@@ -1,27 +1,51 @@
 /**
  * Filename: src/app/components/BottomNavigation.test.tsx
- * Version : V1.2.2
- * Update  : 2026-02-11
- * Remarks : 
- * V1.2.2 - DOM検証用のマッチャーをインポート
- * V1.2.1 - SVGアイコン対応。アクティブ色の検証を強化。
- * V1.1.0 - アクティブ状態のテスト強化、アイコンのアクティブ確認を追加
- * V1.0.0 - 新規作成。BottomNavigationのユニットテスト。
+ * Version : V1.3.0
+ * Update  : 2026-02-12
+ * Remarks :
+ * V1.3.0 - useAuthCheck をモックし、ログイン済み状態を再現するよう修正
  */
 
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import BottomNavigation from './BottomNavigation';
 import { usePathname } from 'next/navigation';
+import { useAuthCheck } from '@/hooks/useAuthCheck';
 
-// Next.js の usePathname をモック化
+// --- モック ---
 vi.mock('next/navigation', () => ({
   usePathname: vi.fn(),
+}));
+
+vi.mock('@/hooks/useAuthCheck', () => ({
+  useAuthCheck: vi.fn(),
 }));
 
 describe('BottomNavigation Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // ★ ここが最重要：ログイン済み状態を再現
+    (useAuthCheck as any).mockReturnValue({
+      user: { id: 'test-user' },
+      isLoading: false,
+    });
+  });
+
+  it('ログイン前であればメニューが表示されないこと', () => {
+    (useAuthCheck as any).mockReturnValue({
+      user: null,
+      isLoading: false,
+    });
+
+    (usePathname as any).mockReturnValue('/');
+
+    render(<BottomNavigation />);
+
+    const labels = ['お知らせ', 'イベント', '会計', '資産', 'マイページ'];
+    labels.forEach(label => {
+      expect(screen.queryByText(label)).not.toBeInTheDocument();
+    });
   });
 
   it('すべてのメニュー項目が正しくレンダリングされること', () => {
@@ -39,10 +63,8 @@ describe('BottomNavigation Component', () => {
     render(<BottomNavigation />);
 
     const activeItem = screen.getByText('お知らせ').closest('a');
-    // テキスト(aタグ)の色検証
     expect(activeItem).toHaveStyle({ color: '#00D1FF' });
 
-    // SVGの色検証（本体で style={{ color: ... }} を付与する前提）
     const icon = activeItem?.querySelector('svg');
     expect(icon).toHaveStyle({ color: '#00D1FF' });
   });

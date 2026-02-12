@@ -16,13 +16,20 @@
 
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { useRouter } from 'next/navigation';
+
 import AnnouncementsPage from './page';
-import * as announcementApi from '@/lib/announcementApi';
 import { useAuthCheck } from '@/hooks/useAuthCheck';
+import { AnnouncementListItem } from '@/types/announcement';
+import * as announcementApi from '@/lib/announcementApi';
 
 // モック
-vi.mock('@/lib/announcementApi');
-vi.mock('@/hooks/useAuthCheck');
+vi.mock('next/navigation', () => ({
+  useRouter: vi.fn(() => ({
+    replace: vi.fn(),
+    push: vi.fn(),
+  })),
+}));
 vi.mock('next/link', () => ({
   default: ({ children, href, style }: { 
     children: React.ReactNode; 
@@ -32,6 +39,8 @@ vi.mock('next/link', () => ({
     <a href={href} style={style}>{children}</a>
   ),
 }));
+vi.mock('@/lib/announcementApi');
+vi.mock('@/hooks/useAuthCheck');
 
 describe('AnnouncementsPage (UI)', () => {
   const mockUser = { id: 'user-123', email: 'test@example.com' };
@@ -44,7 +53,29 @@ describe('AnnouncementsPage (UI)', () => {
       user: mockUser,
       userRoles: ['general'],
       currentLineId: 'line-123',
+      lineNickname: 'TestUser',
     } as any);
+  });
+
+  it('データがある場合、お知らせ一覧が正しく表示されること', async () => {
+    // API の戻り値をセット
+    vi.mocked(announcementApi.fetchAnnouncements).mockResolvedValue({
+      success: true,
+      data: [
+        {
+          announcement_id: 1,
+          title: 'テストお知らせ',
+          is_read: false,
+          is_pinned: false,
+          publish_date: '2026-02-12',
+        } as any
+      ], 
+    });
+
+    render(<AnnouncementsPage />);
+
+    // 「読み込み中」を通り越して、タイトルが表示されるのを待つ
+    expect(await screen.findByText('テストお知らせ')).toBeInTheDocument();
   });
 
   it('お知らせが1件もない場合、「現在お知らせはありません。」と表示されること', async () => {
