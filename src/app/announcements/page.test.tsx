@@ -31,10 +31,10 @@ vi.mock('next/navigation', () => ({
   })),
 }));
 vi.mock('next/link', () => ({
-  default: ({ children, href, style }: { 
-    children: React.ReactNode; 
-    href: string; 
-    style?: React.CSSProperties 
+  default: ({ children, href, style }: {
+    children: React.ReactNode;
+    href: string;
+    style?: React.CSSProperties
   }) => (
     <a href={href} style={style}>{children}</a>
   ),
@@ -69,7 +69,7 @@ describe('AnnouncementsPage (UI)', () => {
           is_pinned: false,
           publish_date: '2026-02-12',
         } as any
-      ], 
+      ],
     });
 
     render(<AnnouncementsPage />);
@@ -134,6 +134,7 @@ describe('AnnouncementsPage (UI)', () => {
     expect(readTitle).toHaveStyle('font-weight: 400');
 
     // 既読済みテキスト
-    expect(screen.getByText(/既読済み/)).toBeInTheDocument();
+    // \( と \) でカッコ自体をエスケープし、タイトルとの重複を避ける
+    expect(screen.getByText(/\(既読\)/)).toBeInTheDocument();
   });
 });

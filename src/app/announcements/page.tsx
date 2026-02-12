@@ -61,12 +61,12 @@ export default function AnnouncementsPage() {
       <div style={baseStyles.content}>
 
         {/* --- タイトル ＆ 管理ボタン --- */}
-        <div style={annStyles.listHeader}>
+        <div style={baseStyles.listHeader}>
           <h1 style={{ ...baseStyles.headerTitle, marginBottom: 0 }}>
             お知らせ
           </h1>
           {canManageAnnouncements(userRoles) && (
-            <Link href="/announcements/admin" style={annStyles.adminButtonSmall}>
+            <Link href="/announcements/admin" style={baseStyles.adminButtonSmall}>
               管理パネル
             </Link>
           )}
@@ -84,7 +84,7 @@ export default function AnnouncementsPage() {
               {announcements.map((item) => (
                 <li key={item.announcement_id} style={annStyles.listItemWrapper}>
                   <div style={annStyles.listPublishDate}>
-                    {item.publish_date} {item.is_read && '(既読済み)'}
+                    {item.publish_date} {item.is_read && '(既読)'}
                   </div>
 
                   <div style={annStyles.listTitleRow}>

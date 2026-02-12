@@ -19,6 +19,7 @@ export const annStyles: Record<string, React.CSSProperties | any> = {
   // 一覧ページ（一般利用者向け）
   // ============================
 
+  /* baseStyleに移動
   // --- 管理ボタン ---
   listHeader: {
     display: 'flex',
@@ -33,10 +34,10 @@ export const annStyles: Record<string, React.CSSProperties | any> = {
     borderRadius: '20px',
     backgroundColor: 'transparent',
     border: '1px solid #08A5EF',
-    color: '#08A5EF',
+    color: '#03abff',
     textDecoration: 'none',
   },
-
+ */
   /** li 全体（縦並び・隙間調整済み） */
   listContainerCard: {
     backgroundColor: '#194E5D',
@@ -48,8 +49,8 @@ export const annStyles: Record<string, React.CSSProperties | any> = {
   listItemWrapper: {
     display: 'flex',
     flexDirection: 'column',
-    padding: '4px 0',     // ← 隙間を自然に
-    gap: '2px',            // ← 公開日と本文の距離を詰める
+    padding: '6px 0',     // ← 隙間を自然に
+    gap: '4px',            // ← 公開日と本文の距離を詰める
     alignItems: 'stretch', // ← 公開日を左端に固定
     borderBottom: '1.5px solid #2A7A90',
   },
@@ -65,7 +66,7 @@ export const annStyles: Record<string, React.CSSProperties | any> = {
   /** タイトル行（重要マーク + タイトル） */
   listTitleRow: {
     display: 'flex',
-    gap: '8px',
+    gap: '8px ',
     width: '100%',
     alignItems: 'center', // ← 重要マークを縦に伸ばさない
   },
@@ -73,19 +74,20 @@ export const annStyles: Record<string, React.CSSProperties | any> = {
   /** タイトルリンク（既読/未読で色と太さは上書き） */
   listTitleLink: {
     flex: 1,
-    fontSize: '1.1rem',
+    fontSize: '1rem',
     lineHeight: '1.4',
     textDecoration: 'none',
   },
 
   /** 重要マーク（高さ固定で2行化を防止） */
   listImportanceLabel: {
-    backgroundColor: '#ef4444',
-    color: '#fff',
+    //backgroundColor: '#ef4444',
+    color: '#ef4444',
     padding: '2px 6px',
     borderRadius: '4px',
+    border: `1px solid '#ef4444'`,
     fontSize: '0.75rem',
-    fontWeight: 'bold',
+    //fontWeight: 'bold',
     flexShrink: 0,
     height: '20px',        // ← タイトルが2行でも伸びない
     display: 'flex',
@@ -98,8 +100,8 @@ export const annStyles: Record<string, React.CSSProperties | any> = {
   },
 
   importanceLabel: {
-    backgroundColor: '#ef4444',
-    color: '#fff',
+    //backgroundColor: '#ef4444',
+    color: '#ef4444be',
     padding: '2px 6px',
     borderRadius: '4px',
     fontSize: '0.75rem',
@@ -107,10 +109,19 @@ export const annStyles: Record<string, React.CSSProperties | any> = {
   },
 
   readBadge: {
+    textDecoration: 'none',
     fontSize: '0.75rem',
     color: '#9CA3AF',
     marginLeft: '8px',
   },
+
+  //readBadge: {
+  //  textDecoration: 'none',
+  //  fontSize: '0.85rem',
+  //  color: '#00D1FF',
+  //  cursor: 'pointer',
+  //},
+
 
   publishDate: {
     color: '#9CA3AF',
@@ -128,9 +139,9 @@ export const annStyles: Record<string, React.CSSProperties | any> = {
   },
 
   detailTitle: {
-    fontSize: '1.5rem',
+    fontSize: '1.2rem',
     fontWeight: 'bold',
-    marginBottom: '8px',
+    marginBottom: '4px',
     lineHeight: '1.4',
   },
 
@@ -166,14 +177,49 @@ export const annStyles: Record<string, React.CSSProperties | any> = {
   },
 
   // ============================
-  // 管理者者向け一覧画面
+  // 管理者向け一覧画面 (追加・刷新)
   // ============================
+  adminHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '20px',
+  },
+
+  adminPageTitle: {
+    fontSize: '1.8rem',
+    marginBottom: '20px',
+    fontWeight: 'bold',
+  },
+
   adminCard: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '15px',
-    borderBottom: '1px solid #1E5E70',
+    padding: '10px 0',
+    //  borderBottom: '1.5px solid #1E5E70',
+    borderBottom: '1.5px solid #153e48',
+  },
+
+  adminCardMain: {
+    flex: 1,
+  },
+
+  adminCardTitle: {
+    fontSize: '1rem',
+    // fontWeight: 'bold',
+    margin: '4px 0',
+  },
+
+  adminMetaInfo: {
+    fontSize: '0.8rem',
+    color: '#9CA3AF',
+  },
+
+  badgeContainer: {
+    display: 'flex',
+    gap: '8px',
+    marginBottom: '4px',
   },
 
   actionBox: {
@@ -184,10 +230,10 @@ export const annStyles: Record<string, React.CSSProperties | any> = {
 
   statusBadge: (status: string) => ({
     fontSize: '0.75rem',
-    color: status === 'published' ? '#4caf50' : '#9CA3AF',
+    color: status === 'published' ? '#02ff0a' : '#9CA3AF',
     padding: '2px 8px',
     borderRadius: '10px',
-    border: `1px solid ${status === 'published' ? '#4caf50' : '#9CA3AF'}`,
+    border: `1px solid ${status === 'published' ? '#02ff0a' : '#9CA3AF'}`,
   }),
 
   // --- 既読詳細テーブル ---
@@ -241,5 +287,60 @@ export const annStyles: Record<string, React.CSSProperties | any> = {
     marginTop: '40px',
     paddingTop: '20px',
     borderTop: '1px solid #ff4d4f',
+  },
+  // ============================
+  // 編集・新規作成フォーム
+  // ============================
+  formContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px',
+    marginTop: '20px',
+  },
+
+  formGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+
+  label: {
+    fontSize: '0.9rem',
+    color: '#9CA3AF',
+    fontWeight: 'bold',
+  },
+
+  input: {
+    padding: '12px',
+    borderRadius: '8px',
+    backgroundColor: '#194E5D',
+    border: '1px solid #1E5E70',
+    color: '#FFFFFF',
+    fontSize: '1rem',
+  },
+
+  textarea: {
+    padding: '12px',
+    borderRadius: '8px',
+    backgroundColor: '#194E5D',
+    border: '1px solid #1E5E70',
+    color: '#FFFFFF',
+    fontSize: '1rem',
+    minHeight: '200px',
+    resize: 'vertical',
+  },
+
+  checkboxGroup: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    cursor: 'pointer',
+    userSelect: 'none',
+  },
+
+  buttonGroup: {
+    display: 'flex',
+    gap: '12px',
+    marginTop: '30px',
   },
 };

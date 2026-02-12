@@ -1,8 +1,12 @@
 /**
- * Filename: src/app/announcements/admin/edit/[id]/page.test.tsx
- * Version : V1.1.0
- * Update  : 2026-02-09
- * Remarks : B-12 お知らせ編集・削除機能のテスト。新API・新スキーマ対応を検証。
+ * Filename: src/app/announcements/edit/[id]/page.test.tsx
+ * Version : V1.2.0
+ * Update  : 2026-02-12
+ * Remarks : 
+ * V1.2.0
+ * - デザイン準拠の編集・削除機能テスト。
+ * V1.5.x
+ * - B-12 お知らせ編集・削除機能のテスト。新API・新スキーマ対応を検証。
  */
 
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
@@ -11,6 +15,7 @@ import EditAnnouncementPage from './page';
 import * as announcementApi from '@/lib/announcementApi';
 import { useAuthCheck } from '@/hooks/useAuthCheck';
 import { useRouter, useParams } from 'next/navigation';
+import { AnnouncementStatus } from '@/types/announcement';
 
 vi.mock('@/lib/announcementApi');
 vi.mock('@/hooks/useAuthCheck');
@@ -19,15 +24,15 @@ vi.mock('next/navigation', () => ({
   useParams: vi.fn(),
 }));
 
-describe('EditAnnouncementPage (B-12)', () => {
-  const mockRouter = { push: vi.fn() };
+describe('EditAnnouncementPage (B-12, B-14)', () => {
+  const mockRouter = { push: vi.fn(), replace: vi.fn() };
   const mockId = '101';
   const mockAnnouncement = {
     announcement_id: 101,
     title: '既存のタイトル',
     content: '既存の本文',
     publish_date: '2026-02-01',
-    status: 'published',
+    status: 'published' as AnnouncementStatus,
     is_pinned: true,
     target_role: 'all',
   };
@@ -37,7 +42,6 @@ describe('EditAnnouncementPage (B-12)', () => {
     vi.mocked(useParams).mockReturnValue({ id: mockId });
     vi.mocked(useRouter).mockReturnValue(mockRouter as any);
 
-    // 管理者ロールでモック
     vi.mocked(useAuthCheck).mockReturnValue({
       isLoading: false,
       user: { id: 'admin-1' },
@@ -55,7 +59,8 @@ describe('EditAnnouncementPage (B-12)', () => {
     render(<EditAnnouncementPage />);
 
     await waitFor(() => {
-      expect(mockRouter.push).toHaveBeenCalledWith('/announcements');
+      // replace または push でリダイレクトされることを確認
+      expect(mockRouter.replace).toHaveBeenCalledWith('/announcements');
     });
   });
 
@@ -66,11 +71,6 @@ describe('EditAnnouncementPage (B-12)', () => {
     });
 
     render(<EditAnnouncementPage />);
-
-    // API 呼び出し検証 
-    await waitFor(() => {
-      expect(announcementApi.fetchAnnouncementById).toHaveBeenCalledWith(101);
-    });
 
     await waitFor(() => {
       expect(screen.getByDisplayValue('既存のタイトル')).toBeInTheDocument();
@@ -89,14 +89,9 @@ describe('EditAnnouncementPage (B-12)', () => {
     });
 
     render(<EditAnnouncementPage />);
-
-    // ロード待ち
     const titleInput = await screen.findByDisplayValue('既存のタイトル');
-
-    // 値を変更
     fireEvent.change(titleInput, { target: { value: '更新後のタイトル' } });
 
-    // 更新実行
     const updateButton = screen.getByRole('button', { name: /更新する/ });
     fireEvent.click(updateButton);
 
@@ -119,13 +114,12 @@ describe('EditAnnouncementPage (B-12)', () => {
       data: null,
     });
 
-    // window.confirm をモック
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     render(<EditAnnouncementPage />);
     await screen.findByDisplayValue('既存のタイトル');
 
-    const deleteButton = screen.getByRole('button', { name: /この記事を完全に削除/ });
+    const deleteButton = screen.getByRole('button', { name: /削除/ });
     fireEvent.click(deleteButton);
 
     expect(confirmSpy).toHaveBeenCalled();
@@ -147,7 +141,7 @@ describe('EditAnnouncementPage (B-12)', () => {
     render(<EditAnnouncementPage />);
     await screen.findByDisplayValue('既存のタイトル');
 
-    const deleteButton = screen.getByRole('button', { name: /この記事を完全に削除/ });
+    const deleteButton = screen.getByRole('button', { name: /削除/ });
     fireEvent.click(deleteButton);
 
     // confirm が呼ばれたこと

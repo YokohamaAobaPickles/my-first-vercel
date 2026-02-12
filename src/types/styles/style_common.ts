@@ -28,6 +28,8 @@ export const baseStyles: Record<string, React.CSSProperties> = {
     width: '100%',
     maxWidth: '500px',
     boxSizing: 'border-box',
+    // 下部のナビゲーション（約60-80px）に重ならないよう、余裕を持って余白を追加
+    paddingBottom: '50px',
   },
 
   // UI のまとまり（カード）
@@ -70,6 +72,15 @@ export const baseStyles: Record<string, React.CSSProperties> = {
     borderRadius: '8px',
     cursor: 'pointer',
   },
+  secondaryButtonMinimal: {
+    fontSize: '0.75rem',
+    backgroundColor: '#0891d1',
+    border: '1px solid white',
+    color: '#eef9ff',
+    padding: '2px 8px',
+    borderRadius: '16px',
+    cursor: 'pointer',
+  },
 
   dangerButton: {
     backgroundColor: '#ff4d4f',
@@ -79,7 +90,39 @@ export const baseStyles: Record<string, React.CSSProperties> = {
     border: 'none',
     cursor: 'pointer',
   },
-
+  // 枠線のみのボタン
+  buttonOutline: {
+    padding: '10px 16px',
+    borderRadius: '30px', // 管理パネルのボタンに合わせる
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    fontSize: '0.9rem',
+    fontWeight: 'bold',
+    textAlign: 'center' as const,
+    flex: 1,
+    transition: '0.2s',
+  },
+  // --- 管理ボタン ---
+  listHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '24px',
+    width: '100%',
+  },
+  adminButtonSmall: {
+    padding: '6px 12px',
+    fontSize: '0.8rem',
+    borderRadius: '20px',
+    //透明ボタン
+    //backgroundColor: 'transparent',
+    //border: '1px solid #08A5EF',
+    //color: '#03abff',
+    backgroundColor: '#08A5EF',
+    border: '1px solid #08A5EF',
+    color: '#eef9ff',
+    textDecoration: 'none',
+  },
   // 入力ボックス
   inputBox: {
     color: '#fff',
@@ -102,7 +145,7 @@ export const baseStyles: Record<string, React.CSSProperties> = {
 
   // ヘッダータイトル
   headerTitle: {
-    fontSize: '2rem',
+    fontSize: '1.8rem',
     fontWeight: 'bold',
     margin: '0 0 30px 0',
   },

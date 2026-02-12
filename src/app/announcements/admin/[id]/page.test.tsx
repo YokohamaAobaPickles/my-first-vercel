@@ -124,15 +124,23 @@ describe('AnnouncementReadDetailPage (UI Test)', () => {
     expect(await screen.findByText('既読データはありません')).toBeInTheDocument();
   });
 
-  it('データの取得に失敗した場合にエラーメッセージが表示されること', async () => {
-    vi.mocked(announcementApi.fetchReadDetails).mockResolvedValue({
+it('データの取得に失敗した場合にエラーメッセージが表示されること', async () => {
+    // 記事取得に失敗するケースをシミュレート
+    vi.mocked(announcementApi.fetchAnnouncementById).mockResolvedValue({
       success: false,
-      error: { message: '通信エラーが発生しました' },
-      data: null
+      data: null as any,
+      error: { message: 'サーバーエラーが発生しました' },
+    });
+
+    vi.mocked(announcementApi.fetchReadDetails).mockResolvedValue({
+      success: true,
+      data: [],
     });
 
     render(<AnnouncementReadDetailPage />);
 
-    expect(await screen.findByText('通信エラーが発生しました')).toBeInTheDocument();
+    // エラーメッセージの表示を待機
+    const errorDisplay = await screen.findByText('サーバーエラーが発生しました');
+    expect(errorDisplay).toBeInTheDocument();
   });
 });
