@@ -318,29 +318,17 @@ export default function ProfilePage() {
               >
                 ログアウト
               </button>
-              {/* デバッグ用：お知らせ一覧へのリンクを追加 */}
-              <div style={{ marginTop: '24px' }}>
-                <Link href="/announcements" style={styles.debugLink}>
-                  【デバッグ用】お知らせ一覧
-                </Link>
-              </div>
             </>
           ) : (
             <>
               <p style={{ color: '#666', fontSize: '0.8rem' }}>
                 ※ LINEアプリでお使いの方は、右上の「×」で閉じてください。
               </p>
-              {/* LINE環境でもデバッグしやすいようリンクのみ表示 */}
-              <div style={{ marginTop: '24px' }}>
-                <Link href="/announcements" style={styles.debugLink}>
-                  【デバッグ用】お知らせ一覧
-                </Link>
-              </div>
             </>
           )}
         </div>
         <footer style={footerStyle}>
-          YAPMS V1.0.1 Copyright 2026
+          YAPMS V1.1.0 Copyright 2026
           {' '}
           Yokohama Aoba Pickles
         </footer>
