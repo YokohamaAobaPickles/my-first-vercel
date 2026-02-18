@@ -29,6 +29,7 @@ export default function LayoutSample() {
   // セクション
   const sectionStyle: React.CSSProperties = {
     width: '100%',
+    height: 'fit-content',
     maxWidth: '500px',
 //    minHeight: '100vh',
     padding: '16px',
