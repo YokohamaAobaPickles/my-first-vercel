@@ -30,7 +30,7 @@ export default function LayoutSample() {
   const sectionStyle: React.CSSProperties = {
     width: '100%',
     maxWidth: '500px',
-    minHeight: '100vh',
+//    minHeight: '100vh',
     padding: '16px',
     backgroundColor: '#194e5d',
     borderRadius: '12px',
