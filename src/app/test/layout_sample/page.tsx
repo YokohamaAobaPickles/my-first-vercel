@@ -22,7 +22,8 @@ export default function LayoutSample() {
     alignItems: 'center',
     gap: '24px',
     fontFamily: 'sans-serif',
-    // backgroundColor: '#11353f',
+    // backgroundColor: '#11353f', // ダークブルー1色の背景色
+    // 背景をグラディエーションにするためには以下の定義を使う
     background: 'linear-gradient(to bottom, #11353f 0%, #000000 100%)',
     backgroundAttachment: 'fixed',
   };
@@ -31,13 +32,22 @@ export default function LayoutSample() {
     width: '100%',
     height: 'fit-content',
     maxWidth: '500px',
-    //    minHeight: '100vh',
+    // minHeight: '100vh', // 画面いっぱいまで表示する場合はこれを有効にする
     padding: '16px',
     backgroundColor: '#194e5d',
     borderRadius: '12px',
     boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
     marginTop: '2px',
     marginBottom: '2px',
+  };
+  // セクションタイトル
+  const sectionTitleStyle: React.CSSProperties = {
+    fontSize: '1rem',
+    color: 'lightgray',
+    display: 'flex',          // 横並びにする
+    alignItems: 'center',     // 上下中央揃え
+    gap: '8px',               // タイトルとアイコンの間の隙間
+    marginBottom: '12px'      // 下の要素との余白
   };
   // UI のまとまり（カード）
   const card: React.CSSProperties = {
@@ -51,17 +61,6 @@ export default function LayoutSample() {
     gap: '10px', // ボタン間のスペース
     marginTop: '2px',
     marginBottom: '2px',
-  };
-
-  const buttonStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '10px',
-    fontSize: '16px',
-    fontWeight: 'bold',
-    borderRadius: '8px',
-    border: 'none',
-    cursor: 'pointer',
-    textAlign: 'center'
   };
   const label: React.CSSProperties = {
     padding: '2px',
@@ -109,6 +108,11 @@ export default function LayoutSample() {
     marginTop: '2px',
     marginBottom: '4px',
     cursor: 'pointer',
+    // アイコンと文字を並べるための設定
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px', // アイコンと文字の間隔
   };
   const secondaryButtonProceed: React.CSSProperties = {
     width: '100%',
@@ -123,6 +127,18 @@ export default function LayoutSample() {
     marginBottom: '4px',
     cursor: 'pointer',
   };
+  const Icons = [
+    { id: 1, name: '新聞アイコン', src: '/icons/newspaper.png' },
+    { id: 2, name: '会計アイコン', src: '/icons/money.png' },
+    { id: 3, name: 'ロックアイコン', src: '/icons/lock.png' },
+    { id: 4, name: '救急(svg)', src: '/icons/first_aid.svg' },
+    { id: 5, name: '救急(svg_dark)', src: '/icons/first_aid_dark.svg' },
+    { id: 6, name: '救急(svg_blue)', src: '/icons/first_aid_blue.svg' },
+    { id: 7, name: '救急(svg_office)', src: '/icons/first_aid_office.svg' },
+    { id: 8, name: '虫眼鏡', src: '/icons/magnifying_glass.png' },
+    { id: 9, name: 'ユーザ', src: '/icons/user.png' },
+    { id: 10, name: 'グループ', src: '/icons/users4.png' },
+  ];
 
 
   return (
@@ -135,7 +151,7 @@ export default function LayoutSample() {
 
       {/* 会員アクション想定 */}
       <section style={sectionStyle} >
-        <h3 style={{ fontSize: '1rem', color: 'lightgray' }}>
+        <h3 style={sectionTitleStyle}>
           A群: 会員セクション(sectionTitle)
         </h3>
         <div style={{ ...card, display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -160,7 +176,12 @@ export default function LayoutSample() {
           </button>
 
           <button style={{ ...secondaryButton }}>
-            ボタン(secondaryButton)
+            <img
+              src={Icons[7].src} // Icons配列の8番目(index 7)を指定
+              alt={Icons[7].name}
+              style={{ width: '20px', height: '20px', objectFit: 'contain' }}
+            />
+            検索ボタン(secondaryButton)
           </button>
 
           <button style={{ ...secondaryButton, border: '1px solid gray', color: 'gray' }}>
@@ -171,8 +192,13 @@ export default function LayoutSample() {
 
       {/* お知らせセクション想定 */}
       < section style={sectionStyle} >
-        <h3 style={{ fontSize: '1rem', color: 'lightgray' }}>
+        <h3 style={sectionTitleStyle}>
           B群: お知らせセクション
+          <img
+            src={Icons[2].src} // Icons配列の3番目(index 2)を指定
+            alt={Icons[2].name}
+            style={{ width: '20px', height: '20px', objectFit: 'contain' }}
+          />
         </h3>
 
         <div style={{ ...label, color: 'lightgray' }}>
