@@ -31,7 +31,7 @@ export default function LayoutSample() {
     width: '100%',
     height: 'fit-content',
     maxWidth: '500px',
-//    minHeight: '100vh',
+    //    minHeight: '100vh',
     padding: '16px',
     backgroundColor: '#194e5d',
     borderRadius: '12px',
@@ -187,11 +187,12 @@ export default function LayoutSample() {
             更新
           </button>
         </div>
-        <a href="/test/image_sample" style={baseStyles.Link}>
-          イメージサンプル
-        </a>
 
       </section >
+
+      <a href="/test/image_sample" style={baseStyles.Link}>
+        イメージサンプル
+      </a>
 
       {/* 画面下部固定などのUI確認用 */}
       < footer style={{ marginTop: 'auto', textAlign: 'center', fontSize: '0.8rem', color: '#999' }
