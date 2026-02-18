@@ -7,6 +7,7 @@
 'use client';
 
 import React from 'react';
+import { baseStyles } from '@/types/styles/style_common'
 
 export default function LayoutSample() {
   // コンテナ
@@ -185,6 +186,10 @@ export default function LayoutSample() {
             更新
           </button>
         </div>
+        <a href="/test/image_sample" style={baseStyles.Link}>
+          イメージサンプル
+        </a>
+
       </section >
 
       {/* 画面下部固定などのUI確認用 */}

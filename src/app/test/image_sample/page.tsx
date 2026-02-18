@@ -5,8 +5,10 @@
  * Remarks: V0.2.0 - PNG画像のプレビュー表示機能を追加
  */
 import Image from 'next/image';
+import { baseStyles } from '@/types/styles/style_common'
 
-export default function  ImageSample() {
+
+export default function ImageSample() {
   // プレースホルダ用のダミー画像データ
   const dummyAssets = [
     { id: 1, name: '救急(png64)', src: '/icons/first_aid_64.png' },
@@ -64,6 +66,10 @@ export default function  ImageSample() {
           </div>
         ))}
       </div>
+      <a href="/test/layout_sample" style={baseStyles.Link}>
+        レイアウトサンプル
+      </a>
+
     </div>
   );
 }
