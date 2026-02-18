@@ -9,25 +9,27 @@
 import React from 'react';
 
 export default function LayoutSample() {
-  // スタイル定義（1行ずつ改行）
+  // コンテナ
   const containerStyle: React.CSSProperties = {
-    padding: '20px',
-    maxWidth: '500px',
+    width: '100%',
+    minHeight: '100vh',
+    boxSizing: 'border-box',
     margin: '0 auto',
+    padding: '20px',
     display: 'flex',
     flexDirection: 'column',
+    alignItems: 'center',
     gap: '24px',
     fontFamily: 'sans-serif',
     // backgroundColor: '#11353f',
-    background: 'linear-gradient(\n' +
-      '  to bottom,\n' +
-      '  #11353f 0%,\n' +
-      '  #000000 100%\n' +
-      ')',
-    minHeight: '100vh',
-    backgroundAttachment: 'fixed'
+    background: 'linear-gradient(to bottom, #11353f 0%, #000000 100%)',
+    backgroundAttachment: 'fixed',
   };
+  // セクション
   const sectionStyle: React.CSSProperties = {
+    width: '100%',
+    maxWidth: '500px',
+    minHeight: '100vh',
     padding: '16px',
     backgroundColor: '#194e5d',
     borderRadius: '12px',
