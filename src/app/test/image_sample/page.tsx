@@ -1,12 +1,12 @@
 /**
- * Filename: src/app/assets/page.tsx
+ * Filename: src/app/test/image_sample/page.tsx
  * Version: V0.2.0
  * Update: 2026-02-13
  * Remarks: V0.2.0 - PNG画像のプレビュー表示機能を追加
  */
 import Image from 'next/image';
 
-export default function AssetsPage() {
+export default function  ImageSample() {
   // プレースホルダ用のダミー画像データ
   const dummyAssets = [
     { id: 1, name: '救急(png64)', src: '/icons/first_aid_64.png' },
