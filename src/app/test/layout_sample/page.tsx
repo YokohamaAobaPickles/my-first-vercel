@@ -18,8 +18,14 @@ export default function LayoutSample() {
     flexDirection: 'column',
     gap: '24px',
     fontFamily: 'sans-serif',
-    backgroundColor: '#11353f',
-    minHeight: '100vh'
+    // backgroundColor: '#11353f',
+    background: 'linear-gradient(\n' +
+      '  to bottom,\n' +
+      '  #11353f 0%,\n' +
+      '  #000000 100%\n' +
+      ')',
+    minHeight: '100vh',
+    backgroundAttachment: 'fixed'
   };
   const sectionStyle: React.CSSProperties = {
     padding: '16px',
