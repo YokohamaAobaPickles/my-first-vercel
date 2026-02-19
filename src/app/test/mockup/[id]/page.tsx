@@ -15,7 +15,7 @@ export default function MockupDetailPage() {
   const idNum = parseInt(params.id as string, 10);
   
   // ファイル名の組み立て（0埋めなし）
-  const fileName = `スライド${idNum}.png`;
+  const fileName = `スライド${idNum}.PNG`; // PowerPointの画像ファイル名はPNGとなる
   const imagePath = `/mockup/${fileName}`;
 
   // スタイルの定義
