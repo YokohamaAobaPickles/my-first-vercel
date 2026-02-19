@@ -4,72 +4,170 @@
 
 ---
 
-# 横浜青葉ピックルズ システムデザイン仕様書 (V2.0.0)
+# 🎨 デザインシステム V2.0.0 — 今日のまとめ
+## 🏠 1. Container / Content / Card の最終定義
+### ✔ Container（敷地）
+画面全体の背景・高さ（min-height: 100vh）・中央寄せを担当
 
-## 1. デザインコンセプト
+全ページ共通（ログイン画面も含む）
 
-「落ち着きのある洗練されたスポーツコミュニティ」を体現するため、深みのある**青緑（ティール）**を基調としたダークテーマを採用します。視認性を確保しつつ、モダンなUIを提供します。
+BottomNav がない画面は paddingBottom を上書きするだけ
 
----
+レスポンシブは Container ではなく Content で制御
 
-## 2. カラーパレット
+### ✔ Content（本文の枠）
+Container の中にある本文領域
 
-すべてのコンポーネントは、以下のカラーコードに基づいて構築します。
+maxWidth と padding を端末ごとに切り替える
 
-| 要素 | カラーコード | 用途・役割 |
-| --- | --- | --- |
-| **Main Background** | `#1E5E70` | アプリケーション全体の背景色 |
-| **Card / Box Background** | `#194E5D` | 情報表示エリア、入力フィールドの背景 |
-| **Border / Divider** | `#1E5E70` | ボックスの枠線、セクションの区切り線 |
-| **Text (Primary)** | `#FFFFFF` | タイトル、メインの本文 |
-| **Text (Secondary)** | `#9CA3AF` | 補足情報、ラベル、日付表示 |
-| **Accent / Admin** | `#00D1FF` | 管理者向けリンク、会員番号、重要な強調 |
-| **Alert / Error** | `#FF4D4F` | 削除ボタン、警告、未承認ステータス |
+スマホ：maxWidth 500px
 
----
+タブレット：maxWidth 800px
 
-## 3. タイポグラフィ
+PC：maxWidth 1200px
 
-情報の階層を明確にするため、以下のサイズ・太さを基準とします。
+全ページ共通
 
-| 階層 | サイズ | 太さ | 適用例 |
-| --- | --- | --- | --- |
-| **H1 (Page Title)** | `1.5rem` | **Bold (700)** | 「マイプロフィール」「お知らせ」 |
-| **H2 (Section Title)** | `1.1rem` | **Bold (700)** | 「基本情報」「検索結果」 |
-| **Body (Main)** | `1.0rem` | Regular (400) | プロフィール内容、お知らせ本文 |
-| **Label / Meta** | `0.85rem` | **Bold (700)** | 入力項目の見出し、投稿日 |
-| **Small / Helper** | `0.75rem` | Regular (400) | 補足説明、ステータスバッジ |
+### ✔ Card（情報のまとまり）
+Content の中に置く情報ブロック
 
----
+背景色：#194E5D
 
-## 4. コンポーネント定義
+枠線：1px solid #1E5E70
 
-### 4.1. カード (Information Box)
+角丸：12px
 
-* **Background**: `#194E5D`
-* **Border**: `1px solid #1E5E70`
-* **Radius**: `12px`
-* **Padding**: `20px`
+padding：16px
 
-### 4.2. フォーム入力 (Input / Textarea)
+大きなまとまり（セクション）にも、小さなまとまり（入力欄など）にも使える
 
-* **Background**: `#194E5D`
-* **Border**: `1px solid #1E5E70`
-* **Text Color**: `#FFFFFF`
-* **Radius**: `8px`
+Card の中に別の Card を入れて OK（再利用性が高い）
 
-### 4.3. ボタン (Buttons)
+# 🧩 2. 入力系コンポーネント（CardInput）
+### ✔ CardInput は 1種類で統一
+text / email / number
 
-* **非アクティブ（通常時）**:
-* **Background**: `#1E5E70` (全体背景と同化)
-* **Border**: `1px solid #194E5D`
+textarea（複数行）
 
+select（ドロップダウン）
 
-* **アクティブ（ホバー・選択時）**:
-* **Background**: `#194E5D` (ボックス背景色と同期)
-* **Border**: `1px solid #FFFFFF`
+date（日付選択）
+→ type と props で切り替えるだけ
 
+### ✔ InputWrapper のデザイン
+背景色：#08191E
 
+枠線：1px solid #2A6F82
+
+角丸：8px
+
+padding：8px
+
+高さ：
+
+1行：40px
+
+select：40px
+
+date：40px
+
+textarea：rows に応じて可変
+
+# 🎛️ 3. ボタン（Button）とボタン群（CardButtonGroup）
+### ✔ ボタンの形は pill 型 1種類に統一
+height：40px
+
+border-radius：20px
+
+padding：0 16px
+
+font-size：16px
+
+font-weight：600
+
+### ✔ 種類は「色」で切り替える
+primary（最重要）
+
+secondary（通常）
+
+proceed（肯定）
+
+cancel（否定）
+
+inactive（無効）
+
+### ✔ CardButtonGroup
+ボタンをまとめる小さな Card
+
+gap：12px
+
+基本は縦並び（スマホ）
+
+PC では横並びも可能
+
+# 🏷️ 4. バッジ（Badge）
+### ✔ Badge = 状態・種別・重要度を示す小さなラベル
+形：pill 型
+
+高さ：20px
+
+padding：4px 8px
+
+角丸：10px
+
+font-size：12px
+
+色で意味を表現（重要・公開・在籍・退会・会長など）
+
+### ✔ 使用例
+会員一覧：在籍 / 退会 / 会長
+
+お知らせ一覧：重要 / 公開 / 無効 / 下書き
+
+イベント一覧：受付中 / 満員 / 終了（将来）
+
+# 📋 5. 一覧カード（ListItemCard）
+### ✔ ListItemCardBase（共通）
+背景色：#194E5D
+
+枠線：1px solid #1E5E70
+
+角丸：12px
+
+padding：12px
+
+タップ可能
+
+### ✔ ListItemCardSimple（会員・お知らせ）
+左：主要情報
+
+右：バッジ
+
+高さは内容に応じて可変
+
+会員一覧・お知らせ一覧に使用
+
+### ✔ ListItemCardEvent（イベント）
+日付を大きく表示
+
+時間・場所・参加人数など複数行
+
+アイコンを含む
+
+イベント一覧専用の構造
+
+# 🌱 6. 今後の方針
+### ✔ 今決めるべきもの
+共通コンポーネント（CardInput / Button / Badge / ListItemCard）
+
+デザインシステムの基礎レイヤー
+
+### ✔ 後で決めていいもの
+D群（会計管理）の画面構造
+
+E群（資産/設備管理）の画面構造
+
+各群の詳細画面のレイアウト
 
 ---
 
@@ -100,7 +198,8 @@
  * Filename: [実際のファイル名]
  * Version : Vx.y.z
  * Update  : YYYY-MM-DD
- * Remarks : バージョン - 追加/修正内容の概略
+ * Remarks : 
+ * バージョン - 追加/修正内容の概略
  */
 
 ```
