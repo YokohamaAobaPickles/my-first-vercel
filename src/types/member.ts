@@ -99,7 +99,7 @@ export interface Member {
   tel?: string | null;
   postal?: string | null;
   address?: string | null;
-  notes?: string | null;
+  profile_icon_url?: string | null;
   profile_memo?: string | null;
   emg_memo?: string | null;
   introducer?: string | null;

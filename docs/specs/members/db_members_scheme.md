@@ -18,7 +18,7 @@
 | member_kind            | text                     | NO          |
 | roles                  | text                     | NO          |
 | dupr_id                | text                     | YES         |
-| notes                  | text                     | YES         |
+| profile_icon_url       | text                     | YES         |
 | is_profile_public      | boolean                  | YES         |
 | last_login_date        | timestamp with time zone | YES         |
 | req_date               | timestamp with time zone | YES         |

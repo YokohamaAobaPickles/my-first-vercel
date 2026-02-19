@@ -61,7 +61,7 @@ const MOCK_MEMBERS: Member[] = [
     tel: null,
     postal: null,
     address: null,
-    notes: null,
+    profile_icon_url: null,
     profile_memo: null,
     emg_memo: null,
     introducer: null,
