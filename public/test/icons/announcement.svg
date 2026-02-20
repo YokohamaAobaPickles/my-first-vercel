@@ -1,0 +1,23 @@
+<svg version="1.1"
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:xlink="http://www.w3.org/1999/xlink" width="512" height="512" viewBox="0 0 512 512">
+    <title>newspaper icon</title>
+    <desc>newspaper icon from the IconExperience.com G-Collection. Copyright by INCORS GmbH (www.incors.com).</desc>
+    <g fill="none" fill-rule="evenodd" stroke="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" stroke-dasharray="" stroke-dashoffset="0" font-family="none" font-weight="none" font-size="none" text-anchor="none" style="mix-blend-mode: normal">
+        <path d="M448,112l0,304c0,35 -29,64 -64,64l-336,0c-26.5,0 -48,-21.5 -48,-48l0,-320z" id="curve14" fill="#0094d2"/>
+        <path d="M32,464l0,-368l384,0l0,384l-368,0c-9,0 -16,-7 -16,-16z" id="curve13" fill="#00aeee"/>
+        <path d="M64,80l0,384c0,9 -7,16 -16,16l368,0c17.5,0 32,-14.5 32,-32l0,-368z" id="curve12" fill="#36cdff"/>
+        <path d="M96,64l416,0l0,352c0,35 -28.5,64 -64,64l-400,0c26.5,0 48,-21.5 48,-48z" id="curve11" fill="#ffffff"/>
+        <path d="M78,469.5c2,-1.5 3.5,-3 5.5,-5l428.5,-400.5l0,352c0,35 -28.5,64 -64,64l-400,0c11.5,0 22,-4 30,-10.5z" id="curve10" fill="#d7d7d7"/>
+        <path d="M336,208l144,0l0,128l-144,0z" id="curve9" fill="#36cdff"/>
+        <path d="M358,208l122,0l0,128l-144,0l0,-107.5z" id="curve8" fill="#00aeee"/>
+        <path d="M128,96l352,0l0,80l-352,0z" id="curve7" fill="#00aeee"/>
+        <path d="M400,256l48,32l0,48l-112,0l0,-96z" id="curve6" fill="#36cdff"/>
+        <path d="M477.5,96l2.5,0l0,80l-88,0z" id="curve5" fill="#0094d2"/>
+        <path d="M128,208l176,0l0,16l-176,0z M128,368l352,0l0,16l-352,0z M128,416l352,0l0,16l-352,0z M128,304l176,0l0,16l-176,0z M128,256l176,0l0,16l-176,0z" id="curve4" fill="#0080bc"/>
+        <path d="M169.5,384l17,-16l293.5,0l0,16z M238,320l17,-16l49,0l0,16z M289.5,272l14.5,-13.5l0,13.5z M135,416l345,0l0,16l-352,0l0,-9z" id="curve3" fill="#0069a6"/>
+        <path d="M368,272l48,16l32,-42l32,-22l0,112l-144,0l0,-44z" id="curve2" fill="#0094d2"/>
+        <path d="M384,304l48,32l-96,0l0,-16z" id="curve1" fill="#36cdff"/>
+        <path d="M192,112l16,0l0,48l-16,0z M368,144l32,0l0,16l-32,0z M384,112l32,0l0,16l-32,0z M336,112l16,0l0,48l-16,0z M304,112l16,0l0,48l-16,0z M256,144l32,0l0,16l-32,0z M256,112l32,0l0,16l-32,0z M224,112l16,0l0,48l-16,0z" id="curve0" fill="#ffffff"/>
+    </g>
+</svg>
