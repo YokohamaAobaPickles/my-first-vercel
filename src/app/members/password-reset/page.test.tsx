@@ -34,7 +34,7 @@ describe('PasswordResetPage', () => {
   it('戻るボタン押下でログイン画面へ遷移すること', () => {
     render(<PasswordResetPage />)
     fireEvent.click(screen.getByRole('button', { name: '戻る' }))
-    expect(mockPush).toHaveBeenCalledWith('/members/login')
+    expect(mockPush).toHaveBeenCalledWith('/login')
   })
 
   it('メールアドレスが存在しない場合は何も起きずログインへ遷移すること', async () => {
@@ -58,7 +58,7 @@ describe('PasswordResetPage', () => {
         })
       )
       expect(window.alert).toHaveBeenCalled()
-      expect(mockPush).toHaveBeenCalledWith('/members/login')
+      expect(mockPush).toHaveBeenCalledWith('/login')
     })
   })
 
@@ -82,7 +82,7 @@ describe('PasswordResetPage', () => {
       expect(window.alert).toHaveBeenCalledWith(
         expect.stringContaining('パスワードリセット用のリンク')
       )
-      expect(mockPush).toHaveBeenCalledWith('/members/login')
+      expect(mockPush).toHaveBeenCalledWith('/login')
     })
   })
 })

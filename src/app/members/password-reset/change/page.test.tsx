@@ -120,7 +120,7 @@ describe('PasswordResetChangePage', () => {
       expect(window.alert).toHaveBeenCalledWith(
         'パスワードを変更しました。ログインしてください。'
       )
-      expect(mockPush).toHaveBeenCalledWith('/members/login')
+      expect(mockPush).toHaveBeenCalledWith('/login')
     })
   })
 })

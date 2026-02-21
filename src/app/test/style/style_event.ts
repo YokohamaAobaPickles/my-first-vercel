@@ -1,6 +1,9 @@
 // test/style/style_event.ts
-import { spacing, colors, font } from "./style_common";
+import { spacing, colors, font, card } from "./style_common";
 
+// ------------------------------
+// Event Page Layout
+// ------------------------------
 export const eventPage = {
   title: {
     fontSize: font.size.md,
@@ -22,5 +25,49 @@ export const eventPage = {
     flexDirection: "column",
     gap: spacing.md,
     marginTop: spacing.md,
+  },
+} as const;
+
+// ------------------------------
+// Event List Item Card
+// ------------------------------
+export const listItemEvent = {
+  container: {
+    ...card,
+    display: "flex",
+    flexDirection: "column",
+    gap: spacing.sm,
+  },
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  date: {
+    fontSize: font.size.sm,
+    fontWeight: font.weight.bold,
+    color: colors.text,
+  },
+  title: {
+    fontSize: font.size.md,
+    fontWeight: font.weight.bold,
+    color: colors.text,
+  },
+  badges: {
+    display: "flex",
+    gap: spacing.xs,
+  },
+  info: {
+    fontSize: font.size.sm,
+    color: colors.textSub,
+    display: "flex",
+    flexDirection: "column",
+    gap: spacing.xs,
+  },
+  participants: {
+    display: "flex",
+    gap: spacing.xs,
+    fontSize: font.size.sm,
+    color: colors.text,
   },
 } as const;

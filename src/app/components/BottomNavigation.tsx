@@ -160,7 +160,7 @@ export default function BottomNavigation() {
 
   // 1. ログイン画面、または認証確認中は表示しない
   // 2. ユーザー情報がない（未ログイン）場合も表示しない
-  if (isLoading || !user || pathname === '/members/login') {
+  if (isLoading || !user || pathname === '/login') {
     return null;
   }
 

@@ -1,7 +1,8 @@
 // test/layout_sample/event/page.tsx
 
-import { container, content, listItemEvent, badge } from "@/app/test/style/style_common";
-import { eventPage } from "@/app/test/style/style_event";
+import { container, content, badge } from "@/app/test/style/style_common";
+import { eventPage, listItemEvent } from "@/app/test/style/style_event";
+
 
 export default function EventPageSample() {
   return (

@@ -30,7 +30,7 @@ export default function RootPage() {
         router.replace('/members/profile')
       } else {
         // Case 1: LINE初回（未登録）
-        router.replace('/members/login')
+        router.replace('/login')
       }
     } else {
       // --- PC/標準ブラウザからのアクセス ---
@@ -39,7 +39,7 @@ export default function RootPage() {
         router.replace('/members/profile')
       } else {
         // Case 3: ブラウザ未ログイン
-        router.replace('/members/login')
+        router.replace('/login')
       }
     }
   }, [user, isLoading, currentLineId, router])

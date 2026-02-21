@@ -520,7 +520,7 @@ function MemberNewContent() {
         <div style={buttonContainerStyle}>
           <button
             type="button"
-            onClick={() => router.push('/members/login')}
+            onClick={() => router.push('/login')}
             style={cancelButtonStyle}
           >
             キャンセル

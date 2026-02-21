@@ -1,5 +1,7 @@
+import React from 'react';
 import { container, content, card, cardInput, button } from "@/app/test/style/style_common";
 import { loginPage } from "@/app/test/style/style_login";
+import { text } from '@/app/test/style/style_common';
 
 export default function LoginPageSample() {
   return (
@@ -30,6 +32,9 @@ export default function LoginPageSample() {
           {/* パスワード忘れ */}
           <div style={loginPage.forgot}>パスワードをお忘れですか？</div>
 
+          <a href="/test" style={text.link}>
+            サンプルに戻る
+          </a>
         </div>
 
       </div>

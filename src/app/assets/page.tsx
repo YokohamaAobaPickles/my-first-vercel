@@ -23,20 +23,8 @@ export default function AssetsPage() {
       </div>
 
       <nav style={linkContainerStyle}>
-        <a href="/test/mockup" style={baseStyles.Link}>
-          モックアップ
-        </a>
-        
-        <a href="/test/image_sample" style={baseStyles.Link}>
-          イメージサンプル
-        </a>
-
-        <a href="/test/layout_sample" style={baseStyles.Link}>
-          レイアウトサンプル
-        </a>
-
-        <a href="/test/profile_icon" style={baseStyles.Link}>
-          プロファイルアイコン
+        <a href="/test" style={baseStyles.Link}>
+          テストページ
         </a>
       </nav>
     </div>

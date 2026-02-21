@@ -89,7 +89,7 @@ describe('useAuthCheck (sessionStorage対応検証)', () => {
     Object.defineProperty(window.navigator, 'userAgent', {
       value: 'Mozilla/5.0 Line/12.1.1', configurable: true
     })
-      ; (usePathname as any).mockReturnValue('/members/login')
+      ; (usePathname as any).mockReturnValue('/login')
       ; (liff.init as any).mockResolvedValue(undefined)
       ; (liff.getProfile as any).mockResolvedValue({
         userId: TEST_LINE_ID,

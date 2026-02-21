@@ -36,7 +36,7 @@ export default function AnnouncementDetailPage() {
     const loadData = async () => {
       // ログイン前のアクセスをガード
       if (!isAuthLoading && !user) {
-        router.replace('/members/login')
+        router.replace('/login')
         return
       }
 

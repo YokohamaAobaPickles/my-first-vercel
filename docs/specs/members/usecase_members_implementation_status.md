@@ -11,9 +11,9 @@
 |----|-------------|----------|------|
 | **A-01** | 一般／プレミアム会員として新規登録する | ✅ 実装済 | `members/new`：一般/ゲストタブで「新規会員登録」。氏名・ニックネーム・メール・パスワード・緊急連絡先等を入力し `registerMember` で登録。ステータスは `new_req`。 |
 | **A-02** | ゲスト会員として新規登録する | ⚠️ 一部実装 | `members/new`：ゲストタブで「紹介者のニックネーム」のみ入力。仕様の「ホストのニックネーム＋会員番号」のうち、**会員番号（秘密キー）の入力・照合は未実装**。 |
-| **A-03** | LINEでログインする | ✅ 実装済 | `members/login`：`useAuthCheck` の `currentLineId` あり時、メール入力で既存会員なら LINE ID 紐付け後に `/members/profile` へ。未登録なら `/members/new?email=...` へ誘導。 |
-| **A-04** | メールアドレス＋パスワードでログインする | ✅ 実装済 | `members/login`：メール・パスワード入力で DB 照合。一致時は `sessionStorage.auth_member_id` に id を保存し `/members/profile` へ。 |
-| **A-05** | パスワードをリセットする | ✅ 実装済 | `members/login`：リセットリンク。`members/password-reset`：メール入力。`members/password-reset/change`：トークン検証・新パスワード設定。30分有効トークン、Gmail送信。 |
+| **A-03** | LINEでログインする | ✅ 実装済 | `/login`：`useAuthCheck` の `currentLineId` あり時、メール入力で既存会員なら LINE ID 紐付け後に `/members/profile` へ。未登録なら `/members/new?email=...` へ誘導。 |
+| **A-04** | メールアドレス＋パスワードでログインする | ✅ 実装済 | `/login`：メール・パスワード入力で DB 照合。一致時は `sessionStorage.auth_member_id` に id を保存し `/members/profile` へ。 |
+| **A-05** | パスワードをリセットする | ✅ 実装済 | `/login`：リセットリンク。`members/password-reset`：メール入力。`members/password-reset/change`：トークン検証・新パスワード設定。30分有効トークン、Gmail送信。 |
 
 ---
 
@@ -61,7 +61,7 @@
 
 | パス | 主な役割 |
 |------|----------|
-| `src/app/members/login/page.tsx` | A-03, A-04 ログイン、A-05 パスワードリセットリンク |
+| `src/app/login/page.tsx` | A-03, A-04 ログイン、A-05 パスワードリセットリンク |
 | `src/app/members/password-reset/page.tsx` | A-05 パスワードリセット用メール入力 |
 | `src/app/members/password-reset/change/page.tsx` | A-05 パスワードリセット用新パスワード設定 |
 | `src/app/members/new/page.tsx` | A-01, A-02 新規登録（一般／ゲスト） |

@@ -49,14 +49,14 @@ describe('RootPage (app/page.tsx) - 交通整理のテスト', () => {
 
   describe('LINEアプリからのアクセス (currentLineIdがある場合)', () => {
     // Case 1: LINE初回アクセス (IDあり / DB未登録)
-    test('【Case 1】DB未登録なら /members/login へリダイレクトすること', async () => {
+    test('【Case 1】DB未登録なら /login へリダイレクトすること', async () => {
       (useAuthCheck as Mock).mockReturnValue({
         user: null,
         isLoading: false,
         currentLineId: 'LINE_ID_EXAMPLE',
       })
       render(<RootPage />)
-      await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/members/login'))
+      await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/login'))
     })
 
     // Case 2: LINEリピート (IDあり / DB登録済み)
@@ -73,14 +73,14 @@ describe('RootPage (app/page.tsx) - 交通整理のテスト', () => {
 
   describe('ブラウザからのアクセス (currentLineIdがない場合)', () => {
     // Case 3: ブラウザ未ログイン (IDなし / セッションなし)
-    test('【Case 3】未ログインなら /members/login へリダイレクトすること', async () => {
+    test('【Case 3】未ログインなら /login へリダイレクトすること', async () => {
       (useAuthCheck as Mock).mockReturnValue({
         user: null,
         isLoading: false,
         currentLineId: null,
       })
       render(<RootPage />)
-      await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/members/login'))
+      await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/login'))
     })
 
     // Case 4: ブラウザログイン済み (IDなし / セッションあり)

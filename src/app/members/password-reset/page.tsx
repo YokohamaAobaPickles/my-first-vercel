@@ -16,7 +16,7 @@ export default function PasswordResetPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleBack = () => {
-    router.push('/members/login')
+    router.push('/login')
   }
 
   const handleReset = async (e: React.FormEvent) => {
@@ -40,7 +40,7 @@ export default function PasswordResetPage() {
         '入力されたメールアドレスが登録されている場合、' +
         'パスワードリセット用のリンクをお送りしました。'
       )
-      router.push('/members/login')
+      router.push('/login')
     } catch (err) {
       alert('エラーが発生しました。もう一度お試しください。')
     } finally {

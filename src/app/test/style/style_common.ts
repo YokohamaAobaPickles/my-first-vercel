@@ -49,6 +49,34 @@ export const font = {
 } as const;
 
 // ------------------------------
+// Typography
+// ------------------------------
+export const text = {
+  title: {
+    fontSize: font.size.md,
+    fontWeight: font.weight.bold,
+    color: colors.text,
+    marginBottom: spacing.md,
+  },
+  subtitle: {
+    fontSize: font.size.sm,
+    fontWeight: font.weight.medium,
+    color: colors.textSub,
+    marginBottom: spacing.sm,
+  },
+  link: {
+    color: colors.text,
+    textDecoration: "underline",
+    cursor: "pointer",
+  },
+  linkSubtle: {
+    color: colors.textSub,
+    textDecoration: "underline",
+    cursor: "pointer",
+  },
+} as const;
+
+// ------------------------------
 // Container / Content
 // ------------------------------
 export const container = {
@@ -190,49 +218,5 @@ export const listItemSimple = {
     display: "flex",
     gap: spacing.xs,
     flexWrap: "wrap",
-  },
-} as const;
-
-// ------------------------------
-// ListItemCardEvent
-// ------------------------------
-export const listItemEvent = {
-  container: {
-    ...card,
-    display: "flex",
-    flexDirection: "column",
-    gap: spacing.sm,
-  },
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  date: {
-    fontSize: font.size.sm,
-    fontWeight: font.weight.bold,
-    color: colors.text,
-  },
-  title: {
-    fontSize: font.size.md,
-    fontWeight: font.weight.bold,
-    color: colors.text,
-  },
-  badges: {
-    display: "flex",
-    gap: spacing.xs,
-  },
-  info: {
-    fontSize: font.size.sm,
-    color: colors.textSub,
-    display: "flex",
-    flexDirection: "column",
-    gap: spacing.xs,
-  },
-  participants: {
-    display: "flex",
-    gap: spacing.xs,
-    fontSize: font.size.sm,
-    color: colors.text,
   },
 } as const;

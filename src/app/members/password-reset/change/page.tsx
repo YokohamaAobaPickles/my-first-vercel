@@ -77,7 +77,7 @@ function PasswordResetChangeContent() {
         return
       }
       alert('パスワードを変更しました。ログインしてください。')
-      router.push('/members/login')
+      router.push('/login')
     } catch {
       alert('エラーが発生しました。もう一度お試しください。')
     } finally {
@@ -153,7 +153,7 @@ function PasswordResetChangeContent() {
           <div style={styles.buttonContainer}>
             <button
               type="button"
-              onClick={() => router.push('/members/login')}
+              onClick={() => router.push('/login')}
               style={styles.backButton}
             >
               戻る

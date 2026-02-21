@@ -25,7 +25,7 @@
 
 ### ● 動作
 - クリック時：  
-  `router.push('/members/login')`  
+  `router.push('/login')`  
   → ログイン画面へ遷移。
 - フォーム送信や状態クリアは行わない。
 

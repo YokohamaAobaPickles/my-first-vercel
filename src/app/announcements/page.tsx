@@ -32,7 +32,7 @@ export default function AnnouncementsPage() {
     const loadData = async () => {
       // 1. 認証チェックが終わり、ユーザーがいない場合はログイン画面へ
       if (!isAuthLoading && !user) {
-        router.replace('/members/login')
+        router.replace('/login')
         return
       }
 

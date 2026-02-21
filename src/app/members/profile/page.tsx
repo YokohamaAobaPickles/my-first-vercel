@@ -85,13 +85,13 @@ export default function ProfilePage() {
         liff.closeWindow()
       } catch (err) {
         console.error('LIFF close error:', err)
-        router.replace('/members/login')
+        router.replace('/login')
       }
     } else {
       // ブラウザ環境: 通常のログアウト処理
       sessionStorage.setItem('logout', 'true')
       sessionStorage.removeItem('auth_member_id')
-      router.replace('/members/login')
+      router.replace('/login')
     }
   }
 
