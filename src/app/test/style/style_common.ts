@@ -141,29 +141,43 @@ export const button = {
     alignItems: "center",
     justifyContent: "center",
   },
+
   primary: {
     backgroundColor: colors.status.info,
     color: colors.text,
   },
+
   secondary: {
     backgroundColor: "transparent",
     border: `1px solid ${colors.status.info}`,
     color: colors.status.info,
   },
+
   cancel: {
     backgroundColor: colors.status.danger,
     color: colors.text,
   },
+
   inactive: {
     backgroundColor: colors.status.inactive,
     color: colors.textSub,
   },
-  search: { 
+
+  search: {
     backgroundColor: colors.status.info,
-    color: colors.text, 
-    padding: "6px 12px", 
-    borderRadius: 8, 
-    fontSize: font.size.sm, 
+    color: colors.text,
+    padding: "6px 12px",
+    borderRadius: 8,
+    fontSize: font.size.sm,
+  },
+
+  new: {
+    backgroundColor: colors.status.active,
+    color: colors.text,
+    padding: "6px 16px",
+    borderRadius: radius.button,
+    fontSize: font.size.md,
+    fontWeight: font.weight.bold,
   },
 } as const;
 

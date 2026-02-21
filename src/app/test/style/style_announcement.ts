@@ -9,14 +9,6 @@ export const announcementPage = {
     marginBottom: spacing.md,
   },
 
-  newButton: {
-    backgroundColor: colors.status.info,
-    color: colors.text,
-    padding: "6px 12px",
-    borderRadius: 8,
-    fontSize: font.size.sm,
-  },
-
   list: {
     display: "flex",
     flexDirection: "column",

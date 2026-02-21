@@ -1,6 +1,6 @@
 // test/layout_sample/announcement/page.tsx
 
-import { container, content, listItemSimple, badge, text } from "@/app/test/style/style_common";
+import { container, content, listItemSimple, badge, text, button } from "@/app/test/style/style_common";
 import { announcementPage } from "@/app/test/style/style_announcement";
 
 export default function AnnouncementPageSample() {
@@ -13,7 +13,7 @@ export default function AnnouncementPageSample() {
 
         {/* 上部：検索ボタン + 新規作成 */}
         <div style={announcementPage.topRow}>
-          <button style={announcementPage.newButton}>新規作成</button>
+          <button style={button.new}>新規作成</button>
         </div>
 
         {/* 一覧リスト */}
