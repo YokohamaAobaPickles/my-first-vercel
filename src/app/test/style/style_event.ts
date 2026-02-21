@@ -5,13 +5,6 @@ import { spacing, colors, font, card } from "./style_common";
 // Event Page Layout
 // ------------------------------
 export const eventPage = {
-  title: {
-    fontSize: font.size.md,
-    fontWeight: font.weight.bold,
-    color: colors.text,
-    marginBottom: spacing.md,
-  },
-
   monthHeader: {
     fontSize: font.size.sm,
     fontWeight: font.weight.bold,

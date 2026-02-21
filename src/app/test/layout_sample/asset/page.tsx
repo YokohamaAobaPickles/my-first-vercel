@@ -1,4 +1,4 @@
-import { container, content, listItemSimple, badge } from "@/app/test/style/style_common";
+import { container, content, listItemSimple, badge, text } from "@/app/test/style/style_common";
 import { assetPage } from "@/app/test/style/style_asset";
 
 export default function AssetPageSample() {
@@ -6,7 +6,7 @@ export default function AssetPageSample() {
     <div style={container}>
       <div style={content}>
 
-        <h2 style={assetPage.title}>設備管理（サンプル）</h2>
+        <h2 style={text.title}>設備管理（サンプル）</h2>
 
         <div style={assetPage.list}>
 

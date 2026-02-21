@@ -1,7 +1,6 @@
 import React from 'react';
-import { container, content, card, cardInput, button } from "@/app/test/style/style_common";
+import { container, content, card, cardInput, button, text } from "@/app/test/style/style_common";
 import { loginPage } from "@/app/test/style/style_login";
-import { text } from '@/app/test/style/style_common';
 
 export default function LoginPageSample() {
   return (
@@ -10,6 +9,7 @@ export default function LoginPageSample() {
 
         {/* タイトル */}
         <h2 style={loginPage.title}>ログイン</h2>
+        {/* <h2 style={text.title}>ログイン</h2> */}
 
         {/* カード */}
         <div style={{ ...card, ...loginPage.card }}>

@@ -1,7 +1,8 @@
 // test/layout_sample/member_page.tsx
 
-import { container, content, listItemSimple, badge } from "@/app/test/style/style_common";
+import { container, content, listItemSimple, badge, button, text} from "@/app/test/style/style_common";
 import { memberPage } from "@/app/test/style/style_member";
+//import { text } from "stream/consumers";
 
 export default function MemberPageSample() {
   return (
@@ -9,12 +10,12 @@ export default function MemberPageSample() {
       <div style={content}>
 
         {/* ページタイトル */}
-        <h2 style={memberPage.title}>プロフィール管理（サンプル）</h2>
+        <h2 style={text.title}>プロフィール管理（サンプル）</h2>
 
         {/* フィルタ行 */}
         <div style={memberPage.filterRow}>
           <div style={memberPage.filterBox}>全員</div>
-          <button style={memberPage.searchButton}>検索</button>
+          <button style={button.search}>検索</button>
         </div>
 
         {/* 一覧リスト */}

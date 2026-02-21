@@ -2,13 +2,6 @@
 import { spacing, colors, font } from "./style_common";
 
 export const announcementPage = {
-  title: {
-    fontSize: font.size.md,
-    fontWeight: font.weight.bold,
-    color: colors.text,
-    marginBottom: spacing.md,
-  },
-
   topRow: {
     display: "flex",
     justifyContent: "space-between",

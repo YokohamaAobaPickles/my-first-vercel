@@ -1,4 +1,4 @@
-import { container, content, listItemSimple, badge } from "@/app/test/style/style_common";
+import { container, content, listItemSimple, badge, text } from "@/app/test/style/style_common";
 import { accountingPage } from "@/app/test/style/style_accounting";
 
 export default function AccountingPageSample() {
@@ -6,7 +6,7 @@ export default function AccountingPageSample() {
     <div style={container}>
       <div style={content}>
 
-        <h2 style={accountingPage.title}>会計管理（サンプル）</h2>
+        <h2 style={text.title}>会計管理（サンプル）</h2>
 
         <div style={accountingPage.list}>
 

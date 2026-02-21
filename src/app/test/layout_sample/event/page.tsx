@@ -1,6 +1,6 @@
 // test/layout_sample/event/page.tsx
 
-import { container, content, badge } from "@/app/test/style/style_common";
+import { container, content, badge, text } from "@/app/test/style/style_common";
 import { eventPage, listItemEvent } from "@/app/test/style/style_event";
 
 
@@ -10,7 +10,7 @@ export default function EventPageSample() {
       <div style={content}>
 
         {/* ページタイトル */}
-        <h2 style={eventPage.title}>イベント一覧（サンプル）</h2>
+        <h2 style={text.title}>イベント一覧（サンプル）</h2>
 
         {/* 2026年2月 */}
         <div style={eventPage.monthHeader}>2026年2月</div>

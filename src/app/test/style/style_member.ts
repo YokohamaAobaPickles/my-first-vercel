@@ -2,13 +2,6 @@
 import { spacing, colors, font } from "./style_common";
 
 export const memberPage = {
-  title: {
-    fontSize: font.size.md,
-    fontWeight: font.weight.bold,
-    color: colors.text,
-    marginBottom: spacing.md,
-  },
-
   filterRow: {
     display: "flex",
     justifyContent: "space-between",
@@ -22,14 +15,6 @@ export const memberPage = {
     padding: "6px 12px",
     borderRadius: 8,
     color: colors.text,
-    fontSize: font.size.sm,
-  },
-
-  searchButton: {
-    backgroundColor: colors.status.info,
-    color: colors.text,
-    padding: "6px 12px",
-    borderRadius: 8,
     fontSize: font.size.sm,
   },
 

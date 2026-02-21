@@ -158,6 +158,13 @@ export const button = {
     backgroundColor: colors.status.inactive,
     color: colors.textSub,
   },
+  search: { 
+    backgroundColor: colors.status.info,
+    color: colors.text, 
+    padding: "6px 12px", 
+    borderRadius: 8, 
+    fontSize: font.size.sm, 
+  },
 } as const;
 
 export const buttonGroup = {
