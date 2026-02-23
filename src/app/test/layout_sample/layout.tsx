@@ -114,6 +114,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </Link>
 
         <Link
+          href="/test/layout_sample/game"
+          style={isActive("/test/layout_sample/game")
+            ? { ...bottomNav.item, ...bottomNav.itemActive }
+            : bottomNav.item}
+        >
+          <img src="/test/icons/court.svg"
+            style={
+              isActive("/test/layout_sample/game")
+                ? { ...bottomNav.icon, ...bottomNav.iconActive }
+                : bottomNav.icon
+            }
+          />
+          試合
+        </Link>
+
+        <Link
           href="/test/layout_sample/asset"
           style={isActive("/test/layout_sample/asset")
             ? { ...bottomNav.item, ...bottomNav.itemActive }

@@ -5,9 +5,9 @@
 // ------------------------------
 export const colors = {
   //background: "#194E5D",
-   background: '#0b242b', // ダークブルー1色の背景色
+  //background: '#0b242b', // ダークブルー1色の背景色
   // 背景をグラディエーションにするためには以下の定義を使う
-  //background: 'linear-gradient(to bottom, #11353f 0%, #000000 100%)',
+  background: 'linear-gradient(to bottom, #11353f 0%, #000000 100%)',
   backgroundAttachment: 'fixed',
   border: "#1E5E70",
   inputBackground: "#08191E",
@@ -98,7 +98,10 @@ export const container = {
   boxSizing: 'border-box',
   display: "flex",
   flexDirection: "column",
-  backgroundColor: colors.background,
+  //backgroundColor: colors.background,
+  // グラデーションを適用。backgroundAttachmentでスクロールしても背景を固定する
+  background: colors.background,
+  backgroundAttachment: 'fixed',
   border: `none`,
   padding: spacing.xs,
 } as const;
