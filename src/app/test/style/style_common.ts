@@ -4,7 +4,11 @@
 // Design Tokens
 // ------------------------------
 export const colors = {
-  background: "#194E5D",
+  //background: "#194E5D",
+   background: '#0b242b', // ダークブルー1色の背景色
+  // 背景をグラディエーションにするためには以下の定義を使う
+  //background: 'linear-gradient(to bottom, #11353f 0%, #000000 100%)',
+  backgroundAttachment: 'fixed',
   border: "#1E5E70",
   inputBackground: "#08191E",
   text: "#FFFFFF",
@@ -80,9 +84,14 @@ export const text = {
 // Container / Content
 // ------------------------------
 export const container = {
+  width: "100%",
   minHeight: "100vh",
+  boxSizing: 'border-box',
+  display: "flex",
+  flexDirection: "column",
   backgroundColor: colors.background,
-  padding: spacing.lg,
+  border: `none`,
+  padding: spacing.xs,
 } as const;
 
 export const content = {
@@ -209,6 +218,32 @@ export const badge = {
     warning: { backgroundColor: colors.status.warning },
     info: { backgroundColor: colors.status.info },
     unread: { backgroundColor: colors.status.unread },
+  },
+} as const;
+
+// ------------------------------
+// Common Row Layouts
+// ------------------------------
+export const row = {
+  filter: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: spacing.md,
+  },
+} as const;
+
+// ------------------------------
+// Common Filter UI
+// ------------------------------
+export const filter = {
+  box: {
+    backgroundColor: colors.inputBackground,
+    border: `1px solid ${colors.border}`,
+    padding: "6px 12px",
+    borderRadius: radius.input,
+    color: colors.text,
+    fontSize: font.size.sm,
   },
 } as const;
 

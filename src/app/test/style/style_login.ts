@@ -12,6 +12,7 @@ export const loginPage = {
   card: {
     display: "flex",
     flexDirection: "column",
+    border: `none`,
     gap: spacing.md,
   },
 
