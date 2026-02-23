@@ -1,12 +1,23 @@
 // test/layout_sample/announcement/page.tsx
+"use client"; // window を参照するため必要
 
-import { container, content, listItemSimple, badge, text, button } from "@/app/test/style/style_common";
+import React, { useEffect, useState } from 'react';
+import { container, getContentStyle, listItemSimple, badge, text, button } from "@/app/test/style/style_common";
 import { announcementPage } from "@/app/test/style/style_announcement";
 
 export default function AnnouncementPageSample() {
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    setWidth(window.innerWidth); // 初期値設定
+    const handleResize = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+  
   return (
     <div style={container}>
-      <div style={content}>
+      <div style={getContentStyle(width)}>
 
         {/* ページタイトル */}
         <h2 style={text.title}>お知らせ管理（サンプル）</h2>

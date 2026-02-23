@@ -1,7 +1,9 @@
 // test/layout_sample/member_page.tsx
+"use client";
 
+import React, { useEffect, useState } from 'react';
 import { container, 
-  content, 
+  getContentStyle, 
   listItemSimple, 
   badge, 
   button, 
@@ -13,9 +15,18 @@ import { memberPage } from "@/app/test/style/style_member";
 //import { text } from "stream/consumers";
 
 export default function MemberPageSample() {
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    setWidth(window.innerWidth); // 初期値設定
+    const handleResize = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   return (
     <div style={container}>
-      <div style={content}>
+      <div style={getContentStyle(width)}>
 
         {/* ページタイトル */}
         <h2 style={text.title}>プロフィール管理（サンプル）</h2>

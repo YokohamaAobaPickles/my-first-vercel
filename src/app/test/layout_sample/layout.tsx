@@ -1,19 +1,33 @@
+// app/test/layout_sample/layout.tsx
+
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { container, content } from "../style/style_common";
-import { bottomNav } from "../style/style_bottomnav";
+import { useEffect, useState } from "react";
+import { container, getContentStyle } from "@/app/test/style/style_common";
+import { bottomNav }          from "@/app/test/style/style_bottomnav";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   // active 判定関数
   const isActive = (path: string) => pathname.startsWith(path);
+  
+  const [width, setWidth] = useState(500);
+
+  useEffect(() => {
+    setWidth(window.innerWidth); // 初期値設定
+    const handleResize = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const appliedStyle = getContentStyle(width);
 
   return (
     <div style={container}>
-      <div style={content}>{children}</div>
+      <div style={appliedStyle}>{children}</div>
 
       {/* BottomNavigation */}
       <div style={bottomNav.container}>

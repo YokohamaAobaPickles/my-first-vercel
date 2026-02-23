@@ -81,6 +81,15 @@ export const text = {
 } as const;
 
 // ------------------------------
+// Breakpoints デバイス幅
+// ------------------------------
+export const breakpoints = {
+  mobile: 480,
+  tablet: 768,
+  desktop: 1024,
+} as const;
+
+// ------------------------------
 // Container / Content
 // ------------------------------
 export const container = {
@@ -94,11 +103,28 @@ export const container = {
   padding: spacing.xs,
 } as const;
 
-export const content = {
-  maxWidth: 500,
-  margin: "0 auto",
-  paddingBottom: 80, // BottomNav 分
-} as const;
+/**
+ * デバイス幅に応じたcontentスタイルを生成する関数
+ * @param width ウィンドウ幅
+ * @returns スタイルオブジェクト
+ */
+export const getContentStyle = (width: number) => {
+  const base = {
+    margin: "0 auto",
+    paddingBottom: 80,
+    width: "100%",
+  };
+
+  if (width < breakpoints.mobile) {
+    return { ...base, maxWidth: "100%" };
+  }
+
+  if (width < breakpoints.tablet) {
+    return { ...base, maxWidth: 600 };
+  }
+
+  return { ...base, maxWidth: 900 };
+};
 
 // ------------------------------
 // Card
@@ -150,28 +176,28 @@ export const button = {
     alignItems: "center",
     justifyContent: "center",
   },
-
+  // 主なアクションのボタン
   primary: {
     backgroundColor: colors.status.info,
     color: colors.text,
   },
-
+  // 二次的なアクションのボタン
   secondary: {
     backgroundColor: "transparent",
     border: `1px solid ${colors.status.info}`,
     color: colors.status.info,
   },
-
+  // キャンセルボタン
   cancel: {
-    backgroundColor: colors.status.danger,
+    backgroundColor: colors.status.warning,
     color: colors.text,
   },
-
+  // 無効な状態のボタン
   inactive: {
     backgroundColor: colors.status.inactive,
     color: colors.textSub,
   },
-
+  // 検索ボタン
   search: {
     backgroundColor: colors.status.info,
     color: colors.text,
@@ -179,7 +205,16 @@ export const button = {
     borderRadius: 8,
     fontSize: font.size.sm,
   },
-
+  // 管理者用ボタン
+  admin: {
+    backgroundColor: colors.status.warning,
+    color: colors.text,
+    padding: "6px 12px",
+    borderRadius: radius.button,
+    fontSize: font.size.sm,
+    fontWeight: font.weight.bold,
+  },
+  // 新規作成ボタン
   new: {
     backgroundColor: colors.status.active,
     color: colors.text,
@@ -188,6 +223,25 @@ export const button = {
     fontSize: font.size.md,
     fontWeight: font.weight.bold,
   },
+  // 編集ボタン
+  edit: {
+    backgroundColor: colors.status.active,
+    color: colors.text,
+    padding: "6px 12px",
+    borderRadius: radius.input,
+    fontSize: font.size.sm, 
+    fontWeight: font.weight.medium,
+  },
+  // 削除ボタン
+  delete: {
+    backgroundColor: colors.status.danger,
+    color: colors.text,
+    padding: "6px 12px",
+    borderRadius: radius.input,
+    fontSize: font.size.sm, 
+    fontWeight: font.weight.medium,
+  },
+
 } as const;
 
 export const buttonGroup = {

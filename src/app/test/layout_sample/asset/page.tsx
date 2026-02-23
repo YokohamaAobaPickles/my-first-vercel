@@ -1,10 +1,23 @@
-import { container, content, listItemSimple, badge, text } from "@/app/test/style/style_common";
+// test/layout_sample/asset/page.tsx
+"use client"; // window を参照するため必要
+
+import React, { useEffect, useState } from 'react';  
+import { container, getContentStyle, listItemSimple, badge, text } from "@/app/test/style/style_common";
 import { assetPage } from "@/app/test/style/style_asset";
 
 export default function AssetPageSample() {
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    setWidth(window.innerWidth); // 初期値設定
+    const handleResize = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   return (
     <div style={container}>
-      <div style={content}>
+      <div style={getContentStyle(width)}>
 
         <h2 style={text.title}>設備管理（サンプル）</h2>
 
