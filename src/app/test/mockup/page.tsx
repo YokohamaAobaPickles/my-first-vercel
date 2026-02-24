@@ -11,8 +11,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 export default function MockupIndexPage() {
-  // 1〜29の配列を作成
-  const mockupIds = Array.from({ length: 29 }, (_, i) => i + 1);
+  // 1〜31の配列を作成
+  const mockupIds = Array.from({ length: 31 }, (_, i) => i + 1);
 
   const containerStyle: React.CSSProperties = {
     width: '100%',
