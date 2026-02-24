@@ -68,8 +68,8 @@ export default function MockupDetailPage() {
           </Link>
         )}
 
-        {/* 次のページ：29ページ目以外で表示 */}
-        {idNum < 29 && (
+        {/* 次のページ：31ページ目以外で表示 */}
+        {idNum < 31 && (
           <Link href={`/test/mockup/${idNum + 1}`} style={linkStyle}>
             次へ ＞
           </Link>
