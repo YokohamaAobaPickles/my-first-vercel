@@ -1,1 +1,11 @@
-* text=auto eol=lf
+# すべてのテキストファイルを LF に統一
+* text eol=lf
+
+# バイナリは自動判定
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.svg binary
+*.ico binary
+*.pdf binary
