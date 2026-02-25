@@ -1,0 +1,18 @@
+<svg x="0" y="0" width="512" height="512" version="1.1"
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512">
+    <title>warehouse icon</title>
+    <desc>warehouse icon from the IconExperience.com G-Collection. Copyright by INCORS GmbH (www.incors.com).</desc>
+    <g>
+        <polygon points="32,272 256,176 480,272 480,496 32,496" fill="#ffa526"/>
+        <polygon points="256,176 480,272 480,496 256,496 256,212.3 32,310.3 32,272" fill="#f98b00"/>
+        <polygon points="0,480 512,480 512,512 0,512" fill="#afbdc3"/>
+        <polygon points="256,480 512,480 512,512 256,512" fill="#8fa3ad"/>
+        <polygon points="128,336 384,336 384,480 128,480" fill="#788f9b"/>
+        <polygon points="256,336 384,336 384,480 256,480" fill="#546e7a"/>
+        <path d="M128,432l256,0l0,16l-256,0z M128,384l256,0l0,16l-256,0z M128,352l256,0l0,-16l-256,0z" fill="#546e7a"/>
+        <path d="M256,432l128,0l0,16l-128,0z M256,400l0,-16l128,0l0,16z M256,352l0,-16l128,0l0,16z" fill="#445a64"/>
+        <polygon points="0,272 256,160 512,272 499.25,301.25 256,194.85 12.75,301.25" fill="#788f9b"/>
+        <polygon points="256,160 512,272 499.25,301.25 256,194.85" fill="#546e7a"/>
+    </g>
+</svg>

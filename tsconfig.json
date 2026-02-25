@@ -1,3 +1,8 @@
+/*
+Filename: tsconfig.json
+Update  : 2026-02-25
+Remarks : V1開発用にパスエイリアスを追加
+*/
 {
   "compilerOptions": {
     "target": "ES2017",
@@ -18,11 +23,11 @@
         "name": "next"
       }
     ],
-
     // ★ ここを修正 ★
     "baseUrl": "src",
     "paths": {
-      "@/*": ["*"]
+      "@/*": ["*"],
+      "@v1/*": ["V1/*"]
     }
   },
   "include": [

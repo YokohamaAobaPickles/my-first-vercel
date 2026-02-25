@@ -52,7 +52,7 @@ export default function MockupIndexPage() {
       <main style={gridStyle}>
         {mockupIds.map((id) => {
           const fileName = `スライド${id}.PNG`; // PowerPointの画像ファイル名はPNGとなる
-          const imagePath = `/mockup/${fileName}`;
+          const imagePath = `/test/mockup/${fileName}`;
           
           return (
             <Link 

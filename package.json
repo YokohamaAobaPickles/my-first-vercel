@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest"
+    "test": "vitest",
+    "test:v1": "vitest src/V1",
+    "test:v1:run": "vitest run src/V1"
   },
   "dependencies": {
     "@line/liff": "^2.27.3",
