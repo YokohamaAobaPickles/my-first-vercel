@@ -1,12 +1,12 @@
 /**
- * Filename: src/app/V1/style/style_login.ts
- * Version : V0.1.0
- * Update  : 2026-02-11
- * Remarks : 
- * V0.1.0 - 初期バージョン
- */
+ * Filename: src/style/style_login.ts
+ * Version : V1.0.0
+ * Update  : 2026-02-26
+ * 修正内容：
+ * V1.0.0 - ログイン関連のスタイル定義を追加。
+*/
 
-import { spacing, colors, font } from "./style_common";
+import { spacing, colors, font } from "@/style/style_common";
 
 export const loginPage = {
   title: {
