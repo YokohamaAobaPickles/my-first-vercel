@@ -86,6 +86,12 @@ export const text = {
     textDecoration: "underline",
     cursor: "pointer",
   },
+  footer: {
+    marginTop: '20px',
+    textAlign: 'center',
+    padding: '20px 0',
+  },
+
 } as const;
 
 // ------------------------------

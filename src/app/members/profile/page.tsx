@@ -20,7 +20,7 @@ import { calculateEnrollmentDays } from '@/utils/memberHelpers'
 import { updateMemberStatus, deleteMember } from '@/lib/memberApi'
 import { MemberStatus, MEMBER_STATUS_LABELS, MEMBER_KIND_LABELS, ROLES_LABELS } from '@/types/member'
 
-import { colors, container, card, spacing, font, button, row, pageHeader } from '@/style/style_common';
+import { colors, container, card, spacing, font, text, button, row, pageHeader } from '@/style/style_common';
 import { memberPage } from '@/style/style_member';
 
 export default function ProfilePage() {
@@ -548,6 +548,30 @@ export default function ProfilePage() {
       </div>
 
       {/* 下部ナビゲーション（後ほど実装） */}
+                {/* フッターエリア */}
+          <div style={text.footer}>
+            {/* LINEアプリでは自動ログインの仕組み上、ログアウトボタンを表示せず、
+              ユーザーにアプリを閉じてもらう運用とする。
+          */}
+            {!(typeof window !== 'undefined' &&
+              navigator.userAgent.toLowerCase().includes('line')) ? (
+              <>
+                <button
+                  onClick={(e) => handleLogout(e)}
+                  style={button.base}
+                >
+                  ログアウト
+                </button>
+              </>
+            ) : (
+              <>
+                <p style={{ color: '#666', fontSize: '0.8rem' }}>
+                  ※ LINEアプリでお使いの方は、右上の「×」で閉じてください。
+                </p>
+              </>
+            )}
+          </div>
+
     </div >
   );
 }
