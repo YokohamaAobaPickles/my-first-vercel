@@ -50,6 +50,8 @@ export const font = {
     xs: 12,
     sm: 14,
     md: 16,
+    lg: 20,
+    xl: 24,
   },
   weight: {
     normal: 400,
@@ -83,6 +85,119 @@ export const text = {
     color: colors.textSub,
     textDecoration: "underline",
     cursor: "pointer",
+  },
+} as const;
+
+// ------------------------------
+// Button / ButtonGroup
+// ------------------------------
+export const button = {
+  base: {
+    height: 40,
+    borderRadius: radius.button,
+    padding: "0 16px",
+    fontSize: font.size.md,
+    fontWeight: font.weight.bold,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  // 主なアクションのボタン
+  primary: {
+    backgroundColor: colors.status.info,
+    color: colors.text,
+  },
+  // 二次的なアクションのボタン
+  secondary: {
+    backgroundColor: "transparent",
+    border: `1px solid ${colors.status.info}`,
+    color: colors.status.info,
+  },
+  // キャンセルボタン
+  cancel: {
+    backgroundColor: colors.status.warning,
+    color: colors.text,
+  },
+  // 無効な状態のボタン
+  inactive: {
+    backgroundColor: colors.status.inactive,
+    color: colors.textSub,
+  },
+  // 検索ボタン
+  search: {
+    backgroundColor: colors.status.info,
+    color: colors.text,
+    padding: "6px 12px",
+    borderRadius: 8,
+    fontSize: font.size.sm,
+  },
+  // 管理者用ボタン
+  admin: {
+    backgroundColor: colors.status.active,
+    color: colors.text,
+    padding: "6px 12px",
+    borderRadius: radius.button,
+    fontSize: font.size.sm,
+    fontWeight: font.weight.bold,
+  },
+  // 新規作成ボタン
+  new: {
+    backgroundColor: colors.status.active,
+    color: colors.text,
+    padding: "6px 16px",
+    borderRadius: radius.button,
+    fontSize: font.size.md,
+    fontWeight: font.weight.bold,
+  },
+  // 編集ボタン
+  edit: {
+    backgroundColor: colors.status.active,
+    color: colors.text,
+    padding: "6px 12px",
+    borderRadius: radius.input,
+    fontSize: font.size.sm,
+    fontWeight: font.weight.medium,
+  },
+  // 削除ボタン
+  delete: {
+    backgroundColor: colors.status.danger,
+    color: colors.text,
+    padding: "6px 12px",
+    borderRadius: radius.input,
+    fontSize: font.size.sm,
+    fontWeight: font.weight.medium,
+  },
+
+} as const;
+
+export const buttonGroup = {
+  display: "flex",
+  flexDirection: "column",
+  gap: spacing.md,
+} as const;
+
+// ------------------------------
+// Badge
+// ------------------------------
+export const badge = {
+  base: {
+    height: 20,
+    borderRadius: radius.badge,
+    padding: "0 8px",
+    fontSize: font.size.xs,
+    fontWeight: font.weight.bold,
+    display: "inline-flex",
+    alignItems: "center",
+    color: colors.text,
+  },
+  status: {
+    active: { backgroundColor: colors.status.active },
+    pending: { backgroundColor: colors.status.pending },
+    inactive: { backgroundColor: colors.status.inactive },
+    danger: { backgroundColor: colors.status.danger },
+    warning: { backgroundColor: colors.status.warning },
+    info: { backgroundColor: colors.status.info },
+    unread: { backgroundColor: colors.status.unread },
   },
 } as const;
 
@@ -172,119 +287,6 @@ export const cardInput = {
 } as const;
 
 // ------------------------------
-// Button / ButtonGroup
-// ------------------------------
-export const button = {
-  base: {
-    height: 40,
-    borderRadius: radius.button,
-    padding: "0 16px",
-    fontSize: font.size.md,
-    fontWeight: font.weight.bold,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  // 主なアクションのボタン
-  primary: {
-    backgroundColor: colors.status.info,
-    color: colors.text,
-  },
-  // 二次的なアクションのボタン
-  secondary: {
-    backgroundColor: "transparent",
-    border: `1px solid ${colors.status.info}`,
-    color: colors.status.info,
-  },
-  // キャンセルボタン
-  cancel: {
-    backgroundColor: colors.status.warning,
-    color: colors.text,
-  },
-  // 無効な状態のボタン
-  inactive: {
-    backgroundColor: colors.status.inactive,
-    color: colors.textSub,
-  },
-  // 検索ボタン
-  search: {
-    backgroundColor: colors.status.info,
-    color: colors.text,
-    padding: "6px 12px",
-    borderRadius: 8,
-    fontSize: font.size.sm,
-  },
-  // 管理者用ボタン
-  admin: {
-    backgroundColor: colors.status.warning,
-    color: colors.text,
-    padding: "6px 12px",
-    borderRadius: radius.button,
-    fontSize: font.size.sm,
-    fontWeight: font.weight.bold,
-  },
-  // 新規作成ボタン
-  new: {
-    backgroundColor: colors.status.active,
-    color: colors.text,
-    padding: "6px 16px",
-    borderRadius: radius.button,
-    fontSize: font.size.md,
-    fontWeight: font.weight.bold,
-  },
-  // 編集ボタン
-  edit: {
-    backgroundColor: colors.status.active,
-    color: colors.text,
-    padding: "6px 12px",
-    borderRadius: radius.input,
-    fontSize: font.size.sm, 
-    fontWeight: font.weight.medium,
-  },
-  // 削除ボタン
-  delete: {
-    backgroundColor: colors.status.danger,
-    color: colors.text,
-    padding: "6px 12px",
-    borderRadius: radius.input,
-    fontSize: font.size.sm, 
-    fontWeight: font.weight.medium,
-  },
-
-} as const;
-
-export const buttonGroup = {
-  display: "flex",
-  flexDirection: "column",
-  gap: spacing.md,
-} as const;
-
-// ------------------------------
-// Badge
-// ------------------------------
-export const badge = {
-  base: {
-    height: 20,
-    borderRadius: radius.badge,
-    padding: "0 8px",
-    fontSize: font.size.xs,
-    fontWeight: font.weight.bold,
-    display: "inline-flex",
-    alignItems: "center",
-    color: colors.text,
-  },
-  status: {
-    active: { backgroundColor: colors.status.active },
-    pending: { backgroundColor: colors.status.pending },
-    inactive: { backgroundColor: colors.status.inactive },
-    danger: { backgroundColor: colors.status.danger },
-    warning: { backgroundColor: colors.status.warning },
-    info: { backgroundColor: colors.status.info },
-    unread: { backgroundColor: colors.status.unread },
-  },
-} as const;
-
-// ------------------------------
 // Common Row Layouts
 // ------------------------------
 export const row = {
@@ -293,6 +295,22 @@ export const row = {
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: spacing.md,
+  },
+  // 行（見出しとボタンの並び）のベース
+  header: {
+    display: 'flex',
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between', // 左右に振り分け
+    alignItems: 'center',             // これが「上下中央」のキモ
+    width: '100%',
+    marginBottom: spacing.sm,
+  },
+  // 左側のグループ（見出し、検索ボタン、鍵アイコンなど）
+  leftGroup: {
+    display: 'flex',
+    flexDirection: 'row' as const,
+    alignItems: 'center',             // 子要素（テキストとボタン）を上下中央に
+    gap: spacing.sm,                  // 要素間のスキマ
   },
 } as const;
 
@@ -308,6 +326,49 @@ export const filter = {
     color: colors.text,
     fontSize: font.size.sm,
   },
+} as const;
+
+// ------------------------------
+// 共通ページヘッダー
+// ------------------------------
+export const pageHeader = {
+  container: {
+    ...row.filter, // 既存の左右振り分けロジックを継承
+    marginBottom: spacing.lg, // タイトル下の余白を少し広めに
+  },
+  title: {
+    fontSize: font.size.lg,
+    fontWeight: font.weight.bold,
+    color: colors.text,
+    margin: 0,
+  }
+} as const;
+
+// ------------------------------
+// 共通データ表示スタイル
+// ------------------------------
+export const dataDisplay = {
+  grid2: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: spacing.sm,
+  },
+  grid3: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr 1fr',
+    gap: spacing.sm,
+    textAlign: 'center' as const,
+  },
+  itemStack: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '2px',
+  },
+  label: {
+    fontSize: font.size.xs,
+    color: colors.textSub,
+  },
+  // ...
 } as const;
 
 // ------------------------------
