@@ -56,6 +56,8 @@ export const memberPage = {
   grid3: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr 1fr',
+    alignItems: 'center', // 垂直中央
+
     gap: spacing.sm,
     //textAlign: 'center' as const,
   },
@@ -67,12 +69,20 @@ export const memberPage = {
     whiteSpace: 'pre-wrap' as const,
     textAlign: 'left' as const,
   },
+  // アイコン行専用（アイコン・名前・役割を綺麗に並べる）
+  iconRow: {
+    display: 'grid',
+    gridTemplateColumns: '80px 1fr 1fr', // アイコン幅を固定すると安定します
+    alignItems: 'center', // 垂直中央
+    padding: `${spacing.md} 0`,
+    borderBottom: `1px solid ${colors.border}`,
+  },
   // カード内の区切り線がある行のベース
   rowBorder: {
     borderBottom: `1px solid ${colors.border}`,
     paddingBottom: spacing.md,
     marginBottom: spacing.md, // 行間の余白を一括設定
-  },  
+  },
   // 最後の行（区切り線なし）
   rowLast: {
     paddingTop: spacing.xs,

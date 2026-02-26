@@ -422,8 +422,14 @@ export default function ProfilePage() {
           {/* 2段目: アイコン・ニックネーム・役割 */}
           <div style={memberPage.rowBorder}>
             <div style={{ ...memberPage.grid3, alignItems: 'center' }}>
-              <img src={user.pictureUrl || '/icons/emoticon_smile.png'} alt="Icon"
-                style={{ width: 64, height: 64, borderRadius: '50%', border: `2px solid ${colors.border}` }} />
+              <img src={user.profile_icon_url || '/icons/emoticon_smile.png'} alt="User Icon"
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  border: `2px solid ${colors.border}`
+                }} />
               <div style={memberPage.itemStack}>
                 <span style={memberPage.label}>ニックネーム</span>
                 <span style={memberPage.value}>{user.nickname}</span>
@@ -547,30 +553,34 @@ export default function ProfilePage() {
 
       </div>
 
-      {/* 下部ナビゲーション（後ほど実装） */}
-                {/* フッターエリア */}
-          <div style={text.footer}>
-            {/* LINEアプリでは自動ログインの仕組み上、ログアウトボタンを表示せず、
+      {/* フッターエリア */}
+      <div style={text.footer}>
+        {/* LINEアプリでは自動ログインの仕組み上、ログアウトボタンを表示せず、
               ユーザーにアプリを閉じてもらう運用とする。
           */}
-            {!(typeof window !== 'undefined' &&
-              navigator.userAgent.toLowerCase().includes('line')) ? (
-              <>
-                <button
-                  onClick={(e) => handleLogout(e)}
-                  style={button.base}
-                >
-                  ログアウト
-                </button>
-              </>
-            ) : (
-              <>
-                <p style={{ color: '#666', fontSize: '0.8rem' }}>
-                  ※ LINEアプリでお使いの方は、右上の「×」で閉じてください。
-                </p>
-              </>
-            )}
-          </div>
+        {!(typeof window !== 'undefined' &&
+          navigator.userAgent.toLowerCase().includes('line')) ? (
+          <button
+            onClick={(e) => handleLogout(e)}
+            style={{
+              ...button.base,
+              backgroundColor: 'transparent', // デザイン案に合わせて控えめに
+              border: `1px solid ${colors.border}`,
+              color: colors.textSub,
+              padding: '8px 24px',
+              fontSize: font.size.sm
+            }}
+          >
+            ログアウト
+          </button>
+        ) : (
+          <>
+            <p style={{ color: '#666', fontSize: '0.8rem' }}>
+              ※ LINEアプリでお使いの方は、右上の「×」で閉じてください。
+            </p>
+          </>
+        )}
+      </div>
 
     </div >
   );
