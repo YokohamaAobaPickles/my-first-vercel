@@ -1,12 +1,12 @@
 /**
- * Filename: src/app/V1/style/style_event.ts
+ * Filename: src/V1/style/style_event.ts
  * Version : V0.1.0
  * Update  : 2026-02-11
  * Remarks : 
  * V0.1.0 - 初期バージョン
  */
 
-import { spacing, colors, font, card } from "./style_common";
+import { spacing, colors, font, card } from "@v1/style/style_common";
 
 // ------------------------------
 // Event Page Layout

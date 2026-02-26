@@ -1,6 +1,9 @@
 /**
- * src/V1/types/common.ts
- * 全機能共通の基盤型定義
+ * Filename: src/V1/types/common.ts
+ * Version : V1.0.0
+ * Update  : 2026-02-25
+ * Remarks :
+ * V1.0.0 - 全機能共通の基盤型定義
  */
 
 /**

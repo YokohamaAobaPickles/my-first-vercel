@@ -1,5 +1,5 @@
 /**
- * Filename: src/utils/duprBulkParser.test.ts
+ * Filename: src/V1/utils/duprBulkParser.test.ts
  * Version : V1.0.0
  * Update  : 2026-02-01
  * Remarks : DUPR一括登録パーサーの単体テスト
@@ -9,7 +9,7 @@ import { describe, it, expect } from 'vitest'
 import {
   parseDuprBulkFile,
   type DuprBulkRow,
-} from './duprBulkParser'
+} from '@v1/utils/duprBulkParser'
 
 describe('parseDuprBulkFile', () => {
   it('サンプル通りの3件をパースできる', () => {

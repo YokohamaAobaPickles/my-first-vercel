@@ -19,15 +19,15 @@ import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
 import { render, waitFor } from '@testing-library/react'
 import RootPage from './page'
 import { useRouter } from 'next/navigation'
-import { useAuthCheck } from '@/hooks/useAuthCheck'
+import { useAuthCheck } from '@v1/hooks/useAuthCheck'
 
 // Mock definitions
 vi.mock('next/navigation', () => ({
   useRouter: vi.fn(),
 }))
-vi.mock('@/hooks/useAuthCheck')
+vi.mock('@v1/hooks/useAuthCheck')
 
-vi.mock('../lib/supabase', () => ({
+vi.mock('@v1/lib/supabase', () => ({
   supabase: {
     from: vi.fn(() => ({
       select: vi.fn(() => ({
@@ -49,7 +49,7 @@ describe('RootPage (app/page.tsx) - 交通整理のテスト', () => {
 
   describe('LINEアプリからのアクセス (currentLineIdがある場合)', () => {
     // Case 1: LINE初回アクセス (IDあり / DB未登録)
-    test('【Case 1】DB未登録なら /login へリダイレクトすること', async () => {
+    test('【Case 1】DB未登録なら /V1/login へリダイレクトすること', async () => {
       (useAuthCheck as Mock).mockReturnValue({
         user: null,
         isLoading: false,
@@ -60,7 +60,7 @@ describe('RootPage (app/page.tsx) - 交通整理のテスト', () => {
     })
 
     // Case 2: LINEリピート (IDあり / DB登録済み)
-    test('【Case 2】DB登録済みなら /members/profile へリダイレクトすること', async () => {
+    test('【Case 2】DB登録済みなら /V1/members/profile へリダイレクトすること', async () => {
       (useAuthCheck as Mock).mockReturnValue({
         user: { id: 'existing-uuid' },
         isLoading: false,
@@ -73,25 +73,25 @@ describe('RootPage (app/page.tsx) - 交通整理のテスト', () => {
 
   describe('ブラウザからのアクセス (currentLineIdがない場合)', () => {
     // Case 3: ブラウザ未ログイン (IDなし / セッションなし)
-    test('【Case 3】未ログインなら /login へリダイレクトすること', async () => {
+    test('【Case 3】未ログインなら /V1/login へリダイレクトすること', async () => {
       (useAuthCheck as Mock).mockReturnValue({
         user: null,
         isLoading: false,
         currentLineId: null,
       })
       render(<RootPage />)
-      await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/login'))
+      await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/V1/login'))
     })
 
     // Case 4: ブラウザログイン済み (IDなし / セッションあり)
-    test('【Case 4】ログイン済みなら /members/profile へリダイレクトすること', async () => {
+    test('【Case 4】ログイン済みなら /V1/members/profile へリダイレクトすること', async () => {
       (useAuthCheck as Mock).mockReturnValue({
         user: { id: 'existing-uuid' },
         isLoading: false,
         currentLineId: null,
       })
       render(<RootPage />)
-      await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/members/profile'))
+      await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/V1/members/profile'))
     })
   })
 })

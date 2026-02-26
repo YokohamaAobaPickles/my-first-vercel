@@ -1,21 +1,22 @@
 /**
- * Filename: src/app/V1/style/style_login.ts
+ * Filename: src/V1/style/style_login.ts
  * Version : V0.1.0
  * Update  : 2026-02-11
  * Remarks : 
  * V0.1.0 - 初期バージョン
  */
 
-import { spacing, colors, font } from "./style_common";
+import { spacing, colors, font } from "@v1/style/style_common";
 
 export const loginPage = {
-  title: {
-    fontSize: font.size.md,
-    fontWeight: font.weight.bold,
-    color: colors.text,
-    textAlign: "center",
-    marginBottom: spacing.lg,
-  },
+  // login pageのタイトルはcommonのタイトルで設定する
+  //title: {
+  //  fontSize: font.size.md,
+  //  fontWeight: font.weight.bold,
+  //  color: colors.text,
+  //  textAlign: "center",
+  //  marginBottom: spacing.lg,
+  //},
 
   card: {
     display: "flex",

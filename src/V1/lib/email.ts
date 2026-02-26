@@ -1,5 +1,5 @@
 /**
- * Filename: src/lib/email.ts
+ * Filename: src/V1/lib/email.ts
  * Version : V1.0.0
  * Update  : 2026-02-01
  * Remarks : パスワードリセット用メール送信（Nodemailer + Gmail SMTP）

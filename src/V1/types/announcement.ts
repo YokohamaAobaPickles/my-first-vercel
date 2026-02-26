@@ -1,5 +1,5 @@
 /**
-* Filename: src/types/announcement.ts
+ * Filename: src/V1/types/announcement.ts
  * Version : V1.0.0
  * Update  : 2026-02-25
  * Remarks : 

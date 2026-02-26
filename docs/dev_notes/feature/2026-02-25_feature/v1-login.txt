@@ -1,0 +1,48 @@
+理解
+1. 対象と役割
+対象: src/V1/app/login/page.test.tsx（新規）。実装は page.tsx はまだ作らない。
+役割: V1 ログインページの仕様を Vitest + React Testing Library でテストとして定義する。useAuthCheck・supabase・router.replace はすべてモックする。
+2. 仕様の整理
+currentLineId が存在（LINE からのアクセス）
+メールアドレスで DB 検索（members を email で検索）。
+見つからない → replace('/V1/app/member/new')。
+見つかった → DB の line_id を確認。
+line_id が現在の LINE ID と一致 → replace('/V1/app/member/profile')。
+line_id が null → 現在の line_id を DB に保存してから replace('/V1/app/member/profile')。
+currentLineId が null（ブラウザ）
+メール＋パスワード入力で認証。
+成功 → replace('/V1/app/member/profile')。
+失敗 → エラーメッセージを表示（リダイレクトしない）。
+3. 参照してよいもの
+V1 のテスト例: src/V1/app/page.test.tsx（useRouter / useAuthCheck / supabase のモック）、src/V1/hooks/useAuthCheck.test.ts（supabase チェーン・モックの書き方）。
+V1 の API: @v1/lib/memberApi の fetchMemberByEmail・linkLineIdToMember の「振る舞い」はテストで再現するが、旧 UI のコードは参照しない。import は @v1/... のみ。
+4. モック方針
+useAuthCheck: user, isLoading, currentLineId をテストごとに切り替え。
+useRouter: replace をモックし、呼び出し先・回数を検証。
+supabase:
+LINE 用: from('members').select(...).eq('email', ...).maybeSingle() の戻り値（見つからない / 見つかった・line_id 一致 / 見つかった・line_id null）を制御。
+line_id 保存: from('members').update({ line_id }).eq('email', ...) が呼ばれることを検証。
+ブラウザ用: auth.signInWithPassword({ email, password }) の成功/失敗を制御。
+方針
+1. テスト構成
+describe: 「V1 ログインページ」のような 1 本。
+ネスト describe: 「LINE（currentLineId あり）」「ブラウザ（currentLineId なし）」の 2 ブロックに分ける。
+各ケースは 1 test ずつ。仕様の 5 パターン + 必要なら「loading 中はリダイレクトしない」などを追加。
+2. モックの置き場所
+vi.mock('next/navigation') で useRouter の replace をモック。
+vi.mock('@v1/hooks/useAuthCheck') で useAuthCheck の戻り値をモック。
+vi.mock('@v1/lib/supabase') で supabase をモック。
+from() はチェーン可能なオブジェクトを返す（select().eq().maybeSingle() と update().eq() の両方に対応）。
+auth: { signInWithPassword: vi.fn() } を用意し、テスト内で mockResolvedValue / mockRejectedValue で成功/失敗を切り替える。
+3. コンポーネントの扱い
+テストでは import LoginPage from '@v1/app/login/page' とする。
+page.tsx はまだ作らないため、現時点ではテスト実行時にモジュール未存在で失敗する。実装追加後にテストが通る形で書く。
+4. 各ケースの検証内容
+LINE・未登録: useAuthCheck で currentLineId あり、supabase でメール検索が null → replace('/V1/app/member/new') が 1 回。
+LINE・登録済・line_id 一致: 検索で member（line_id 一致）を返す → replace('/V1/app/member/profile') が 1 回。update は呼ばれない。
+LINE・登録済・line_id が null: 検索で member（line_id: null）を返す → update で line_id 保存が 1 回、その後 replace('/V1/app/member/profile')。
+ブラウザ・認証成功: currentLineId なしで、signInWithPassword が成功 → replace('/V1/app/member/profile')。
+ブラウザ・認証失敗: signInWithPassword が失敗 → replace は呼ばれず、画面にエラーメッセージが表示される（getByRole('alert') や getByText(/エラー|認証に失敗/) などで検証）。
+5. 規約
+ファイルヘッダー（Filename, Version, Update, Remarks）を付ける。
+import は @v1/... のみ。旧 UI のパスは使わない。

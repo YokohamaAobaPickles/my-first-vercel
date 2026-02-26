@@ -1,10 +1,8 @@
 /**
- * Filename: lib/supabase.ts
- * Version : V1.0.1
+ * Filename: src/V1/lib/supabase.ts
+ * Version : V1.0.0
  * Update  : 2026-01-25
  * 内容：
- * V1.0.1
- * -テスト環境で環境変数がなくてもエラーにならないようフォールバックを追加
  * V1.0.0
  * - supabaseアクセス共通ロジック
  */

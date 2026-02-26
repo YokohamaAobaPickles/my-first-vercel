@@ -1,12 +1,12 @@
 /**
- * Filename: src/app/V1/style/style_bottomnav.ts
+ * Filename: src/V1/style/style_bottomnav.ts
  * Version : V0.1.0
  * Update  : 2026-02-11
  * Remarks : 
  * V0.1.0 - 初期バージョン
  */
 
-import { colors } from "./style_common";
+import { colors } from "@v1/style/style_common";
 
 export const bottomNav = {
   container: {

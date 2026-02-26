@@ -1,29 +1,18 @@
 /**
- * Filename: src/lib/memberApi.ts
- * Version : V3.8.0
+ * Filename: src/V1/lib/memberApi.ts
+ * Version : V1.0.0
  * Update  : 2026-02-01
  * Remarks : 
- * V3.8.0 - 追加：パスワードリセット用（saveResetToken, fetchMemberByResetToken, updatePasswordByResetToken）。
- * V3.7.0 - 追加：updateMemberPassword（現在パスワード照合後に新パスワードで更新。プロフィール編集用）。
- * V3.6.1 - 修正：registerMember で introducer_member_number を送信前に除外（PGRST204 エラー防止）。
- * V3.6.0 - 追加：fetchMemberByNicknameAndMemberNumber（ニックネーム＋会員番号で紹介者取得。ゲスト登録用）。
- * V3.5.0 - 追加：fetchMemberByNicknameAndEmail（ニックネーム＋メールで会員取得。物理削除指定用）。
- * V3.4.0 - 追加：checkMemberReferenced（物理削除前の参照チェック。announcements.author_id を確認）。
- * V3.3.2 - 修正：fetchMemberByDuprId で同一 dupr_id 複数時は更新せずエラーを返す（重複解消を促すメッセージ）。
- * V3.3.1 - 修正：fetchMemberByDuprId を maybeSingle → limit(1) に変更（同一 dupr_id 複数時エラー回避）。
- * V3.3.0 - 追加：fetchMemberByDuprId（DUPR一括登録用）。
- * V3.2.0 - 追加：管理者用一括更新関数 updateMember を実装。
- * V3.1.0 - 追加：deleteMember (物理レコード削除) を実装。
- * V3.0.0 - 修正：ステータス名称変更に対応 (new_req) および updateMemberStatus の引数型修正。
+ * V1.0.0 - 初期バージョン
  */
 
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@v1/lib/supabase';
 import {
   Member,
   MemberInput,
   ApiResponse,
   MemberStatus
-} from '@/types/member';
+} from '@v1/types/member';
 
 /**
  * 共通エラーハンドラー

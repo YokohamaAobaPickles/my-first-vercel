@@ -1,9 +1,9 @@
 /**
- * Filename: app/page.tsx
- * Version : V2.0.0
- * Update  : 2026-01-26
+ * Filename: src/app/page.tsx
+ * Version : V1.0.0
+ * Update  : 2026-02-25
  * 修正内容：
- * V2.0.0
+ * V1.0.0
  * - ルートページを「案内係（Router）」に特化。
  * - LINEコンテキストとPCブラウザコンテキストを明示的に分離して判定。
  * - テストコード(page.test.tsx)のCase 1〜4の仕様を厳密に実装。
@@ -13,7 +13,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuthCheck } from '@/hooks/useAuthCheck'
+import { useAuthCheck } from '@v1/hooks/useAuthCheck'
 
 export default function RootPage() {
   const router = useRouter()
@@ -27,19 +27,19 @@ export default function RootPage() {
       // --- LINEアプリからのアクセス ---
       if (user) {
         // Case 2: LINEリピート（登録済み）
-        router.replace('/members/profile')
+        router.replace('/V1/members/profile')
       } else {
         // Case 1: LINE初回（未登録）
-        router.replace('/login')
+        router.replace('/V1/login')
       }
     } else {
       // --- PC/標準ブラウザからのアクセス ---
       if (user) {
         // Case 4: ブラウザログイン済み
-        router.replace('/members/profile')
+        router.replace('/V1/members/profile')
       } else {
         // Case 3: ブラウザ未ログイン
-        router.replace('/login')
+        router.replace('/V1/login')
       }
     }
   }, [user, isLoading, currentLineId, router])

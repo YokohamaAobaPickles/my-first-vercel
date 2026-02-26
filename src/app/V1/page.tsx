@@ -1,5 +1,5 @@
 /**
- * Filename: src/V1/app/page.tsx
+ * Filename: src/app/page.tsx
  * Version : V1.0.0
  * Update  : 2026-02-25
  * 修正内容：
@@ -27,7 +27,7 @@ export default function RootPage() {
       // --- LINEアプリからのアクセス ---
       if (user) {
         // Case 2: LINEリピート（登録済み）
-        router.replace('/V1/app/members/profile')
+        router.replace('/V1/app/member/profile')
       } else {
         // Case 1: LINE初回（未登録）
         router.replace('/V1/app/login')
@@ -36,7 +36,7 @@ export default function RootPage() {
       // --- PC/標準ブラウザからのアクセス ---
       if (user) {
         // Case 4: ブラウザログイン済み
-        router.replace('/V1/app/members/profile')
+        router.replace('/V1/app/member/profile')
       } else {
         // Case 3: ブラウザ未ログイン
         router.replace('/V1/app/login')

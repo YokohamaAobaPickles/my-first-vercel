@@ -1,8 +1,9 @@
 /**
- * Filename: src/utils/duprBulkParser.ts
+ * Filename: src/V1/utils/duprBulkParser.ts
  * Version : V1.0.0
  * Update  : 2026-02-01
- * Remarks : DUPR一括登録用ファイルのパース。書式: 氏名, DUPR ID, 住所, 年齢・性別, Doubles, Singles
+ * Remarks : 
+ * V1.0.0 - DUPR一括登録用ファイルのパース。書式: 氏名, DUPR ID, 住所, 年齢・性別, Doubles, Singles
  */
 
 export interface DuprBulkRow {

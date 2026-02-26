@@ -1,11 +1,9 @@
 /**
- * Filename: src/lib/memberApi.test.ts
- * Version : V3.7.0
+ * Filename: src/V1/lib/memberApi.test.ts
+ * Version : V1.0.0
  * Update  : 2026-02-01
  * Remarks : 
- * V3.7.0 - 追加：updateMemberPassword のテスト（正常系・異常系）。
- * V3.2.1 - 修正：deleteMember のテストケース追加とモック定義の改善。
- * V3.1.0 - 修正：新ステータス名称 (new_req) に合わせて期待値を修正。
+ * V1.0.0 - 初期バージョン
  */
 
 import {
@@ -30,11 +28,11 @@ import {
   saveResetToken,
   fetchMemberByResetToken,
   updatePasswordByResetToken,
-} from './memberApi'
-import { supabase } from '@/lib/supabase'
-import { Member, MemberInput } from '@/types/member'
+} from '@v1/lib/memberApi'
+import { supabase } from '@v1/lib/supabase'
+import { Member, MemberInput } from '@v1/types/member'
 
-vi.mock('@/lib/supabase', () => ({
+vi.mock('@v1/lib/supabase', () => ({
   supabase: {
     from: vi.fn()
   }

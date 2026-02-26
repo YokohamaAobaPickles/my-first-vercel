@@ -10,8 +10,8 @@
 import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
 import { render, waitFor } from '@testing-library/react'
 import { useRouter } from 'next/navigation'
-import RootPage from '@v1/app/page'
-import { useAuthCheck } from '@/hooks/useAuthCheck'
+import RootPage from '@/app/V1/page'
+import { useAuthCheck } from '@v1/hooks/useAuthCheck'
 
 // Mock definitions
 vi.mock('next/navigation', () => ({
@@ -19,7 +19,7 @@ vi.mock('next/navigation', () => ({
   usePathname: vi.fn(() => '/'), // ★ これが必要
 }))
 
-vi.mock('@/hooks/useAuthCheck')
+vi.mock('@v1/hooks/useAuthCheck')
 
 vi.mock('@v1/lib/supabase', () => ({
   supabase: {
@@ -54,7 +54,7 @@ describe('RootPage (app/page.tsx) - 交通整理のテスト', () => {
     })
 
     // Case 2: LINEリピート (IDあり / DB登録済み)
-    test('【Case 2】DB登録済みなら /members/profile へリダイレクトすること', async () => {
+    test('【Case 2】DB登録済みなら /member/profile へリダイレクトすること', async () => {
       (useAuthCheck as Mock).mockReturnValue({
         user: { id: 'existing-uuid' },
         isLoading: false,
@@ -78,7 +78,7 @@ describe('RootPage (app/page.tsx) - 交通整理のテスト', () => {
     })
 
     // Case 4: ブラウザログイン済み (IDなし / セッションあり)
-    test('【Case 4】ログイン済みなら /members/profile へリダイレクトすること', async () => {
+    test('【Case 4】ログイン済みなら /member/profile へリダイレクトすること', async () => {
       (useAuthCheck as Mock).mockReturnValue({
         user: { id: 'existing-uuid' },
         isLoading: false,
