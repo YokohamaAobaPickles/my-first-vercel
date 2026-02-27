@@ -1,8 +1,14 @@
+/**
+ * Filename: src/app/events/components/DetailSections.tsx
+ * Version: V1.0.0
+ * Update: 2026-02-27
+ * Remarks: V1.0.0 - イベント詳細セクションコンポーネントの初期実装
+ */
+
 "use client";
 
 import { Event, Member } from "../types";
 import { eventDetail, statusBadge } from "@/style/style_event";
-import { button } from "@/style/style_common";
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
@@ -41,39 +47,12 @@ function getDetailStatusBadges(event: Event): StatusBadgeKey[] {
 type DetailSectionsProps = {
   event: Event;
   currentUserId: string;
-  onJoin: () => void;
-  onCancelJoin: () => void;
-  onParkingApply: () => void;
-  onParkingCancel: () => void;
 };
 
 export default function DetailSections({
   event,
   currentUserId,
-  onJoin,
-  onCancelJoin,
-  onParkingApply,
-  onParkingCancel,
 }: DetailSectionsProps) {
-  const isFull = event.lotteryDone && event.participants.length >= event.capacity;
-  const hasParkingSlot = event.parkingCapacity > 0;
-  const parkingFull =
-    event.parkingLotteryDone &&
-    event.parking.length >= event.parkingCapacity;
-
-  const showJoinButton =
-    event.userStatus === "未申請" && (!isFull || true);
-  const showCancelJoin =
-    event.userStatus === "申請中" || event.userStatus === "参加確定";
-  const showParkingApply =
-    hasParkingSlot &&
-    (event.userParking === "未申請" || event.userParking === "申請中") &&
-    !parkingFull;
-  const showParkingCancel =
-    hasParkingSlot &&
-    (event.userParking === "申請中" || event.userParking === "確定");
-  const showParkingNone = hasParkingSlot && parkingFull && event.userParking === "未申請";
-
   const renderMember = (m: Member, isSelf: boolean) => (
     <span key={m.id} style={eventDetail.listItem}>
       {isSelf ? "😊 " : ""}{m.name}
@@ -99,54 +78,6 @@ export default function DetailSections({
         </div>
         <div style={eventDetail.dateRow}>
           定員{event.capacity}名 / 📍 {event.location}
-        </div>
-
-        <div style={eventDetail.buttonRow}>
-          {showJoinButton && (
-            <button
-              type="button"
-              onClick={onJoin}
-              style={{ ...button.base, ...button.primary }}
-            >
-              参加申請
-            </button>
-          )}
-          {showCancelJoin && (
-            <button
-              type="button"
-              onClick={onCancelJoin}
-              style={{ ...button.base, ...button.secondary }}
-            >
-              参加取消
-            </button>
-          )}
-          {showParkingApply && (
-            <button
-              type="button"
-              onClick={onParkingApply}
-              style={{ ...button.base, ...button.primary }}
-            >
-              駐車場申請
-            </button>
-          )}
-          {showParkingCancel && (
-            <button
-              type="button"
-              onClick={onParkingCancel}
-              style={{ ...button.base, ...button.secondary }}
-            >
-              駐車場取消
-            </button>
-          )}
-          {showParkingNone && (
-            <button
-              type="button"
-              disabled
-              style={{ ...button.base, ...button.inactive }}
-            >
-              駐車場無し
-            </button>
-          )}
         </div>
       </article>
 

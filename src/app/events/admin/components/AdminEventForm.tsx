@@ -1,8 +1,16 @@
+/**
+ * Filename: src/app/events/admin/components/AdminEventForm.tsx
+ * Version: V1.1.0
+ * Update: 2026-02-27
+ * Remarks: V1.1.0 - onSubmit を Supabase createEvent 用に async 対応、submitting 表示
+ */
+
 "use client";
 
 import { useState, useCallback } from "react";
 import { adminEventForm } from "@/style/style_event_admin";
 import { STATUS, type StatusType } from "@/constants/status";
+import { baseStyles } from "@/types/styles/style_common";
 
 export type EventFormValues = {
   title: string;
@@ -40,13 +48,15 @@ const defaultValues: EventFormValues = {
 type AdminEventFormProps = {
   mode: "create" | "edit";
   initialValues?: Partial<EventFormValues>;
-  onSubmit: (values: EventFormValues) => void;
+  onSubmit: (values: EventFormValues) => void | Promise<void>;
+  submitting?: boolean;
 };
 
 export default function AdminEventForm({
   mode,
   initialValues,
   onSubmit,
+  submitting = false,
 }: AdminEventFormProps) {
   const [values, setValues] = useState<EventFormValues>(() => ({
     ...defaultValues,
@@ -65,7 +75,7 @@ export default function AdminEventForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!values.title.trim()) return;
-    onSubmit(values);
+    void onSubmit(values);
   };
 
   const submitLabel = mode === "create" ? "作成" : "更新";
@@ -213,6 +223,16 @@ export default function AdminEventForm({
           onChange={(e) => update("notes", e.target.value)}
           style={adminEventForm.textarea}
         />
+      </div>
+
+      <div style={{ marginTop: 24 }}>
+        <button
+          type="submit"
+          style={baseStyles.primaryButton}
+          disabled={submitting}
+        >
+          {submitting ? "送信中..." : submitLabel}
+        </button>
       </div>
     </form>
   );

@@ -1,3 +1,10 @@
+/**
+ * Filename: src/app/events/components/FilterChips.tsx
+ * Version: V1.0.0
+ * Update: 2026-02-27
+ * Remarks: V1.0.0 - フィルタチップコンポーネントの初期実装
+ */
+
 "use client";
 
 import { filterChips } from "@/style/style_event";

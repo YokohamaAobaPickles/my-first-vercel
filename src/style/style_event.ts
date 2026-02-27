@@ -226,6 +226,54 @@ export const filterChips = {
 } as const;
 
 // ------------------------------
+// Event Apply Page
+// ------------------------------
+export const eventApply = {
+  section: {
+    ...card,
+    marginTop: spacing.md,
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: spacing.md,
+  },
+  row: {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: spacing.xs,
+  },
+  label: {
+    fontSize: font.size.sm,
+    color: colors.textSub,
+  },
+  value: {
+    fontSize: font.size.md,
+    color: colors.text,
+  },
+  checkboxRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: spacing.xs,
+    fontSize: font.size.sm,
+    color: colors.text,
+  },
+  note: {
+    fontSize: font.size.xs,
+    color: colors.textSub,
+  },
+  input: {
+    width: "100%",
+    boxSizing: "border-box" as const,
+    padding: `${spacing.sm}px ${spacing.md}px`,
+    fontSize: font.size.sm,
+    color: colors.text,
+    backgroundColor: colors.inputBackground,
+    border: `1px solid ${colors.border}`,
+    borderRadius: radius.input,
+    outline: "none",
+  },
+} as const;
+
+// ------------------------------
 // Simple Calendar (no library)
 // ------------------------------
 export const calendar = {

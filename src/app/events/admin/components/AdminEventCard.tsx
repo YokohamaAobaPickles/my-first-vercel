@@ -1,3 +1,10 @@
+/**
+ * Filename: src/app/events/admin/components/AdminEventCard.tsx
+ * Version: V1.0.0
+ * Update: 2026-02-27
+ * Remarks: V1.0.0 - 管理者向けイベントカードコンポーネントの初期実装
+ */
+
 "use client";
 
 import Link from "next/link";

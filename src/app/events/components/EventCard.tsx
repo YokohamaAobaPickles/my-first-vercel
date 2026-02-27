@@ -1,3 +1,10 @@
+/**
+ * Filename: src/app/events/components/EventCard.tsx
+ * Version: V1.0.0
+ * Update: 2026-02-27
+ * Remarks: V1.0.0 - イベントカードコンポーネントの初期実装
+ */
+
 "use client";
 
 import Link from "next/link";
@@ -74,6 +81,20 @@ export default function EventCard({ event }: EventCardProps) {
           <span style={listItemEvent.metaItem}>費用：{feeYen}円</span>
           <span style={listItemEvent.metaItem}>｜</span>
           <span style={listItemEvent.metaItem}>駐車場：{event.parkingCapacity}台</span>
+          {event.minLevel && event.maxLevel && (
+            <>
+              <span style={listItemEvent.metaItem}>｜</span>
+              <span style={listItemEvent.metaItem}>
+                レベル：{event.minLevel}〜{event.maxLevel}
+              </span>
+            </>
+          )}
+          {event.genderRule && (
+            <>
+              <span style={listItemEvent.metaItem}>｜</span>
+              <span style={listItemEvent.metaItem}>条件：{event.genderRule}</span>
+            </>
+          )}
         </div>
         <div style={listItemEvent.info}>
           <div>🕒 {event.start}–{event.end}</div>

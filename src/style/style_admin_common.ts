@@ -1,3 +1,11 @@
+/**
+ * Filename: src/style/style_admin_common.ts
+ * Version: V1.0.0
+ * Update: 2026-02-27
+ * Remarks:
+ * V1.0.0 - 管理者向け共通スタイルの初期実装。イベント管理で仮作成
+ */
+
 import { spacing, colors, font, radius } from "@/style/style_common";
 
 export const adminCommon = {

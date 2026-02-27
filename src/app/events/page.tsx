@@ -1,6 +1,13 @@
+/**
+ * Filename: src/app/events/page.tsx
+ * Version: V1.1.0
+ * Update: 2026-02-27
+ * Remarks: V1.1.0 - dummyData 廃止、fetchEvents API 接続にリファクタ
+ */
+
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { baseStyles } from "@/types/styles/style_common";
 import { eventPage } from "@/style/style_event";
@@ -8,7 +15,8 @@ import Calendar from "./components/Calendar";
 import EventCard from "./components/EventCard";
 import SearchBar from "./components/SearchBar";
 import FilterChips, { type FilterOption } from "./components/FilterChips";
-import { getEventsByMonthYear, getEventsFuture, getEventsPast } from "./dummyData";
+import { fetchEvents } from "@/lib/eventApi";
+import type { Event as ApiEvent } from "@/types/event";
 import type { Event } from "./types";
 
 const CURRENT_USER_ID = "me";
@@ -35,6 +43,31 @@ const FILTER_OPTIONS: FilterOption[] = [
   { key: "駐車場あり", label: "駐車場あり" },
   { key: "駐車場なし", label: "駐車場なし" },
 ];
+
+function mapApiEventToListView(api: ApiEvent): Event {
+  return {
+    id: String(api.event_id),
+    date: api.date,
+    start: api.start_time,
+    end: api.end_time,
+    title: api.title,
+    description: undefined,
+    capacity: api.capacity ?? 0,
+    parkingCapacity: api.parking_capacity ?? 0,
+    location: api.place,
+    deadline: api.date,
+    lotteryDone: false,
+    parkingLotteryDone: false,
+    applicants: [],
+    participants: [],
+    waitlist: [],
+    parkingApplicants: [],
+    parking: [],
+    parkingWaitlist: [],
+    userStatus: "未申請",
+    userParking: "未申請",
+  };
+}
 
 function matchFilter(event: Event, filterKey: string): boolean {
   const now = new Date();
@@ -130,13 +163,43 @@ export default function EventsPage() {
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
-  const [participationFilter, setParticipationFilter] = useState<string[]>(["all"]);
+  const [participationFilter, setParticipationFilter] = useState<string[]>([
+    "all",
+  ]);
+  const [viewEvents, setViewEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const monthEventsRaw = useMemo(
-    () => getEventsByMonthYear(currentYear, currentMonth),
-    [currentYear, currentMonth]
-  );
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      const result = await fetchEvents();
+      if (cancelled) return;
+      if (!result.success) {
+        setError(result.error?.message ?? "イベント一覧の取得に失敗しました。");
+        setViewEvents([]);
+        setLoading(false);
+        return;
+      }
+      setViewEvents((result.data ?? []).map(mapApiEventToListView));
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const today = useMemo(() => todayStart(), []);
+  const monthEventsRaw = useMemo(
+    () =>
+      viewEvents.filter((e) => {
+        const d = new Date(e.date);
+        return d.getFullYear() === currentYear && d.getMonth() + 1 === currentMonth;
+      }),
+    [viewEvents, currentYear, currentMonth]
+  );
   const monthEvents = useMemo(
     () =>
       monthEventsRaw.filter((e) => {
@@ -149,18 +212,27 @@ export default function EventsPage() {
   const daysWithEvents = useMemo(() => {
     const set = new Set<number>();
     monthEvents.forEach((e) => {
-      const d = new Date(e.date).getDate();
-      set.add(d);
+      set.add(new Date(e.date).getDate());
     });
     return set;
   }, [monthEvents]);
 
   const byDay = useMemo(() => {
     if (selectedDay === null) return monthEvents;
-    return monthEvents.filter((e) => new Date(e.date).getDate() === selectedDay);
+    return monthEvents.filter(
+      (e) => new Date(e.date).getDate() === selectedDay
+    );
   }, [monthEvents, selectedDay]);
 
-  const pastEvents = useMemo(() => getEventsPast(), []);
+  const pastEvents = useMemo(
+    () =>
+      viewEvents.filter((e) => {
+        const d = new Date(e.date);
+        d.setHours(0, 0, 0, 0);
+        return d < today;
+      }),
+    [viewEvents, today]
+  );
 
   const filteredEventsFuture = useMemo(
     () => applyFilters(byDay, searchQuery, selectedFilters),
@@ -170,16 +242,21 @@ export default function EventsPage() {
   const filteredEventsPast = useMemo(() => {
     let list = applySearchOnly(pastEvents, searchQuery);
     participationFilter.forEach((key) => {
-      list = list.filter((e) => matchParticipation(e, key, CURRENT_USER_ID));
+      list = list.filter((e) =>
+        matchParticipation(e, key, CURRENT_USER_ID)
+      );
     });
     return list;
   }, [pastEvents, searchQuery, participationFilter]);
 
-  const filteredEvents = tab === "future" ? filteredEventsFuture : filteredEventsPast;
+  const filteredEvents =
+    tab === "future" ? filteredEventsFuture : filteredEventsPast;
 
   const handleFilterToggle = (filterKey: string) => {
     setSelectedFilters((prev) =>
-      prev.includes(filterKey) ? prev.filter((k) => k !== filterKey) : [...prev, filterKey]
+      prev.includes(filterKey)
+        ? prev.filter((k) => k !== filterKey)
+        : [...prev, filterKey]
     );
   };
 
@@ -206,6 +283,29 @@ export default function EventsPage() {
     }
     setSelectedDay(null);
   };
+
+  if (loading) {
+    return (
+      <div style={baseStyles.containerDefault}>
+        <div style={baseStyles.content}>
+          <p>読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={baseStyles.containerDefault}>
+        <div style={baseStyles.content}>
+          <p style={{ color: "#DC2626", marginTop: 40 }}>{error}</p>
+          <Link href="/" style={baseStyles.primaryButton}>
+            トップへ
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={baseStyles.containerDefault}>
@@ -252,7 +352,9 @@ export default function EventsPage() {
             selectedDay={selectedDay}
             onPrevMonth={handlePrevMonth}
             onNextMonth={handleNextMonth}
-            onDayClick={(day) => setSelectedDay((d) => (d === day ? null : day))}
+            onDayClick={(day) =>
+              setSelectedDay((d) => (d === day ? null : day))
+            }
           />
         )}
 
@@ -282,9 +384,13 @@ export default function EventsPage() {
         </div>
         <div style={eventPage.list}>
           {filteredEvents.length === 0 ? (
-            <p style={{ color: "#9CA3AF", fontSize: 14 }}>イベントはありません。</p>
+            <p style={{ color: "#9CA3AF", fontSize: 14 }}>
+              イベントはありません。
+            </p>
           ) : (
-            filteredEvents.map((ev) => <EventCard key={ev.id} event={ev} />)
+            filteredEvents.map((ev) => (
+              <EventCard key={ev.id} event={ev} />
+            ))
           )}
         </div>
       </div>

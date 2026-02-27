@@ -1,3 +1,10 @@
+/**
+ * Filename: src/app/events/dummyData.ts
+ * Version: V1.0.0
+ * Update: 2026-02-27
+ * Remarks: V1.0.0 - イベントダミーデータの初期実装
+ */ 
+
 import { Event, Member } from "./types";
 
 const members: Member[] = [
@@ -16,6 +23,10 @@ export const dummyEvents: Event[] = [
     start: "12:00",
     end: "15:00",
     title: "ピックルボール会",
+    minLevel: "初級",
+    maxLevel: "中級",
+    genderRule: "制限なし",
+    pairRule: "SOLO",
     capacity: 8,
     parkingCapacity: 2,
     location: "大場A",
@@ -38,6 +49,10 @@ export const dummyEvents: Event[] = [
     start: "12:00",
     end: "15:00",
     title: "ピックルボール会",
+    minLevel: "中級",
+    maxLevel: "上級",
+    genderRule: "男女ペア必須",
+    pairRule: "PAIR_REQUIRED",
     capacity: 6,
     parkingCapacity: 3,
     location: "大場A",
@@ -60,6 +75,10 @@ export const dummyEvents: Event[] = [
     start: "12:00",
     end: "15:00",
     title: "ピックルボール会",
+    minLevel: "初級",
+    maxLevel: "中級",
+    genderRule: "制限なし",
+    pairRule: "SOLO",
     capacity: 8,
     parkingCapacity: 2,
     location: "大場A",
@@ -82,6 +101,10 @@ export const dummyEvents: Event[] = [
     start: "12:00",
     end: "15:00",
     title: "ピックルボール会",
+    minLevel: "初級",
+    maxLevel: "中級",
+    genderRule: "女性限定",
+    pairRule: "SOLO",
     capacity: 8,
     parkingCapacity: 2,
     location: "大場A",
@@ -102,6 +125,10 @@ export const dummyEvents: Event[] = [
 
 export function getEventById(id: string): Event | undefined {
   return dummyEvents.find((e) => e.id === id);
+}
+
+export function getMemberById(id: string): Member | undefined {
+  return members.find((m) => m.id === id);
 }
 
 export function getEventsByMonthYear(year: number, month: number): Event[] {
@@ -133,4 +160,19 @@ export function getEventsPast(): Event[] {
     d.setHours(0, 0, 0, 0);
     return d < today;
   });
+}
+
+// 参加申請ダミーレコード
+export type ParticipantApplication = {
+  eventId: string;
+  userId: string;
+  pairUserId?: string;
+  parkingRequested: boolean;
+};
+
+const applications: ParticipantApplication[] = [];
+
+export function applyForEvent(app: ParticipantApplication) {
+  applications.push(app);
+  console.log("applyForEvent (dummy)", app);
 }

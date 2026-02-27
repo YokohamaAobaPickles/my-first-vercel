@@ -17,6 +17,13 @@ export type Event = {
   title: string;
   /** 検索用。任意 */
   description?: string;
+  /** 推奨レベル帯（例: 初級〜中級） */
+  minLevel?: string;
+  maxLevel?: string;
+  /** 性別条件（例: 女性限定／ペアなどの説明用） */
+  genderRule?: string;
+  /** 申込形態: ソロ or ペア必須 */
+  pairRule?: "SOLO" | "PAIR_REQUIRED";
   capacity: number;
   parkingCapacity: number;
   location: string;

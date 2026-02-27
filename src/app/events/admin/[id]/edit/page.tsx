@@ -1,63 +1,142 @@
+/**
+ * Filename: src/app/events/admin/[id]/edit/page.tsx
+ * Version: V1.1.0
+ * Update: 2026-02-27
+ * Remarks: V1.1.0 - fetchEventById/updateEvent/deleteEvent API 接続に変更
+ */
+
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { baseStyles } from "@/types/styles/style_common";
 import { adminEventForm } from "@/style/style_event_admin";
 import { adminCommon } from "@/style/style_admin_common";
 import ConfirmModal from "@/components/common/ConfirmModal";
-import { STATUS, type StatusType } from "@/constants/status";
+import { STATUS } from "@/constants/status";
 import AdminEventForm from "../../components/AdminEventForm";
 import type { EventFormValues } from "../../components/AdminEventForm";
-import { getEventById } from "../../../dummyData";
-import type { Event } from "../../../types";
+import {
+  fetchEventById,
+  updateEvent,
+  deleteEvent,
+} from "@/lib/eventApi";
+import type { Event as ApiEvent, EventUpdateInput } from "@/types/event";
 
-function eventToFormValues(event: Event): EventFormValues {
-  const deadline =
-    event.deadline && event.deadline.includes("T")
-      ? event.deadline.slice(0, 16)
-      : event.deadline || "";
+function apiEventToFormValues(api: ApiEvent): EventFormValues {
   return {
-    title: event.title,
-    date: event.date,
-    startTime: event.start,
-    endTime: event.end,
-    location: event.location,
-    capacity: event.capacity,
-    parkingCapacity: event.parkingCapacity,
-    deadline,
-    notes: event.description ?? "",
+    title: api.title,
+    date: api.date,
+    startTime: api.start_time,
+    endTime: api.end_time,
+    location: api.place,
+    capacity: api.capacity ?? 0,
+    parkingCapacity: api.parking_capacity ?? 0,
+    deadline: "",
+    notes: "",
     status: STATUS.DRAFT,
+  };
+}
+
+function formValuesToEventUpdateInput(
+  values: EventFormValues
+): EventUpdateInput {
+  return {
+    title: values.title.trim(),
+    date: values.date,
+    start_time: values.startTime,
+    end_time: values.endTime,
+    place: values.location,
+    capacity: values.capacity,
+    min_level: null,
+    max_level: null,
+    gender_rule: "none",
+    pair_rule: "solo",
+    parking_capacity: values.parkingCapacity,
   };
 }
 
 export default function EventEditPage() {
   const params = useParams();
   const router = useRouter();
-  const id = typeof params.id === "string" ? params.id : "";
-  const event = id ? getEventById(id) : undefined;
+  const idParam = typeof params.id === "string" ? params.id : "";
+  const eventId = Number(idParam);
+
+  const [apiEvent, setApiEvent] = useState<ApiEvent | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // 将来的に Event に status が追加されたらここで取得（暫定で event.status を優先）
-  const eventStatus = ((event as any)?.status ?? STATUS.DRAFT) as StatusType;
-  const isDeletable = eventStatus === STATUS.INVALID;
+  useEffect(() => {
+    if (!eventId || Number.isNaN(eventId)) {
+      setError("イベントが見つかりません。");
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      const result = await fetchEventById(eventId);
+      if (cancelled) return;
+      if (!result.success || !result.data) {
+        setError("イベントが見つかりません。");
+        setLoading(false);
+        return;
+      }
+      setApiEvent(result.data);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId]);
 
-  const handleUpdate = (values: EventFormValues) => {
-    console.log("update event (dummy):", values);
+  const handleUpdate = async (values: EventFormValues) => {
+    if (!apiEvent) return;
+    setError(null);
+    setSubmitting(true);
+    const input = formValuesToEventUpdateInput(values);
+    const result = await updateEvent(apiEvent.event_id, input);
+    setSubmitting(false);
+    if (!result.success) {
+      setError(result.error?.message ?? "イベントの更新に失敗しました。");
+      return;
+    }
+    router.push(`/events/${apiEvent.event_id}`);
   };
 
-  const handleDelete = () => {
-    if (!event) return;
-    console.log("削除:", event.id);
+  const handleDelete = async () => {
+    if (!apiEvent) return;
+    setError(null);
+    const result = await deleteEvent(apiEvent.event_id);
+    if (!result.success) {
+      setError(result.error?.message ?? "イベントの削除に失敗しました。");
+      return;
+    }
+    setShowDeleteModal(false);
     router.push("/events/admin");
   };
 
-  if (!event) {
+  if (loading) {
     return (
       <div style={baseStyles.containerDefault}>
         <div style={baseStyles.content}>
-          <p style={{ color: "#9CA3AF", marginTop: 40 }}>イベントが見つかりません。</p>
+          <p>読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !apiEvent) {
+    return (
+      <div style={baseStyles.containerDefault}>
+        <div style={baseStyles.content}>
+          <p style={{ color: "#9CA3AF", marginTop: 40 }}>
+            {error ?? "イベントが見つかりません。"}
+          </p>
           <Link href="/events/admin" style={adminEventForm.backButton}>
             ＜ 戻る
           </Link>
@@ -65,6 +144,8 @@ export default function EventEditPage() {
       </div>
     );
   }
+
+  const isDeletable = true;
 
   return (
     <div style={baseStyles.containerDefault}>
@@ -75,10 +156,15 @@ export default function EventEditPage() {
           </Link>
         </div>
 
+        {error && (
+          <p style={{ color: "#DC2626", marginBottom: 16 }}>{error}</p>
+        )}
+
         <AdminEventForm
           mode="edit"
-          initialValues={eventToFormValues(event)}
+          initialValues={apiEventToFormValues(apiEvent)}
           onSubmit={handleUpdate}
+          submitting={submitting}
         />
         <div style={adminCommon.buttonRow}>
           <button
@@ -97,6 +183,7 @@ export default function EventEditPage() {
                 (form as HTMLFormElement).requestSubmit();
               }
             }}
+            disabled={submitting}
           >
             更新
           </button>
@@ -105,7 +192,9 @@ export default function EventEditPage() {
             style={adminCommon.deleteButton}
             onClick={() => {
               if (!isDeletable) {
-                alert("ステータスが「無効」でないため削除できません。");
+                alert(
+                  "ステータスが「無効」でないため削除できません。"
+                );
                 return;
               }
               setShowDeleteModal(true);
