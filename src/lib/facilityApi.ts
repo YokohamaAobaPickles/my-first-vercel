@@ -1,8 +1,10 @@
 /**
  * Filename: facilityApi.ts
- * Version: V1.3.0
+ * Version: V1.5.0
  * Update: 2026-03-03
  * Remarks: 
+ * V1.5.0 - updateFacility を実装。
+ * V1.4.0 - insertFacility を実装。
  * V1.3.0 - deleteRegistrationGroup を実装。
  * V1.2.0 - fetchAllRegistrationGroups を実装。
  * V1.1.0 - updateRegistrationGroup を実装。
@@ -10,7 +12,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
-import { RegistrationGroup } from '@/types/facility';
+import { RegistrationGroup, Facility } from '@/types/facility';
 
 /**
  * F-01: 登録団体情報をDBに登録する
@@ -87,4 +89,46 @@ export const fetchAllRegistrationGroups = async (): Promise<RegistrationGroup[]>
   }
 
   return data || [];
+};
+
+/**
+ * F-11: 施設情報をDBに登録する
+ * @param facility 登録する施設情報
+ */
+export const insertFacility = async (
+  facility: Omit<Facility, 'id' | 'created_at' | 'updated_at'>
+): Promise<Facility | null> => {
+  const { data, error } = await supabase
+    .from('facilities')
+    .insert([facility])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error inserting facility:', error);
+    return null;
+  }
+  return data;
+};
+/**
+ * F-12: 施設情報を更新する
+ * @param id 更新対象のUUID
+ * @param facility 更新する項目
+ */
+export const updateFacility = async (
+  id: string,
+  facility: Partial<Omit<Facility, 'id' | 'created_at' | 'updated_at'>>
+): Promise<Facility | null> => {
+  const { data, error } = await supabase
+    .from('facilities')
+    .update(facility)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating facility:', error);
+    return null;
+  }
+  return data;
 };

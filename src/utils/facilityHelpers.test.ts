@@ -1,8 +1,11 @@
 /**
  * Filename: facilityHelpers.test.ts
- * Version: V1.3.0
+ * Version: V1.5.1
  * Update: 2026-03-03
  * Remarks: 
+ * V1.5.1 - 施設更新のテストを Helper 層の命名に修正
+ * V1.5.0 - F-12 施設情報更新のテストケースを追加
+ * V1.4.0 - F-11 施設登録のロジックテストを追加
  * V1.3.0 - F-03 登録団体削除のロジックテストを追加
  * V1.2.0 - F-04 登録団体一覧取得のロジックテストを追加
  * V1.1.0 - F-02 登録団体更新のロジックテストを追加
@@ -16,6 +19,10 @@ import {
   updateRegistrationGroupInfo,
   getRegistrationGroups,
   removeRegistrationGroup
+} from '@/utils/facilityHelpers';
+import {
+  createFacility,
+  updateFacilityInfo
 } from '@/utils/facilityHelpers';
 
 // 必要に応じてAPI側のモック化を検討しますが、まずは素直に呼び出します
@@ -122,5 +129,75 @@ describe('F-04: 登録団体一覧の取得', () => {
     expect(Array.isArray(list)).toBe(true);
     // 1件以上あるはず（これまでのテストで作成されているため）
     expect(list.length).toBeGreaterThan(0);
+  });
+});
+
+describe('facilityHelpers: 施設管理ロジックのテスト', () => {
+  it('F-11: 正しいデータで施設を登録できる', async () => {
+    // 紐付け用の団体を作成
+    const group = await createRegistrationGroup({
+      registration_club_name: 'Helper施設テスト団体',
+      registration_club_number: 'H-FAC-001',
+      representative_id: null,
+      vice_representative_id: null,
+      registration_club_notes: 'Notes'
+    });
+
+    const facilityData = {
+      facility_name: 'ヘルパーテストコート',
+      address: '横浜市...',
+      map_url: null,
+      facility_notes: 'テスト',
+      registration_group_id: group!.id
+    };
+
+    const result = await createFacility(facilityData);
+
+    expect(result).not.toBeNull();
+    expect(result?.facility_name).toBe('ヘルパーテストコート');
+  });
+
+  it('F-11: 施設名が空の場合は登録を拒否し null を返す', async () => {
+    const result = await createFacility({
+      facility_name: '', // 不正なデータ
+      address: null,
+      map_url: null,
+      facility_notes: null,
+      registration_group_id: null
+    });
+    expect(result).toBeNull();
+  });
+
+  describe('F-12: 施設更新ロジック', () => {
+    it('既存の施設名を変更したとき、正常に更新データを返す', async () => {
+      // 1. Helper を使ってテスト用の施設を作成
+      const newFacility = await createFacility({
+        facility_name: '更新前コート',
+        address: '住所A',
+        map_url: null,
+        facility_notes: null,
+        registration_group_id: null
+      });
+
+      // 2. updateFacilityInfo を実行
+      const updateData = { facility_name: '更新後コート' };
+      const result = await updateFacilityInfo(newFacility!.id, updateData);
+
+      expect(result).not.toBeNull();
+      expect(result?.facility_name).toBe('更新後コート');
+    });
+
+    it('施設名を空文字に更新しようとした場合、null を返す', async () => {
+      const f = await createFacility({
+        facility_name: 'バリデーションテスト',
+        address: null,
+        map_url: null,
+        facility_notes: null,
+        registration_group_id: null
+      });
+
+      const result = await updateFacilityInfo(f!.id, { facility_name: '' });
+      expect(result).toBeNull();
+    });
   });
 });

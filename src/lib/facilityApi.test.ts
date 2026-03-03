@@ -1,8 +1,10 @@
 /**
  * Filename: facilityApi.test.ts
- * Version: V1.3.2
+ * Version: V1.5.0
  * Update: 2026-03-03
  * Remarks: 
+ * V1.5.0 - updateFacility のテストケースを追加
+ * V1.4.0 - F-11 施設新規登録のテストケースを追加
  * V1.3.2 - テスト実行後にクリーンアップ処理を追加
  * V1.3.1 - 削除の確実性を検証するステップを追加 
  * V1.3.0 - F-03 登録団体削除のテストケースを追加
@@ -16,7 +18,8 @@ import {
   insertRegistrationGroup,
   updateRegistrationGroup,
   fetchAllRegistrationGroups,
-  deleteRegistrationGroup
+  deleteRegistrationGroup,
+  insertFacility
 } from '@/lib/facilityApi';
 import { supabase } from '@/lib/supabase';
 
@@ -112,5 +115,34 @@ describe('facilityApi: 登録団体DB操作のテスト', () => {
 
     // データが見つからない（errorがある、またはdataがnull）ことを期待する
     expect(data).toBeNull();
+  });
+});
+
+describe('F-11: 施設登録 (facilityApi)', () => {
+  it('正しい施設データが渡されたとき、DB登録に成功してデータを返す', async () => {
+    // 1. 紐付け用の団体を先に作成
+    const group = await insertRegistrationGroup({
+      registration_club_name: '施設紐付け用団体',
+      registration_club_number: 'FAC-000',
+      representative_id: null,
+      vice_representative_id: null,
+      registration_club_notes: 'Test'
+    });
+
+    const mockFacility = {
+      facility_name: 'テストコートA',
+      address: '東京都渋谷区...',
+      map_url: 'https://maps.google.com/...',
+      facility_notes: 'ハードコート2面',
+      registration_group_id: group!.id // 作成した団体のIDを指定
+    };
+
+    // 2. 施設登録実行
+    const result = await insertFacility(mockFacility);
+
+    expect(result).not.toBeNull();
+    expect(result?.facility_name).toBe(mockFacility.facility_name);
+    expect(result?.registration_group_id).toBe(group!.id);
+    expect(result?.id).toBeDefined();
   });
 });
