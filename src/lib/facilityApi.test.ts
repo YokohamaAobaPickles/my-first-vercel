@@ -1,25 +1,28 @@
 /**
  * Filename: facilityApi.test.ts
- * Version: V1.5.0
+ * Version: V1.6.0
  * Update: 2026-03-03
- * Remarks: 
+ * Remarks:
+ * V1.6.0 - F-13, F-14 施設削除・一覧取得のテスト追加
  * V1.5.0 - updateFacility のテストケースを追加
  * V1.4.0 - F-11 施設新規登録のテストケースを追加
  * V1.3.2 - テスト実行後にクリーンアップ処理を追加
- * V1.3.1 - 削除の確実性を検証するステップを追加 
+ * V1.3.1 - 削除の確実性を検証するステップを追加
  * V1.3.0 - F-03 登録団体削除のテストケースを追加
  * V1.2.0 - F-04 登録団体一覧取得のテストケースを追加
  * V1.1.0 - F-02 登録団体更新のテストケースを追加
  * V1.0.1 - 外部キー制約エラー回避のためテストデータを修正
  */
 
-import { describe, it, expect, afterAll} from 'vitest';
+import { describe, it, expect, afterAll } from 'vitest';
 import {
   insertRegistrationGroup,
   updateRegistrationGroup,
   fetchAllRegistrationGroups,
   deleteRegistrationGroup,
-  insertFacility
+  insertFacility,
+  deleteFacility,
+  fetchAllFacilities
 } from '@/lib/facilityApi';
 import { supabase } from '@/lib/supabase';
 
@@ -144,5 +147,69 @@ describe('F-11: 施設登録 (facilityApi)', () => {
     expect(result?.facility_name).toBe(mockFacility.facility_name);
     expect(result?.registration_group_id).toBe(group!.id);
     expect(result?.id).toBeDefined();
+  });
+});
+
+describe('F-13 / F-14: 施設削除・一覧取得 (facilityApi)', () => {
+  const createdGroupIds: string[] = [];
+
+  const insertGroupWithCleanup = async (input: Parameters<
+    typeof insertRegistrationGroup
+  >[0]) => {
+    const res = await insertRegistrationGroup(input);
+    if (res?.id) createdGroupIds.push(res.id);
+    return res;
+  };
+
+  afterAll(async () => {
+    for (const id of createdGroupIds) {
+      await deleteRegistrationGroup(id);
+    }
+    if (createdGroupIds.length > 0) {
+      console.log(
+        `${createdGroupIds.length}件の施設テスト用団体を清掃しました。`
+      );
+    }
+  });
+
+  describe('F-14: fetchAllFacilities', () => {
+    it('登録済みの施設リストを配列で取得できること', async () => {
+      const list = await fetchAllFacilities();
+
+      expect(Array.isArray(list)).toBe(true);
+      if (list && list.length > 0) {
+        expect(list[0]).toHaveProperty('facility_name');
+        expect(list[0]).toHaveProperty('id');
+      }
+    });
+  });
+
+  it('F-13: 指定したIDの施設情報を削除し、その後取得できないこと', async () => {
+    const group = await insertGroupWithCleanup({
+      registration_club_name: '施設削除テスト用団体',
+      registration_club_number: 'F-DEL-001',
+      representative_id: null,
+      vice_representative_id: null,
+      registration_club_notes: '削除テスト'
+    });
+
+    const target = await insertFacility({
+      facility_name: '削除対象施設',
+      address: '東京都...',
+      map_url: null,
+      facility_notes: 'F-13テスト',
+      registration_group_id: group!.id
+    });
+
+    const isDeleted = await deleteFacility(target!.id);
+    expect(isDeleted).toBe(true);
+
+    const { data } = await supabase
+      .from('facilities')
+      .select('*')
+      .eq('id', target!.id)
+      .single();
+
+    expect(data).toBeNull();
   });
 });

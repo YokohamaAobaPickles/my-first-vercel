@@ -1,13 +1,14 @@
 /**
  * Filename: facilityHelpers.ts
- * Version: V1.5.1
+ * Version: V1.6.0
  * Update: 2026-03-03
- * Remarks: 
+ * Remarks:
+ * V1.6.0 - F-13 removeFacility, F-14 getFacilities を実装。
  * V1.5.1 - updateFacility が API層を呼ぶように修正。
  * V1.5.0 - updateFacility を実装。
  * V1.4.1 - Facility 型のインポート漏れを修正。
  * V1.4.0 - createFacility を実装。
- * V1.3.0 - removeRegistrationGroup を実装。 
+ * V1.3.0 - removeRegistrationGroup を実装。
  * V1.2.0 - getRegistrationGroups を実装。
  * V1.1.0 - updateRegistrationGroupInfo を実装。
  * V1.0.0 - F群 登録団体管理のビジネスロジックを実装。
@@ -20,7 +21,9 @@ import {
   fetchAllRegistrationGroups,
   deleteRegistrationGroup,
   insertFacility,
-  updateFacility as apiUpdateFacility // 混乱を避けるため別名でインポート
+  updateFacility as apiUpdateFacility,
+  deleteFacility,
+  fetchAllFacilities
 } from '@/lib/facilityApi';
 /**
  * F-01: 登録団体情報の新規登録
@@ -103,4 +106,19 @@ export const updateFacilityInfo = async (
 
   // API層の updateFacility を呼び出す
   return await apiUpdateFacility(id, facility);
+};
+
+/**
+ * F-13: 施設情報の削除ロジック
+ */
+export const removeFacility = async (id: string): Promise<boolean> => {
+  if (!id) return false;
+  return await deleteFacility(id);
+};
+
+/**
+ * F-14: 施設一覧を取得するロジック
+ */
+export const getFacilities = async (): Promise<Facility[]> => {
+  return await fetchAllFacilities();
 };

@@ -1,8 +1,9 @@
 /**
  * Filename: facilityHelpers.test.ts
- * Version: V1.5.1
+ * Version: V1.6.0
  * Update: 2026-03-03
- * Remarks: 
+ * Remarks:
+ * V1.6.0 - F-13, F-14 施設削除・一覧取得のテスト追加
  * V1.5.1 - 施設更新のテストを Helper 層の命名に修正
  * V1.5.0 - F-12 施設情報更新のテストケースを追加
  * V1.4.0 - F-11 施設登録のロジックテストを追加
@@ -18,11 +19,11 @@ import {
   createRegistrationGroup,
   updateRegistrationGroupInfo,
   getRegistrationGroups,
-  removeRegistrationGroup
-} from '@/utils/facilityHelpers';
-import {
+  removeRegistrationGroup,
   createFacility,
-  updateFacilityInfo
+  updateFacilityInfo,
+  removeFacility,
+  getFacilities
 } from '@/utils/facilityHelpers';
 
 // 必要に応じてAPI側のモック化を検討しますが、まずは素直に呼び出します
@@ -198,6 +199,44 @@ describe('facilityHelpers: 施設管理ロジックのテスト', () => {
 
       const result = await updateFacilityInfo(f!.id, { facility_name: '' });
       expect(result).toBeNull();
+    });
+  });
+
+  describe('F-13: 施設情報の削除', () => {
+    it('存在するIDを指定したとき、正常に削除され true を返す', async () => {
+      const newFacility = await createFacility({
+        facility_name: 'Helper削除テスト施設',
+        address: '横浜市...',
+        map_url: null,
+        facility_notes: 'F-13 Helper削除用',
+        registration_group_id: null
+      });
+
+      const result = await removeFacility(newFacility!.id);
+      expect(result).toBe(true);
+
+      const { data } = await supabase
+        .from('facilities')
+        .select('*')
+        .eq('id', newFacility!.id)
+        .single();
+
+      expect(data).toBeNull();
+    });
+
+    it('空のIDを指定したとき、false を返す', async () => {
+      const result = await removeFacility('');
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('F-14: 施設一覧の取得', () => {
+    it('登録済みの施設リストを取得し、配列であることを確認する', async () => {
+      const list = await getFacilities();
+
+      expect(Array.isArray(list)).toBe(true);
+      // 1件以上あるはず（これまでのテストで作成されているため）
+      expect(list.length).toBeGreaterThan(0);
     });
   });
 });

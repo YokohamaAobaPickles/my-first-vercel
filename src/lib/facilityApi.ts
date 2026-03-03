@@ -1,8 +1,9 @@
 /**
  * Filename: facilityApi.ts
- * Version: V1.5.0
+ * Version: V1.6.0
  * Update: 2026-03-03
- * Remarks: 
+ * Remarks:
+ * V1.6.0 - F-13 deleteFacility, F-14 fetchAllFacilities を実装。
  * V1.5.0 - updateFacility を実装。
  * V1.4.0 - insertFacility を実装。
  * V1.3.0 - deleteRegistrationGroup を実装。
@@ -131,4 +132,40 @@ export const updateFacility = async (
     return null;
   }
   return data;
+};
+
+/**
+ * F-13: 施設情報を物理削除する
+ * @param id 削除対象のUUID
+ */
+export const deleteFacility = async (id: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('facilities')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting facility:', error);
+    return false;
+  }
+
+  return true;
+};
+
+/**
+ * F-14: 全ての施設情報を取得する
+ * 作成日時（created_at）の降順で取得します。
+ */
+export const fetchAllFacilities = async (): Promise<Facility[]> => {
+  const { data, error } = await supabase
+    .from('facilities')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching facilities:', error);
+    return [];
+  }
+
+  return data || [];
 };
