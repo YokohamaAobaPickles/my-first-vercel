@@ -1,8 +1,9 @@
 /**
  * Filename: facilityHelpers.ts
- * Version: V1.6.0
+ * Version: V1.7.0
  * Update: 2026-03-03
  * Remarks:
+ * V1.7.0 - F-21〜F-24 施設予約 (create/update/remove/get) を実装。
  * V1.6.0 - F-13 removeFacility, F-14 getFacilities を実装。
  * V1.5.1 - updateFacility が API層を呼ぶように修正。
  * V1.5.0 - updateFacility を実装。
@@ -14,7 +15,11 @@
  * V1.0.0 - F群 登録団体管理のビジネスロジックを実装。
  */
 
-import { RegistrationGroup, Facility } from '@/types/facility';
+import {
+  RegistrationGroup,
+  Facility,
+  FacilityReservation
+} from '@/types/facility';
 import {
   insertRegistrationGroup,
   updateRegistrationGroup,
@@ -23,7 +28,11 @@ import {
   insertFacility,
   updateFacility as apiUpdateFacility,
   deleteFacility,
-  fetchAllFacilities
+  fetchAllFacilities,
+  insertReservation,
+  updateReservation as apiUpdateReservation,
+  deleteReservation,
+  fetchAllReservations
 } from '@/lib/facilityApi';
 /**
  * F-01: 登録団体情報の新規登録
@@ -121,4 +130,42 @@ export const removeFacility = async (id: string): Promise<boolean> => {
  */
 export const getFacilities = async (): Promise<Facility[]> => {
   return await fetchAllFacilities();
+};
+
+/**
+ * F-21: 施設予約の新規登録ロジック
+ * reserved_courts が 1 未満の場合は null を返す。
+ */
+export const createReservation = async (
+  res: Omit<FacilityReservation, 'id' | 'created_at' | 'updated_at'>
+): Promise<FacilityReservation | null> => {
+  if (res.reserved_courts < 1) {
+    return null;
+  }
+  return await insertReservation(res);
+};
+
+/**
+ * F-22: 施設予約情報の更新ロジック
+ */
+export const updateReservationInfo = async (
+  id: string,
+  res: Partial<Omit<FacilityReservation, 'id' | 'created_at' | 'updated_at'>>
+): Promise<FacilityReservation | null> => {
+  return await apiUpdateReservation(id, res);
+};
+
+/**
+ * F-23: 施設予約の削除ロジック
+ */
+export const removeReservation = async (id: string): Promise<boolean> => {
+  if (!id) return false;
+  return await deleteReservation(id);
+};
+
+/**
+ * F-24: 施設予約一覧を取得するロジック
+ */
+export const getReservations = async (): Promise<FacilityReservation[]> => {
+  return await fetchAllReservations();
 };

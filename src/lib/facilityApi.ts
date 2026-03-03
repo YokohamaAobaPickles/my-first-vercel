@@ -1,8 +1,9 @@
 /**
  * Filename: facilityApi.ts
- * Version: V1.6.0
+ * Version: V1.7.0
  * Update: 2026-03-03
  * Remarks:
+ * V1.7.0 - F-21〜F-24 施設予約 (insert/update/delete/fetch) を実装。
  * V1.6.0 - F-13 deleteFacility, F-14 fetchAllFacilities を実装。
  * V1.5.0 - updateFacility を実装。
  * V1.4.0 - insertFacility を実装。
@@ -13,7 +14,11 @@
  */
 
 import { supabase } from '@/lib/supabase';
-import { RegistrationGroup, Facility } from '@/types/facility';
+import {
+  RegistrationGroup,
+  Facility,
+  FacilityReservation
+} from '@/types/facility';
 
 /**
  * F-01: 登録団体情報をDBに登録する
@@ -164,6 +169,85 @@ export const fetchAllFacilities = async (): Promise<Facility[]> => {
 
   if (error) {
     console.error('Error fetching facilities:', error);
+    return [];
+  }
+
+  return data || [];
+};
+
+/**
+ * F-21: 施設予約情報をDBに登録する
+ * @param res 登録する予約情報
+ */
+export const insertReservation = async (
+  res: Omit<FacilityReservation, 'id' | 'created_at' | 'updated_at'>
+): Promise<FacilityReservation | null> => {
+  const { data, error } = await supabase
+    .from('facility_reservations')
+    .insert([res])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error inserting reservation:', error);
+    return null;
+  }
+  return data;
+};
+
+/**
+ * F-22: 施設予約情報を更新する
+ * @param id 更新対象のUUID
+ * @param res 更新する項目
+ */
+export const updateReservation = async (
+  id: string,
+  res: Partial<Omit<FacilityReservation, 'id' | 'created_at' | 'updated_at'>>
+): Promise<FacilityReservation | null> => {
+  const { data, error } = await supabase
+    .from('facility_reservations')
+    .update(res)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating reservation:', error);
+    return null;
+  }
+  return data;
+};
+
+/**
+ * F-23: 施設予約情報を物理削除する
+ * @param id 削除対象のUUID
+ */
+export const deleteReservation = async (id: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('facility_reservations')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting reservation:', error);
+    return false;
+  }
+
+  return true;
+};
+
+/**
+ * F-24: 全ての施設予約情報を取得する
+ * reservation_date の昇順で取得します。
+ */
+export const fetchAllReservations = async (): Promise<FacilityReservation[]> => {
+  const { data, error } = await supabase
+    .from('facility_reservations')
+    .select('*')
+    .order('reservation_date', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching reservations:', error);
     return [];
   }
 

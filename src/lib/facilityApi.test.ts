@@ -1,8 +1,9 @@
 /**
  * Filename: facilityApi.test.ts
- * Version: V1.6.0
+ * Version: V1.7.0
  * Update: 2026-03-03
  * Remarks:
+ * V1.7.0 - F-21〜F-24 施設予約管理のテスト追加
  * V1.6.0 - F-13, F-14 施設削除・一覧取得のテスト追加
  * V1.5.0 - updateFacility のテストケースを追加
  * V1.4.0 - F-11 施設新規登録のテストケースを追加
@@ -22,7 +23,11 @@ import {
   deleteRegistrationGroup,
   insertFacility,
   deleteFacility,
-  fetchAllFacilities
+  fetchAllFacilities,
+  insertReservation,
+  updateReservation,
+  deleteReservation,
+  fetchAllReservations
 } from '@/lib/facilityApi';
 import { supabase } from '@/lib/supabase';
 
@@ -211,5 +216,201 @@ describe('F-13 / F-14: 施設削除・一覧取得 (facilityApi)', () => {
       .single();
 
     expect(data).toBeNull();
+  });
+});
+
+describe('F-21〜F-24: 施設予約管理 (facilityApi)', () => {
+  const createdGroupIds: string[] = [];
+  const createdFacilityIds: string[] = [];
+  const createdReservationIds: string[] = [];
+
+  const insertGroupWithCleanup = async (input: Parameters<
+    typeof insertRegistrationGroup
+  >[0]) => {
+    const res = await insertRegistrationGroup(input);
+    if (res?.id) createdGroupIds.push(res.id);
+    return res;
+  };
+
+  const insertFacilityWithCleanup = async (input: Parameters<
+    typeof insertFacility
+  >[0]) => {
+    const res = await insertFacility(input);
+    if (res?.id) createdFacilityIds.push(res.id);
+    return res;
+  };
+
+  const insertReservationWithCleanup = async (input: Parameters<
+    typeof insertReservation
+  >[0]) => {
+    const res = await insertReservation(input);
+    if (res?.id) createdReservationIds.push(res.id);
+    return res;
+  };
+
+  afterAll(async () => {
+    for (const id of createdReservationIds) {
+      await deleteReservation(id);
+    }
+    for (const id of createdFacilityIds) {
+      await deleteFacility(id);
+    }
+    for (const id of createdGroupIds) {
+      await deleteRegistrationGroup(id);
+    }
+    if (createdReservationIds.length > 0 || createdFacilityIds.length > 0 ||
+        createdGroupIds.length > 0) {
+      console.log(
+        '施設予約テスト用データを清掃しました。'
+      );
+    }
+  });
+
+  describe('F-21: insertReservation', () => {
+    it('reservation_date, reservation_time_slot, reserved_courts, ' +
+       'reserved_fee を含む正常系で登録に成功すること', async () => {
+      const group = await insertGroupWithCleanup({
+        registration_club_name: '予約テスト用団体',
+        registration_club_number: 'RES-001',
+        representative_id: null,
+        vice_representative_id: null,
+        registration_club_notes: '予約テスト'
+      });
+      const facility = await insertFacilityWithCleanup({
+        facility_name: '予約テストコート',
+        address: null,
+        map_url: null,
+        facility_notes: null,
+        registration_group_id: group!.id
+      });
+
+      const mockReservation = {
+        facility_id: facility!.id,
+        registration_group_id: group!.id,
+        reservation_number: 'RES-2026-001',
+        reservation_date: '2026-04-01',
+        reservation_time_slot: '13:00-15:00',
+        reserved_courts: 2,
+        reserved_fee: 5000,
+        reservation_limit: '2026-03-25',
+        reserver_name: null,
+        lottery_results: null,
+        reservation_notes: 'API単体テスト'
+      };
+
+      const result = await insertReservationWithCleanup(mockReservation);
+
+      expect(result).not.toBeNull();
+      expect(result?.reservation_date).toBe(mockReservation.reservation_date);
+      expect(result?.reservation_time_slot).toBe(
+        mockReservation.reservation_time_slot
+      );
+      expect(result?.reserved_courts).toBe(mockReservation.reserved_courts);
+      expect(result?.reserved_fee).toBe(mockReservation.reserved_fee);
+      expect(result?.id).toBeDefined();
+    });
+  });
+
+  describe('F-22: updateReservation', () => {
+    it('既存の予約情報を指定して更新できること', async () => {
+      const group = await insertGroupWithCleanup({
+        registration_club_name: '予約更新テスト用団体',
+        registration_club_number: 'RES-UPD-001',
+        representative_id: null,
+        vice_representative_id: null,
+        registration_club_notes: null
+      });
+      const facility = await insertFacilityWithCleanup({
+        facility_name: '更新テストコート',
+        address: null,
+        map_url: null,
+        facility_notes: null,
+        registration_group_id: group!.id
+      });
+      const reservation = await insertReservationWithCleanup({
+        facility_id: facility!.id,
+        registration_group_id: group!.id,
+        reservation_number: null,
+        reservation_date: '2026-04-02',
+        reservation_time_slot: '10:00-12:00',
+        reserved_courts: 1,
+        reserved_fee: 3000,
+        reservation_limit: null,
+        reserver_name: null,
+        lottery_results: null,
+        reservation_notes: null
+      });
+
+      const updateData = {
+        reservation_time_slot: '14:00-16:00',
+        reserved_fee: 4000
+      };
+      const result = await updateReservation(reservation!.id, updateData);
+
+      expect(result).not.toBeNull();
+      expect(result?.reservation_time_slot).toBe('14:00-16:00');
+      expect(result?.reserved_fee).toBe(4000);
+    });
+  });
+
+  it('F-23: 指定したIDの予約を削除し、その後取得できないこと', async () => {
+    const group = await insertGroupWithCleanup({
+      registration_club_name: '予約削除テスト用団体',
+      registration_club_number: 'RES-DEL-001',
+      representative_id: null,
+      vice_representative_id: null,
+      registration_club_notes: null
+    });
+    const facility = await insertFacilityWithCleanup({
+      facility_name: '削除テストコート',
+      address: null,
+      map_url: null,
+      facility_notes: null,
+      registration_group_id: group!.id
+    });
+    const target = await insertReservationWithCleanup({
+      facility_id: facility!.id,
+      registration_group_id: group!.id,
+      reservation_number: null,
+      reservation_date: '2026-04-03',
+      reservation_time_slot: '09:00-11:00',
+      reserved_courts: 1,
+      reserved_fee: 2000,
+      reservation_limit: null,
+      reserver_name: null,
+      lottery_results: null,
+      reservation_notes: null
+    });
+
+    const isDeleted = await deleteReservation(target!.id);
+    expect(isDeleted).toBe(true);
+
+    const { data } = await supabase
+      .from('facility_reservations')
+      .select('*')
+      .eq('id', target!.id)
+      .single();
+
+    expect(data).toBeNull();
+  });
+
+  describe('F-24: fetchAllReservations', () => {
+    it('予約一覧を reservation_date の昇順（日付が近い順）で取得できること',
+      async () => {
+        const list = await fetchAllReservations();
+
+        expect(Array.isArray(list)).toBe(true);
+        if (list && list.length >= 2) {
+          for (let i = 0; i < list.length - 1; i++) {
+            expect(
+              list[i].reservation_date <= list[i + 1].reservation_date
+            ).toBe(true);
+          }
+        }
+        if (list && list.length > 0) {
+          expect(list[0]).toHaveProperty('reservation_date');
+          expect(list[0]).toHaveProperty('id');
+        }
+      });
   });
 });
