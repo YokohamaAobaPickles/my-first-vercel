@@ -1,8 +1,9 @@
 /**
  * Filename: facilityHelpers.test.ts
- * Version: V1.7.0
- * Update: 2026-03-03
+ * Version: V1.8.0
+ * Update: 2026-03-04
  * Remarks:
+ * V1.8.0 - 個別取得テスト追加と命名整理。
  * V1.7.0 - F-21〜F-24 施設予約管理のテスト追加
  * V1.6.0 - F-13, F-14 施設削除・一覧取得のテスト追加
  * V1.5.1 - 施設更新のテストを Helper 層の命名に修正
@@ -22,13 +23,16 @@ import {
   getRegistrationGroups,
   removeRegistrationGroup,
   createFacility,
-  updateFacilityInfo,
-  removeFacility,
+  updateFacility,
+  deleteFacility,
   getFacilities,
   createReservation,
-  updateReservationInfo,
-  removeReservation,
-  getReservations
+  updateReservation,
+  deleteReservation,
+  getReservations,
+  getRegistrationGroupById,
+  getFacilityById,
+  getReservationById
 } from '@/utils/facilityHelpers';
 
 // 必要に応じてAPI側のモック化を検討しますが、まずは素直に呼び出します
@@ -136,6 +140,29 @@ describe('F-04: 登録団体一覧の取得', () => {
     // 1件以上あるはず（これまでのテストで作成されているため）
     expect(list.length).toBeGreaterThan(0);
   });
+
+  it('getRegistrationGroupById で団体を1件取得できること',
+    async () => {
+      const input = {
+        registration_club_name: 'Helper個別取得団体',
+        registration_club_number: 'H-GRP-FETCH',
+        representative_id: null,
+        vice_representative_id: null,
+        registration_club_notes: '個別取得テスト'
+      };
+
+      const created = await createRegistrationGroup(
+        input
+      );
+      const result = await getRegistrationGroupById(
+        created!.id
+      );
+
+      expect(result).not.toBeNull();
+      expect(result?.registration_club_name)
+        .toBe(input.registration_club_name);
+      expect(result?.id).toBe(created!.id);
+    });
 });
 
 describe('facilityHelpers: 施設管理ロジックのテスト', () => {
@@ -185,9 +212,9 @@ describe('facilityHelpers: 施設管理ロジックのテスト', () => {
         registration_group_id: null
       });
 
-      // 2. updateFacilityInfo を実行
+      // 2. updateFacility を実行
       const updateData = { facility_name: '更新後コート' };
-      const result = await updateFacilityInfo(newFacility!.id, updateData);
+      const result = await updateFacility(newFacility!.id, updateData);
 
       expect(result).not.toBeNull();
       expect(result?.facility_name).toBe('更新後コート');
@@ -202,7 +229,7 @@ describe('facilityHelpers: 施設管理ロジックのテスト', () => {
         registration_group_id: null
       });
 
-      const result = await updateFacilityInfo(f!.id, { facility_name: '' });
+      const result = await updateFacility(f!.id, { facility_name: '' });
       expect(result).toBeNull();
     });
   });
@@ -217,7 +244,7 @@ describe('facilityHelpers: 施設管理ロジックのテスト', () => {
         registration_group_id: null
       });
 
-      const result = await removeFacility(newFacility!.id);
+      const result = await deleteFacility(newFacility!.id);
       expect(result).toBe(true);
 
       const { data } = await supabase
@@ -230,7 +257,7 @@ describe('facilityHelpers: 施設管理ロジックのテスト', () => {
     });
 
     it('空のIDを指定したとき、false を返す', async () => {
-      const result = await removeFacility('');
+      const result = await deleteFacility('');
       expect(result).toBe(false);
     });
   });
@@ -243,6 +270,26 @@ describe('facilityHelpers: 施設管理ロジックのテスト', () => {
       // 1件以上あるはず（これまでのテストで作成されているため）
       expect(list.length).toBeGreaterThan(0);
     });
+
+    it('getFacilityById で施設を1件取得できること',
+      async () => {
+        const facility = await createFacility({
+          facility_name: 'Helper個別取得施設',
+          address: 'テスト住所',
+          map_url: null,
+          facility_notes: 'F-14 個別取得テスト',
+          registration_group_id: null
+        });
+
+        const result = await getFacilityById(
+          facility!.id
+        );
+
+        expect(result).not.toBeNull();
+        expect(result?.facility_name)
+          .toBe('Helper個別取得施設');
+        expect(result?.id).toBe(facility!.id);
+      });
   });
 
   describe('F-21〜F-24: 施設予約管理ロジック', () => {
@@ -321,7 +368,7 @@ describe('facilityHelpers: 施設管理ロジックのテスト', () => {
       });
     });
 
-    describe('F-22: updateReservationInfo', () => {
+    describe('F-22: updateReservation', () => {
       it('既存の予約情報を更新したとき、更新データを返す', async () => {
         const group = await createRegistrationGroup({
           registration_club_name: 'Helper予約更新テスト団体',
@@ -353,7 +400,7 @@ describe('facilityHelpers: 施設管理ロジックのテスト', () => {
         if (!newReservation) throw new Error('setup failed');
 
         const updateData = { reserved_fee: 3500 };
-        const result = await updateReservationInfo(
+        const result = await updateReservation(
           newReservation.id,
           updateData
         );
@@ -363,7 +410,7 @@ describe('facilityHelpers: 施設管理ロジックのテスト', () => {
       });
     });
 
-    describe('F-23: removeReservation', () => {
+    describe('F-23: deleteReservation', () => {
       it('存在するIDを指定したとき、正常に削除され true を返す', async () => {
         const group = await createRegistrationGroup({
           registration_club_name: 'Helper予約削除テスト団体',
@@ -394,7 +441,7 @@ describe('facilityHelpers: 施設管理ロジックのテスト', () => {
         });
         if (!newReservation) throw new Error('setup failed');
 
-        const result = await removeReservation(newReservation.id);
+        const result = await deleteReservation(newReservation.id);
         expect(result).toBe(true);
 
         const { data } = await supabase
@@ -407,12 +454,53 @@ describe('facilityHelpers: 施設管理ロジックのテスト', () => {
       });
 
       it('空のIDを指定したとき、false を返す', async () => {
-        const result = await removeReservation('');
+        const result = await deleteReservation('');
         expect(result).toBe(false);
       });
     });
 
     describe('F-24: getReservations', () => {
+      it('getReservationById で予約を1件取得できること',
+        async () => {
+          const group = await createRegistrationGroup({
+            registration_club_name: 'Helper予約個別取得団体',
+            registration_club_number: 'H-RES-FETCH',
+            representative_id: null,
+            vice_representative_id: null,
+            registration_club_notes: null
+          });
+          const facility = await createFacility({
+            facility_name: '予約個別取得テストコート',
+            address: null,
+            map_url: null,
+            facility_notes: null,
+            registration_group_id: group!.id
+          });
+          const reservation = await createReservation({
+            facility_id: facility!.id,
+            registration_group_id: group!.id,
+            reservation_number: null,
+            reservation_date: '2026-05-10',
+            reservation_time_slot: '12:00-14:00',
+            reserved_courts: 1,
+            reserved_fee: 2500,
+            reservation_limit: null,
+            reserver_name: null,
+            lottery_results: null,
+            reservation_notes: null
+          });
+          if (!reservation) throw new Error('setup failed');
+
+          const result = await getReservationById(
+            reservation.id
+          );
+
+          expect(result).not.toBeNull();
+          expect(result?.id).toBe(reservation.id);
+          expect(result?.reservation_date)
+            .toBe('2026-05-10');
+        });
+
       it('予約一覧を reservation_date の昇順で取得し、配列であること',
         async () => {
           const list = await getReservations();
@@ -421,7 +509,8 @@ describe('facilityHelpers: 施設管理ロジックのテスト', () => {
           if (list && list.length >= 2) {
             for (let i = 0; i < list.length - 1; i++) {
               expect(
-                list[i].reservation_date <= list[i + 1].reservation_date
+                list[i].reservation_date 
+                  <= list[i + 1].reservation_date
               ).toBe(true);
             }
           }

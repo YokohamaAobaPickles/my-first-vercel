@@ -1,8 +1,9 @@
 /**
  * Filename: facilityApi.ts
- * Version: V1.7.0
- * Update: 2026-03-03
+ * Version: V1.8.0
+ * Update: 2026-03-05
  * Remarks:
+ * V1.8.0 - 個別取得API (by id) を追加。
  * V1.7.0 - F-21〜F-24 施設予約 (insert/update/delete/fetch) を実装。
  * V1.6.0 - F-13 deleteFacility, F-14 fetchAllFacilities を実装。
  * V1.5.0 - updateFacility を実装。
@@ -97,6 +98,26 @@ export const fetchAllRegistrationGroups = async (): Promise<RegistrationGroup[]>
   return data || [];
 };
 
+export const fetchRegistrationGroupById = async (
+  id: string
+): Promise<RegistrationGroup | null> => {
+  const { data, error } = await supabase
+    .from('registration_groups')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error(
+      'Error fetching registration group by id:',
+      error
+    );
+    return null;
+  }
+
+  return data;
+};
+
 /**
  * F-11: 施設情報をDBに登録する
  * @param facility 登録する施設情報
@@ -173,6 +194,26 @@ export const fetchAllFacilities = async (): Promise<Facility[]> => {
   }
 
   return data || [];
+};
+
+export const fetchFacilityById = async (
+  id: string
+): Promise<Facility | null> => {
+  const { data, error } = await supabase
+    .from('facilities')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error(
+      'Error fetching facility by id:',
+      error
+    );
+    return null;
+  }
+
+  return data;
 };
 
 /**
@@ -252,4 +293,24 @@ export const fetchAllReservations = async (): Promise<FacilityReservation[]> => 
   }
 
   return data || [];
+};
+
+export const fetchReservationById = async (
+  id: string
+): Promise<FacilityReservation | null> => {
+  const { data, error } = await supabase
+    .from('facility_reservations')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error(
+      'Error fetching reservation by id:',
+      error
+    );
+    return null;
+  }
+
+  return data;
 };

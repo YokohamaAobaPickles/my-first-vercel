@@ -1,8 +1,9 @@
 /**
  * Filename: facilityHelpers.ts
- * Version: V1.7.0
- * Update: 2026-03-03
+ * Version: V1.8.0
+ * Update: 2026-03-05
  * Remarks:
+ * V1.8.0 - 個別取得の追加と命名整理 (updateFacility/deleteFacility 等)。
  * V1.7.0 - F-21〜F-24 施設予約 (create/update/remove/get) を実装。
  * V1.6.0 - F-13 removeFacility, F-14 getFacilities を実装。
  * V1.5.1 - updateFacility が API層を呼ぶように修正。
@@ -24,15 +25,18 @@ import {
   insertRegistrationGroup,
   updateRegistrationGroup,
   fetchAllRegistrationGroups,
+  fetchRegistrationGroupById,
   deleteRegistrationGroup,
   insertFacility,
   updateFacility as apiUpdateFacility,
-  deleteFacility,
+  deleteFacility as apiDeleteFacility,
   fetchAllFacilities,
+  fetchFacilityById,
   insertReservation,
   updateReservation as apiUpdateReservation,
-  deleteReservation,
-  fetchAllReservations
+  deleteReservation as apiDeleteReservation,
+  fetchAllReservations,
+  fetchReservationById,
 } from '@/lib/facilityApi';
 /**
  * F-01: 登録団体情報の新規登録
@@ -85,6 +89,15 @@ export const getRegistrationGroups = async (): Promise<RegistrationGroup[]> => {
 };
 
 /**
+ * 登録団体を ID 指定で1件取得するロジック
+ */
+export const getRegistrationGroupById = async (
+  id: string
+): Promise<RegistrationGroup | null> => {
+  return await fetchRegistrationGroupById(id);
+};
+
+/**
  * F-11: 施設新規登録ロジック
  */
 export const createFacility = async (
@@ -103,26 +116,25 @@ export const createFacility = async (
  * @param id 更新対象のUUID
  * @param facility 更新項目
  */
-export const updateFacilityInfo = async (
+export const updateFacility = async (
   id: string,
   facility: Partial<Omit<Facility, 'id' | 'created_at' | 'updated_at'>>
 ): Promise<Facility | null> => {
   // 名称変更が含まれる場合、空文字チェックを行う
-  if (facility.facility_name !== undefined && 
+  if (facility.facility_name !== undefined &&
       facility.facility_name.trim() === '') {
     return null;
   }
 
-  // API層の updateFacility を呼び出す
   return await apiUpdateFacility(id, facility);
 };
 
 /**
  * F-13: 施設情報の削除ロジック
  */
-export const removeFacility = async (id: string): Promise<boolean> => {
+export const deleteFacility = async (id: string): Promise<boolean> => {
   if (!id) return false;
-  return await deleteFacility(id);
+  return await apiDeleteFacility(id);
 };
 
 /**
@@ -130,6 +142,15 @@ export const removeFacility = async (id: string): Promise<boolean> => {
  */
 export const getFacilities = async (): Promise<Facility[]> => {
   return await fetchAllFacilities();
+};
+
+/**
+ * 施設を ID 指定で1件取得するロジック
+ */
+export const getFacilityById = async (
+  id: string
+): Promise<Facility | null> => {
+  return await fetchFacilityById(id);
 };
 
 /**
@@ -148,7 +169,7 @@ export const createReservation = async (
 /**
  * F-22: 施設予約情報の更新ロジック
  */
-export const updateReservationInfo = async (
+export const updateReservation = async (
   id: string,
   res: Partial<Omit<FacilityReservation, 'id' | 'created_at' | 'updated_at'>>
 ): Promise<FacilityReservation | null> => {
@@ -158,9 +179,9 @@ export const updateReservationInfo = async (
 /**
  * F-23: 施設予約の削除ロジック
  */
-export const removeReservation = async (id: string): Promise<boolean> => {
+export const deleteReservation = async (id: string): Promise<boolean> => {
   if (!id) return false;
-  return await deleteReservation(id);
+  return await apiDeleteReservation(id);
 };
 
 /**
@@ -168,4 +189,13 @@ export const removeReservation = async (id: string): Promise<boolean> => {
  */
 export const getReservations = async (): Promise<FacilityReservation[]> => {
   return await fetchAllReservations();
+};
+
+/**
+ * 施設予約を ID 指定で1件取得するロジック
+ */
+export const getReservationById = async (
+  id: string
+): Promise<FacilityReservation | null> => {
+  return await fetchReservationById(id);
 };

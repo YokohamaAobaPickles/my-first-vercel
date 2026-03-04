@@ -1,8 +1,9 @@
 /**
  * Filename: facilityApi.test.ts
- * Version: V1.7.0
- * Update: 2026-03-03
+ * Version: V1.8.0
+ * Update: 2026-03-04
  * Remarks:
+ * V1.8.0 - 個別取得テスト追加と命名整理。
  * V1.7.0 - F-21〜F-24 施設予約管理のテスト追加
  * V1.6.0 - F-13, F-14 施設削除・一覧取得のテスト追加
  * V1.5.0 - updateFacility のテストケースを追加
@@ -27,7 +28,10 @@ import {
   insertReservation,
   updateReservation,
   deleteReservation,
-  fetchAllReservations
+  fetchAllReservations,
+  fetchRegistrationGroupById,
+  fetchFacilityById,
+  fetchReservationById,
 } from '@/lib/facilityApi';
 import { supabase } from '@/lib/supabase';
 
@@ -98,6 +102,26 @@ describe('facilityApi: 登録団体DB操作のテスト', () => {
         expect(list[0]).toHaveProperty('id');
       }
     });
+  });
+
+  it('作成した団体を ID 指定で取得できること', async () => {
+    const input = {
+      registration_club_name: 'ID取得団体',
+      registration_club_number: 'FETCH-001',
+      representative_id: null,
+      vice_representative_id: null,
+      registration_club_notes: 'ID取得テスト'
+    };
+
+    const created = await insertRegistrationGroup(input);
+    const fetched = await fetchRegistrationGroupById(
+      created!.id
+    );
+
+    expect(fetched).not.toBeNull();
+    expect(fetched?.registration_club_name)
+      .toBe(input.registration_club_name);
+    expect(fetched?.id).toBe(created!.id);
   });
 
   it('指定したIDの団体情報を削除し、その後取得できないこと', async () => {
@@ -187,6 +211,34 @@ describe('F-13 / F-14: 施設削除・一覧取得 (facilityApi)', () => {
         expect(list[0]).toHaveProperty('id');
       }
     });
+  });
+
+  it('F-14: 作成した施設を ID 指定で取得できること', 
+    async () => {
+    const group = await insertGroupWithCleanup({
+      registration_club_name: '施設ID取得テスト用団体',
+      registration_club_number: 'F-FETCH-001',
+      representative_id: null,
+      vice_representative_id: null,
+      registration_club_notes: '施設ID取得テスト'
+    });
+
+    const created = await insertFacility({
+      facility_name: 'ID取得対象施設',
+      address: 'テスト住所',
+      map_url: null,
+      facility_notes: 'F-14 ID取得テスト',
+      registration_group_id: group!.id
+    });
+
+    const fetched = await fetchFacilityById(
+      created!.id
+    );
+
+    expect(fetched).not.toBeNull();
+    expect(fetched?.facility_name)
+      .toBe('ID取得対象施設');
+    expect(fetched?.id).toBe(created!.id);
   });
 
   it('F-13: 指定したIDの施設情報を削除し、その後取得できないこと', async () => {
@@ -395,6 +447,48 @@ describe('F-21〜F-24: 施設予約管理 (facilityApi)', () => {
   });
 
   describe('F-24: fetchAllReservations', () => {
+    it('作成した予約を ID 指定で取得できること',
+      async () => {
+        const group = await insertGroupWithCleanup({
+          registration_club_name: '予約ID取得テスト用団体',
+          registration_club_number: 'RES-FETCH-001',
+          representative_id: null,
+          vice_representative_id: null,
+          registration_club_notes: null
+        });
+        const facility =
+          await insertFacilityWithCleanup({
+            facility_name: '予約ID取得テストコート',
+            address: null,
+            map_url: null,
+            facility_notes: null,
+            registration_group_id: group!.id
+          });
+        const reservation =
+          await insertReservationWithCleanup({
+            facility_id: facility!.id,
+            registration_group_id: group!.id,
+            reservation_number: 'RES-FETCH-2026',
+            reservation_date: '2026-04-10',
+            reservation_time_slot: '12:00-14:00',
+            reserved_courts: 1,
+            reserved_fee: 2500,
+            reservation_limit: null,
+            reserver_name: null,
+            lottery_results: null,
+            reservation_notes: null
+          });
+
+        const fetched = await fetchReservationById(
+          reservation!.id
+        );
+
+        expect(fetched).not.toBeNull();
+        expect(fetched?.id).toBe(reservation!.id);
+        expect(fetched?.reservation_date)
+          .toBe('2026-04-10');
+      });
+
     it('予約一覧を reservation_date の昇順（日付が近い順）で取得できること',
       async () => {
         const list = await fetchAllReservations();
@@ -403,7 +497,8 @@ describe('F-21〜F-24: 施設予約管理 (facilityApi)', () => {
         if (list && list.length >= 2) {
           for (let i = 0; i < list.length - 1; i++) {
             expect(
-              list[i].reservation_date <= list[i + 1].reservation_date
+              list[i].reservation_date 
+                <= list[i + 1].reservation_date
             ).toBe(true);
           }
         }
