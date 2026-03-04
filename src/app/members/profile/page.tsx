@@ -37,12 +37,10 @@ export default function ProfilePage() {
   })
 
   if (isLoading) {
-    //return <div style={styles.container}>読み込み中...</div>
     return <div style={container}>読み込み中...</div>
   }
 
   if (!user) {
-    //return <div style={styles.container}>ユーザー情報が見つかりません。</div>
     return <div style={container}>ユーザー情報が見つかりません。</div>
   }
 

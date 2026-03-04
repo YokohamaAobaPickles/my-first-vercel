@@ -1,3 +1,10 @@
+/**
+ * Filename: src/app/layout.tsx
+ * Version : V1.0.0
+ * Update  : 2026-02-08
+ * Remarks :
+ * V1.0.0 - レイアウトの基本構造を設定。
+ */
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";

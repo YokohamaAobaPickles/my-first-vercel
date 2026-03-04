@@ -61,3 +61,188 @@
 - 予約日
 - 予約時間帯
 - 予約コート数
+
+## DB定義
+### 登録団体
+#### SQL文
+> --
+> -- Filename: 20260303_create_registration_groups.sql
+> -- Version: V1.0.0
+> -- Update: 2026-03-03
+> -- Remarks: F-01〜F-03 登録団体管理テーブルの新規作成
+> --
+> 
+> CREATE TABLE IF NOT EXISTS registration_groups (
+>     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+>     registration_club_name TEXT NOT NULL,
+>     registration_club_number TEXT,
+>     representative_id TEXT REFERENCES members(member_number), -- 会員番号と連動
+>     vice_representative_id TEXT REFERENCES members(member_number), -- 副代表
+>     registration_club_notes TEXT,
+>     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+>     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+> );
+> 
+> -- 更新日時自動更新用のトリガー（必要に応じて）
+> CREATE OR REPLACE FUNCTION update_updated_at_column()
+> RETURNS TRIGGER AS $$
+> BEGIN
+>     NEW.updated_at = CURRENT_TIMESTAMP;
+>     RETURN NEW;
+> END;
+> $$ language 'plpgsql';
+> 
+> CREATE TRIGGER update_registration_groups_updated_at
+>     BEFORE UPDATE ON registration_groups
+>     FOR EACH ROW
+>     EXECUTE PROCEDURE update_updated_at_column();
+#### DB構造
+| column_name              | data_type                | is_nullable | column_default    |
+| ------------------------ | ------------------------ | ----------- | ----------------- |
+| id                       | uuid                     | NO          | gen_random_uuid() |
+| registration_club_name   | text                     | NO          | null              |
+| registration_club_number | text                     | YES         | null              |
+| representative_id        | text                     | YES         | null              |
+| vice_representative_id   | text                     | YES         | null              |
+| registration_club_notes  | text                     | YES         | null              |
+| created_at               | timestamp with time zone | YES         | CURRENT_TIMESTAMP |
+| updated_at               | timestamp with time zone | YES         | CURRENT_TIMESTAMP |
+### 施設情報
+#### SQL文
+> -- Facilitiesテーブルの作成
+> CREATE TABLE IF NOT EXISTS public.facilities (
+>     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+>     facility_name TEXT NOT NULL,
+>     address TEXT,
+>     map_url TEXT,
+>     facility_notes TEXT,
+>     registration_group_id UUID REFERENCES public.registration_groups(id) ON DELETE SET NULL,
+>     created_at TIMESTAMPTZ DEFAULT now(),
+>     updated_at TIMESTAMPTZ DEFAULT now()
+> );
+> 
+> -- 更新日時（updated_at）を自動更新するトリガーの適用
+> -- (既に registration_groups 等で作成済みの場合は、この関数定義はスキップ可)
+> CREATE OR REPLACE FUNCTION update_updated_at_column()
+> RETURNS TRIGGER AS $$
+> BEGIN
+>     NEW.updated_at = now();
+>     RETURN NEW;
+> END;
+> $$ language 'plpgsql';
+> 
+> CREATE TRIGGER update_facilities_updated_at
+>     BEFORE UPDATE ON public.facilities
+>     FOR EACH ROW
+>     EXECUTE PROCEDURE update_updated_at_column();
+> 
+- テーブル構造のポイント
+  - 外部キー制約: registration_group_id は registration_groups テーブルの id を参照しています。団体が削除された場合、施設データは残るように ON DELETE SET NULL を設定しています。
+  - 自動採番: id は UUID で自動生成されます。
+  - タイムスタンプ: created_at と updated_at でデータの履歴を管理します。
+#### DB構造
+| column_name           | data_type                | is_nullable | column_default    |
+| --------------------- | ------------------------ | ----------- | ----------------- |
+| id                    | uuid                     | NO          | gen_random_uuid() |
+| facility_name         | text                     | NO          | null              |
+| address               | text                     | YES         | null              |
+| map_url               | text                     | YES         | null              |
+| facility_notes        | text                     | YES         | null              |
+| registration_group_id | uuid                     | YES         | null              |
+| created_at            | timestamp with time zone | YES         | now()             |
+| updated_at            | timestamp with time zone | YES         | now()             |
+### 予約情報
+#### SQL文
+> -- FacilityReservationsテーブルの作成
+> CREATE TABLE IF NOT EXISTS public.facility_reservations (
+>     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+>     facility_id UUID NOT NULL REFERENCES public.facilities(id) ON DELETE CASCADE,
+>     registration_group_id UUID REFERENCES public.registration_groups(id) ON DELETE SET NULL,
+>     reservation_number TEXT,
+>     reservation_date DATE NOT NULL,
+>     reservation_time_slot TEXT NOT NULL,
+>     reserved_courts INTEGER DEFAULT 1,
+>     reserved_fee INTEGER DEFAULT 0,
+>     reservation_limit DATE,
+>     reserver_name TEXT,
+>     lottery_results TEXT,
+>     reservation_notes TEXT,
+>     created_at TIMESTAMPTZ DEFAULT now(),
+>     updated_at TIMESTAMPTZ DEFAULT now()
+> );
+> -- 更新日時自動更新トリガー
+> CREATE TRIGGER update_facility_reservations_updated_at
+>     BEFORE UPDATE ON public.facility_reservations
+>     FOR EACH ROW
+>     EXECUTE PROCEDURE update_updated_at_column();
+#### DB構造
+| column_name           | data_type                | is_nullable | column_default    |
+| --------------------- | ------------------------ | ----------- | ----------------- |
+| id                    | uuid                     | NO          | gen_random_uuid() |
+| facility_id           | uuid                     | NO          | null              |
+| registration_group_id | uuid                     | YES         | null              |
+| reservation_number    | text                     | YES         | null              |
+| reservation_date      | date                     | NO          | null              |
+| reservation_time_slot | text                     | NO          | null              |
+| reserved_courts       | integer                  | YES         | 1                 |
+| reserved_fee          | integer                  | YES         | 0                 |
+| reservation_limit     | date                     | YES         | null              |
+| reserver_name         | text                     | YES         | null              |
+| lottery_results       | text                     | YES         | null              |
+| reservation_notes     | text                     | YES         | null              |
+| created_at            | timestamp with time zone | YES         | now()             |
+| updated_at            | timestamp with time zone | YES         | now()             |
+
+## フォルダ構造
+1. 施設管理 (Facilities)
+- 一覧：facilities/page.tsx
+- 新規：facilities/new/page.tsx
+- 詳細：facilities/[id]/page.tsx
+- 編集：facilities/edit/[id]/page.tsx
+2. 施設予約 (Reservations)
+- 一覧：facilities/reservations/page.tsx
+- 新規：facilities/reservations/new/page.tsx
+- 詳細：facilities/reservations/[id]/page.tsx
+- 編集：facilities/reservations/edit/[id]/page.tsx
+3. 登録団体 (Groups)
+- 一覧：facilities/groups/page.tsx
+- 新規：facilities/groups/new/page.tsx
+- 詳細：facilities/groups/[id]/page.tsx
+- 編集：facilities/groups/edit/[id]/page.tsx
+
+>src/app/facilities/   
+├── layout.tsx                # 共通レイアウト (背景・認証)   
+├── page.tsx                  # 施設一覧 [F-14]   
+├── [id]/                     # --- 施設詳細コンテキスト ---  
+│    └── page.tsx             # 施設詳細表示  
+├── new/                      # --- 施設新規登録コンテキスト ---  
+│    └── page.tsx             # 施設新規登録 [F-11]  
+├── edit/                     # --- 施設編集コンテキスト ---  
+│    └── [id]/                # IDを動的に受け取る  
+│       └── page.tsx          # 施設編集 [F-12,F-13]  
+│  
+├── reservations/             # --- 予約情報管理 [F-21～24] ---  
+│    ├── page.tsx             # 予約一覧 [F-24]  
+│    ├── [id]/  
+│    │    └── page.tsx        # 予約詳細表示  
+│    ├── new/  
+│    │    └── page.tsx        # 予約新規登録 [F-21]  
+│    └── edit/  
+│        └── [id]/  
+│             └── page.tsx    # 予約情報編集 [F-22,F-23]  
+│  
+└── groups/                   # --- 登録団体管理 [F-01～04] ---  
+     ├── page.tsx             # 団体一覧 [F-04]  
+     ├── [id]/  
+     │    └── page.tsx        # 団体詳細表示  
+     ├── new/  
+     │    └── page.tsx        # 団体新規登録 [F-01]  
+     └── edit/  
+          └── [id]/  
+               └── page.tsx   # 団体情報編集 [F-02,F-03]  
+## 画面とユースケース対応表
+| 画面(URL) | 対応ユースケース | 備考 |  
+| .../page.tsx | "F-04, F-14, F-24"| 一覧参照。各項目から詳細や編集へのリンク。|  
+| .../new/page.tsx | "F-01, F-11, F-21" |新規登録フォーム。保存して一覧へ戻る。"F-01, F-11, F-21",新規登録フォーム。保存して一覧へ戻る。|  
+| .../[id]/page.tsx | 参照のみ | 編集権限がないユーザー向けの閲覧専用画面。|  
+| .../edit/[id]/page.tsx | "F-02, F-12, F-22F-03, F-13, F-23" | 情報編集（既存データの更新）削除実行（物理削除またはステータス変更）|  
