@@ -1,9 +1,8 @@
 /**
  * Filename: src/app/facilities/edit/[id]/page.tsx
- * Version: V1.0.2
+ * Version: V1.2.0
  * Update: 2026-03-05
- * Remarks: getFacilityByIdの実装、命名整理、および
- *          スタイル適用エラーの修正。
+ * Remarks: new/page.tsx をベースに全フィールド対応・getFacilityById/updateFacility。
  */
 
 'use client'
@@ -33,6 +32,27 @@ import {
 } from '@/style/style_common'
 import { memberPage } from '@/style/style_member'
 
+const itemStackStyle = {
+  ...memberPage.itemStack,
+  marginTop: spacing.md,
+}
+
+function toNum(
+  s: string,
+): number | null {
+  const t = s.trim()
+  if (t === '') return null
+  const n = Number(t)
+  return Number.isNaN(n) ? null : n
+}
+
+function toStr(
+  s: string,
+): string | null {
+  const t = s.trim()
+  return t === '' ? null : t
+}
+
 export default function EditFacilityPage() {
   const router = useRouter()
   const params = useParams()
@@ -48,6 +68,17 @@ export default function EditFacilityPage() {
   const [address, setAddress] = useState('')
   const [mapUrl, setMapUrl] = useState('')
   const [facilityNotes, setFacilityNotes] = useState('')
+  const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
+  const [facilityUrl, setFacilityUrl] = useState('')
+  const [facilityFeeDesc, setFacilityFeeDesc] = useState('')
+  const [courtNumbers, setCourtNumbers] = useState('')
+  const [lotteryDateDesc, setLotteryDateDesc] = useState('')
+  const [registrationDate, setRegistrationDate] = useState('')
+  const [renewalDate, setRenewalDate] = useState('')
+  const [registrationFee, setRegistrationFee] = useState('')
+  const [annualFee, setAnnualFee] = useState('')
+  const [parkingCapacity, setParkingCapacity] = useState('')
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -59,9 +90,26 @@ export default function EditFacilityPage() {
       if (!data) return
 
       setFacilityName(data.facility_name || '')
-      setAddress(data.address || '')
-      setMapUrl(data.map_url || '')
-      setFacilityNotes(data.facility_notes || '')
+      setAddress(data.address ?? '')
+      setMapUrl(data.map_url ?? '')
+      setFacilityNotes(data.facility_notes ?? '')
+      setPhone(data.phone ?? '')
+      setEmail(data.email ?? '')
+      setFacilityUrl(data.facility_url ?? '')
+      setFacilityFeeDesc(data.facility_fee_desc ?? '')
+      setCourtNumbers(data.court_numbers ?? '')
+      setLotteryDateDesc(data.lottery_date_desc ?? '')
+      setRegistrationDate(data.registration_date ?? '')
+      setRenewalDate(data.renewal_date ?? '')
+      setRegistrationFee(
+        data.registration_fee != null ? String(data.registration_fee) : '',
+      )
+      setAnnualFee(
+        data.annual_fee != null ? String(data.annual_fee) : '',
+      )
+      setParkingCapacity(
+        data.parking_capacity != null ? String(data.parking_capacity) : '',
+      )
       setIsLoading(false)
     }
 
@@ -92,23 +140,97 @@ export default function EditFacilityPage() {
     setFacilityNotes(e.target.value)
   }
 
+  const handleChangePhone = (
+    e: ChangeEvent<HTMLInputElement>,
+  ) => {
+    setPhone(e.target.value)
+  }
+
+  const handleChangeEmail = (
+    e: ChangeEvent<HTMLInputElement>,
+  ) => {
+    setEmail(e.target.value)
+  }
+
+  const handleChangeFacilityUrl = (
+    e: ChangeEvent<HTMLInputElement>,
+  ) => {
+    setFacilityUrl(e.target.value)
+  }
+
+  const handleChangeFacilityFeeDesc = (
+    e: ChangeEvent<HTMLInputElement>,
+  ) => {
+    setFacilityFeeDesc(e.target.value)
+  }
+
+  const handleChangeCourtNumbers = (
+    e: ChangeEvent<HTMLInputElement>,
+  ) => {
+    setCourtNumbers(e.target.value)
+  }
+
+  const handleChangeLotteryDateDesc = (
+    e: ChangeEvent<HTMLInputElement>,
+  ) => {
+    setLotteryDateDesc(e.target.value)
+  }
+
+  const handleChangeRegistrationDate = (
+    e: ChangeEvent<HTMLInputElement>,
+  ) => {
+    setRegistrationDate(e.target.value)
+  }
+
+  const handleChangeRenewalDate = (
+    e: ChangeEvent<HTMLInputElement>,
+  ) => {
+    setRenewalDate(e.target.value)
+  }
+
+  const handleChangeRegistrationFee = (
+    e: ChangeEvent<HTMLInputElement>,
+  ) => {
+    setRegistrationFee(e.target.value)
+  }
+
+  const handleChangeAnnualFee = (
+    e: ChangeEvent<HTMLInputElement>,
+  ) => {
+    setAnnualFee(e.target.value)
+  }
+
+  const handleChangeParkingCapacity = (
+    e: ChangeEvent<HTMLInputElement>,
+  ) => {
+    setParkingCapacity(e.target.value)
+  }
+
   const handleUpdate = async () => {
     if (!facilityId) return
 
     const payload = {
       facility_name: facilityName,
-      address,
-      map_url: mapUrl,
-      facility_notes: facilityNotes,
+      address: toStr(address),
+      map_url: toStr(mapUrl),
+      facility_notes: toStr(facilityNotes),
+      phone: toStr(phone),
+      email: toStr(email),
+      facility_url: toStr(facilityUrl),
+      facility_fee_desc: toStr(facilityFeeDesc),
+      court_numbers: toStr(courtNumbers),
+      lottery_date_desc: toStr(lotteryDateDesc),
+      registration_date: toStr(registrationDate),
+      renewal_date: toStr(renewalDate),
+      registration_fee: toNum(registrationFee),
+      annual_fee: toNum(annualFee),
+      parking_capacity: toNum(parkingCapacity),
     }
 
-    const result = await updateFacility(
-      facilityId,
-      payload,
-    )
+    const result = await updateFacility(facilityId, payload)
 
     if (result) {
-      router.push('/facilities')
+      router.push(`/facilities/${facilityId}`)
     }
   }
 
@@ -121,9 +243,7 @@ export default function EditFacilityPage() {
 
     if (!ok) return
 
-    const result = await deleteFacility(
-      facilityId,
-    )
+    const result = await deleteFacility(facilityId)
 
     if (result) {
       router.push('/facilities')
@@ -181,16 +301,8 @@ export default function EditFacilityPage() {
             />
           </div>
 
-          <div
-            style={{
-              ...memberPage.itemStack,
-              marginTop: spacing.md,
-            }}
-          >
-            <label
-              htmlFor="address"
-              style={memberPage.label}
-            >
+          <div style={itemStackStyle}>
+            <label htmlFor="address" style={memberPage.label}>
               住所
             </label>
             <input
@@ -202,16 +314,8 @@ export default function EditFacilityPage() {
             />
           </div>
 
-          <div
-            style={{
-              ...memberPage.itemStack,
-              marginTop: spacing.md,
-            }}
-          >
-            <label
-              htmlFor="map_url"
-              style={memberPage.label}
-            >
+          <div style={itemStackStyle}>
+            <label htmlFor="map_url" style={memberPage.label}>
               Google Map URL
             </label>
             <input
@@ -223,12 +327,168 @@ export default function EditFacilityPage() {
             />
           </div>
 
-          <div
-            style={{
-              ...memberPage.itemStack,
-              marginTop: spacing.md,
-            }}
-          >
+          <div style={itemStackStyle}>
+            <label htmlFor="phone" style={memberPage.label}>
+              電話番号
+            </label>
+            <input
+              id="phone"
+              type="text"
+              value={phone}
+              onChange={handleChangePhone}
+              style={memberPage.value}
+            />
+          </div>
+
+          <div style={itemStackStyle}>
+            <label htmlFor="email" style={memberPage.label}>
+              メールアドレス
+            </label>
+            <input
+              id="email"
+              type="text"
+              value={email}
+              onChange={handleChangeEmail}
+              style={memberPage.value}
+            />
+          </div>
+
+          <div style={itemStackStyle}>
+            <label htmlFor="facility_url" style={memberPage.label}>
+              公式サイトURL
+            </label>
+            <input
+              id="facility_url"
+              type="text"
+              value={facilityUrl}
+              onChange={handleChangeFacilityUrl}
+              style={memberPage.value}
+            />
+          </div>
+
+          <div style={itemStackStyle}>
+            <label
+              htmlFor="facility_fee_desc"
+              style={memberPage.label}
+            >
+              利用料金
+            </label>
+            <input
+              id="facility_fee_desc"
+              type="text"
+              value={facilityFeeDesc}
+              onChange={handleChangeFacilityFeeDesc}
+              style={memberPage.value}
+            />
+          </div>
+
+          <div style={itemStackStyle}>
+            <label htmlFor="court_numbers" style={memberPage.label}>
+              コート番号
+            </label>
+            <input
+              id="court_numbers"
+              type="text"
+              value={courtNumbers}
+              onChange={handleChangeCourtNumbers}
+              style={memberPage.value}
+            />
+          </div>
+
+          <div style={itemStackStyle}>
+            <label
+              htmlFor="lottery_date_desc"
+              style={memberPage.label}
+            >
+              抽選日
+            </label>
+            <input
+              id="lottery_date_desc"
+              type="text"
+              value={lotteryDateDesc}
+              onChange={handleChangeLotteryDateDesc}
+              style={memberPage.value}
+            />
+          </div>
+
+          <div style={itemStackStyle}>
+            <label
+              htmlFor="registration_date"
+              style={memberPage.label}
+            >
+              団体登録日
+            </label>
+            <input
+              id="registration_date"
+              type="text"
+              value={registrationDate}
+              onChange={handleChangeRegistrationDate}
+              style={memberPage.value}
+            />
+          </div>
+
+          <div style={itemStackStyle}>
+            <label htmlFor="renewal_date" style={memberPage.label}>
+              団体更新期限
+            </label>
+            <input
+              id="renewal_date"
+              type="text"
+              value={renewalDate}
+              onChange={handleChangeRenewalDate}
+              style={memberPage.value}
+            />
+          </div>
+
+          <div style={itemStackStyle}>
+            <label
+              htmlFor="registration_fee"
+              style={memberPage.label}
+            >
+              団体登録料
+            </label>
+            <input
+              id="registration_fee"
+              type="text"
+              inputMode="numeric"
+              value={registrationFee}
+              onChange={handleChangeRegistrationFee}
+              style={memberPage.value}
+            />
+          </div>
+
+          <div style={itemStackStyle}>
+            <label htmlFor="annual_fee" style={memberPage.label}>
+              団体年会費
+            </label>
+            <input
+              id="annual_fee"
+              type="text"
+              inputMode="numeric"
+              value={annualFee}
+              onChange={handleChangeAnnualFee}
+              style={memberPage.value}
+            />
+          </div>
+
+          <div style={itemStackStyle}>
+            <label
+              htmlFor="parking_capacity"
+              style={memberPage.label}
+            >
+              駐車場台数
+            </label>
+            <input
+              id="parking_capacity"
+              type="text"
+              inputMode="numeric"
+              value={parkingCapacity}
+              onChange={handleChangeParkingCapacity}
+              style={memberPage.value}
+            />
+          </div>
+
+          <div style={itemStackStyle}>
             <label
               htmlFor="facility_notes"
               style={memberPage.label}
@@ -290,4 +550,3 @@ export default function EditFacilityPage() {
     </div>
   )
 }
-

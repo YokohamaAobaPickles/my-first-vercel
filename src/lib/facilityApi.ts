@@ -1,8 +1,9 @@
 /**
  * Filename: facilityApi.ts
- * Version: V1.8.0
+ * Version: V1.9.0
  * Update: 2026-03-05
  * Remarks:
+ * V1.9.0 - Facility 追加カラムの登録・更新に対応。
  * V1.8.0 - 個別取得API (by id) を追加。
  * V1.7.0 - F-21〜F-24 施設予約 (insert/update/delete/fetch) を実装。
  * V1.6.0 - F-13 deleteFacility, F-14 fetchAllFacilities を実装。
@@ -119,7 +120,8 @@ export const fetchRegistrationGroupById = async (
 };
 
 /**
- * F-11: 施設情報をDBに登録する
+ * F-11: 施設情報をDBに登録する。
+ * Facility 型の全プロパティ（phone, email, facility_url 等の追加カラム含む）を指定可能。
  * @param facility 登録する施設情報
  */
 export const insertFacility = async (
@@ -138,7 +140,8 @@ export const insertFacility = async (
   return data;
 };
 /**
- * F-12: 施設情報を更新する
+ * F-12: 施設情報を更新する。
+ * Facility の追加カラム（phone, email, facility_url 等）も部分指定可能。
  * @param id 更新対象のUUID
  * @param facility 更新する項目
  */

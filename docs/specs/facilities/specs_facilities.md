@@ -42,16 +42,20 @@
 - F-02 登録団体情報の更新：施設管理担当や、登録された登録団体情報を更新する
 - F-03 登録団体情報の削除：施設管理担当や、登録された登録団体情報を削除する
 - F-04 登録団体一覧の参照：登録された団体情報の一覧を参照する
+- F-05 登録団体詳細の参照：登録された団体情報の詳細を参照する
 - F-11 施設情報の登録：施設管理担当は、施設情報を登録する
 - F-12 施設情報の更新：施設管理担当や、登録された施設情報を更新する
 - F-13 施設情報の削除：施設管理担当や、登録された施設情報を削除する
 - F-14 施設一覧の参照：登録された施設情報の一覧を参照する
+- F-15 施設詳細の参照：登録された施設情報の詳細を参照する
 - F-21 施設予約情報の登録：施設管理担当は、施設予約情報を登録する
   - F-21a 施設当選情報の登録：システムは、予約申し込み施設から送られてきた施設抽選結果から当選した情報を予約情報として登録する　※予約当選結果はイベント管理機能と連携する
 - F-22 施設予約情報の更新：施設管理担当や、登録された予約施設情報を更新する
   - F-22a 施設当落情報の更新：システムは、予約申し込み施設から送られてきた施設抽選結果を予約情報に反映する。
 - F-23 施設予約情報の削除：施設管理担当や、登録された予約施設情報を削除する
 - F-24 施設予約情報一覧の参照：登録された施設予約情報の一覧を参照する
+- F-25 施設予約詳細の参照：登録された施設予約情報の詳細を参照する
+
 
 ## 備考
 ### イベント管理機能との連携
@@ -140,6 +144,32 @@
   - 外部キー制約: registration_group_id は registration_groups テーブルの id を参照しています。団体が削除された場合、施設データは残るように ON DELETE SET NULL を設定しています。
   - 自動採番: id は UUID で自動生成されます。
   - タイムスタンプ: created_at と updated_at でデータの履歴を管理します。
+#### 追加SQL文
+> -- facilitiesテーブルの定義を仕様書に合わせて拡張
+> ALTER TABLE public.facilities 
+> ADD COLUMN IF NOT EXISTS phone text,                    -- 電話番号
+> ADD COLUMN IF NOT EXISTS email text,                    -- メールアドレス
+> ADD COLUMN IF NOT EXISTS facility_url text,             -- 施設URL
+> ADD COLUMN IF NOT EXISTS registration_date date,        -- 団体登録日
+> ADD COLUMN IF NOT EXISTS renewal_date date,             -- 団体登録更新期限
+> ADD COLUMN IF NOT EXISTS registration_fee integer,      -- 団体登録料
+> ADD COLUMN IF NOT EXISTS annual_fee integer,            -- 団体年会費
+> ADD COLUMN IF NOT EXISTS facility_fee_desc text,        -- 施設利用料金(説明文)
+> ADD COLUMN IF NOT EXISTS court_numbers text,            -- コート番号(例: 1,2番)
+> ADD COLUMN IF NOT EXISTS parking_capacity integer,      -- 駐車場利用台数
+> ADD COLUMN IF NOT EXISTS lottery_date_desc text;        -- 利用抽選日(説明文)
+> -- 各カラムにコメントを追加（メンテナンス性向上）
+> COMMENT ON COLUMN public.facilities.phone IS '施設電話番号';
+> COMMENT ON COLUMN public.facilities.email IS '施設メールアドレス';
+> COMMENT ON COLUMN public.facilities.facility_url IS '施設公式URL';
+> COMMENT ON COLUMN public.facilities.registration_date IS '団体登録日';
+> COMMENT ON COLUMN public.facilities.renewal_date IS '団体登録更新期限';
+> COMMENT ON COLUMN public.facilities.registration_fee IS '団体登録料';
+> COMMENT ON COLUMN public.facilities.annual_fee IS '団体年会費';
+> COMMENT ON COLUMN public.facilities.facility_fee_desc IS '利用料金体系';
+> COMMENT ON COLUMN public.facilities.court_numbers IS '所有コート番号';
+> COMMENT ON COLUMN public.facilities.parking_capacity IS '駐車場利用可能台数';
+> COMMENT ON COLUMN public.facilities.lottery_date_desc IS '抽選申込日等の説明';
 #### DB構造
 | column_name           | data_type                | is_nullable | column_default    |
 | --------------------- | ------------------------ | ----------- | ----------------- |
@@ -151,6 +181,17 @@
 | registration_group_id | uuid                     | YES         | null              |
 | created_at            | timestamp with time zone | YES         | now()             |
 | updated_at            | timestamp with time zone | YES         | now()             |
+| phone                 | text                     | YES         | null              |
+| email                 | text                     | YES         | null              |
+| facility_url          | text                     | YES         | null              |
+| registration_date     | date                     | YES         | null              |
+| renewal_date          | date                     | YES         | null              |
+| registration_fee      | integer                  | YES         | null              |
+| annual_fee            | integer                  | YES         | null              |
+| facility_fee_desc     | text                     | YES         | null              |
+| court_numbers         | text                     | YES         | null              |
+| parking_capacity      | integer                  | YES         | null              |
+| lottery_date_desc     | text                     | YES         | null              |
 ### 予約情報
 #### SQL文
 > -- FacilityReservationsテーブルの作成

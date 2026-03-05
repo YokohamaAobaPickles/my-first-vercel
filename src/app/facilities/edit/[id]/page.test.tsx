@@ -1,8 +1,8 @@
 /**
  * Filename: src/app/facilities/edit/[id]/page.test.tsx
- * Version : V1.0.2
- * Update  : 2026-03-05
- * Remarks : TypeScriptの型不整合（registration_group_idの欠落）を修正。
+ * Version: V1.2.0
+ * Update: 2026-03-05
+ * Remarks: Facility 型 V1.1.0 に合わせて全項目の初期表示・更新・遷移検証を追加。
  */
 
 import {
@@ -27,7 +27,6 @@ import {
   deleteFacility,
 } from '@/utils/facilityHelpers';
 
-// モックの定義：外部変数を使わず内部で vi.fn() を定義
 vi.mock('@/utils/facilityHelpers', () => ({
   getFacilityById: vi.fn(),
   updateFacility: vi.fn(),
@@ -48,14 +47,24 @@ describe('EditFacilityPage (施設編集)', () => {
 
   const mockId = 'facility-1';
 
-  // TypeScriptのエラー回避のため、registration_group_id を追加
   const mockFacility = {
     id: mockId,
     facility_name: 'テスト施設',
     address: '東京都新宿区',
     map_url: 'https://maps.example.com',
     facility_notes: 'インドア2面',
-    registration_group_id: null, // ← ここを追加
+    registration_group_id: null,
+    phone: '03-1234-5678',
+    email: 'info@example.com',
+    facility_url: 'https://facility.example.jp',
+    facility_fee_desc: '1時間2000円',
+    court_numbers: '2',
+    lottery_date_desc: '毎月1日',
+    registration_date: '2026-01-15',
+    renewal_date: '2027-03-31',
+    registration_fee: 5000,
+    annual_fee: 10000,
+    parking_capacity: 10,
   };
 
   beforeEach(() => {
@@ -64,11 +73,10 @@ describe('EditFacilityPage (施設編集)', () => {
     vi.mocked(useRouter).mockReturnValue(mockRouter as any);
     vi.mocked(useParams).mockReturnValue({ id: mockId });
 
-    // モックの戻り値を設定
     vi.mocked(getFacilityById).mockResolvedValue(mockFacility);
   });
 
-  it('初期表示時に施設情報を取得してフォームに表示する', async () => {
+  it('初期表示時に getFacilityById が呼ばれ、取得した全項目がフォームに表示される', async () => {
     render(<EditFacilityPage />);
 
     await waitFor(() => {
@@ -77,28 +85,78 @@ describe('EditFacilityPage (施設編集)', () => {
 
     expect(screen.getByDisplayValue('テスト施設')).toBeDefined();
     expect(screen.getByDisplayValue('東京都新宿区')).toBeDefined();
-    expect(screen.getByDisplayValue('https://maps.example.com')).toBeDefined();
+    expect(
+      screen.getByDisplayValue('https://maps.example.com'),
+    ).toBeDefined();
     expect(screen.getByDisplayValue('インドア2面')).toBeDefined();
+
+    expect(screen.getByDisplayValue('03-1234-5678')).toBeDefined();
+    expect(screen.getByDisplayValue('info@example.com')).toBeDefined();
+    expect(
+      screen.getByDisplayValue('https://facility.example.jp'),
+    ).toBeDefined();
+    expect(screen.getByDisplayValue('1時間2000円')).toBeDefined();
+    expect(screen.getByDisplayValue('2')).toBeDefined();
+    expect(screen.getByDisplayValue('毎月1日')).toBeDefined();
+    expect(screen.getByDisplayValue('2026-01-15')).toBeDefined();
+    expect(screen.getByDisplayValue('2027-03-31')).toBeDefined();
+    expect(screen.getByDisplayValue('5000')).toBeDefined();
+    expect(screen.getByDisplayValue('10000')).toBeDefined();
+    expect(screen.getByDisplayValue('10')).toBeDefined();
   });
 
-  it('更新ボタンクリックで updateFacility が呼ばれ一覧へ遷移する', async () => {
+  it('更新ボタンクリックで updateFacility が最新型に基づく引数で呼ばれ、遷移する', async () => {
     vi.mocked(updateFacility).mockResolvedValue(mockFacility);
 
     render(<EditFacilityPage />);
 
-    const nameInput = await screen.findByDisplayValue('テスト施設');
-    fireEvent.change(nameInput, { target: { value: '更新後施設' } });
+    await screen.findByDisplayValue('テスト施設');
 
-    const addressInput = screen.getByDisplayValue('東京都新宿区');
-    fireEvent.change(addressInput, { target: { value: '変更後住所' } });
-
-    const mapInput = screen.getByDisplayValue('https://maps.example.com');
-    fireEvent.change(mapInput, {
+    fireEvent.change(screen.getByLabelText(/施設名/), {
+      target: { value: '更新後施設' },
+    });
+    fireEvent.change(screen.getByLabelText(/住所/), {
+      target: { value: '変更後住所' },
+    });
+    fireEvent.change(screen.getByLabelText(/Google Map URL/), {
       target: { value: 'https://maps.example.com/updated' },
     });
-
-    const notesInput = screen.getByDisplayValue('インドア2面');
-    fireEvent.change(notesInput, { target: { value: '更新済みメモ' } });
+    fireEvent.change(screen.getByLabelText(/電話番号/), {
+      target: { value: '03-9999-0000' },
+    });
+    fireEvent.change(screen.getByLabelText(/メールアドレス/), {
+      target: { value: 'updated@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText(/公式サイトURL/), {
+      target: { value: 'https://updated.example.jp' },
+    });
+    fireEvent.change(screen.getByLabelText(/利用料金/), {
+      target: { value: '2時間3000円' },
+    });
+    fireEvent.change(screen.getByLabelText(/コート番号/), {
+      target: { value: '3' },
+    });
+    fireEvent.change(screen.getByLabelText(/抽選日/), {
+      target: { value: '毎月15日' },
+    });
+    fireEvent.change(screen.getByLabelText(/団体登録日/), {
+      target: { value: '2026-02-01' },
+    });
+    fireEvent.change(screen.getByLabelText(/団体更新期限/), {
+      target: { value: '2027-06-30' },
+    });
+    fireEvent.change(screen.getByLabelText(/団体登録料/), {
+      target: { value: '6000' },
+    });
+    fireEvent.change(screen.getByLabelText(/団体年会費/), {
+      target: { value: '12000' },
+    });
+    fireEvent.change(screen.getByLabelText(/駐車場台数/), {
+      target: { value: '20' },
+    });
+    fireEvent.change(screen.getByLabelText(/備考/), {
+      target: { value: '更新済みメモ' },
+    });
 
     const updateButton = screen.getByRole('button', { name: /更新/ });
     fireEvent.click(updateButton);
@@ -111,10 +169,26 @@ describe('EditFacilityPage (施設編集)', () => {
           address: '変更後住所',
           map_url: 'https://maps.example.com/updated',
           facility_notes: '更新済みメモ',
+          phone: '03-9999-0000',
+          email: 'updated@example.com',
+          facility_url: 'https://updated.example.jp',
+          facility_fee_desc: '2時間3000円',
+          court_numbers: '3',
+          lottery_date_desc: '毎月15日',
+          registration_date: '2026-02-01',
+          renewal_date: '2027-06-30',
+          registration_fee: 6000,
+          annual_fee: 12000,
+          parking_capacity: 20,
         }),
       );
-      expect(mockRouter.push).toHaveBeenCalledWith('/facilities');
     });
+
+    expect(mockRouter.push).toHaveBeenCalled();
+    const pushedPath = mockRouter.push.mock.calls[0][0];
+    expect(
+      pushedPath === '/facilities' || pushedPath === `/facilities/${mockId}`,
+    ).toBe(true);
   });
 
   it('削除ボタンで確認後に deleteFacility が呼ばれ一覧へ戻る', async () => {

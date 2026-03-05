@@ -1,8 +1,8 @@
 /**
  * Filename: src/app/facilities/page.tsx
- * Version : V1.0.0
- * Update  : 2026-03-04
- * Remarks : 施設一覧画面 (F-14)
+ * Version: V1.1.0
+ * Update: 2026-03-05
+ * Remarks: 表示項目を施設名と電話番号に絞り、詳細リンクを追加。
  */
 
 import Link from 'next/link';
@@ -15,19 +15,8 @@ import {
   spacing,
   button,
   pageHeader,
-  row,
 } from '@/style/style_common';
 import { memberPage } from '@/style/style_member';
-
-const createMapUrl = (facility: Facility): string => {
-  if (facility.map_url && facility.map_url.trim() !== '') {
-    return facility.map_url;
-  }
-
-  const query = facility.address || facility.facility_name;
-
-  return `https://www.google.com/maps?q=${encodeURIComponent(query)}`;
-};
 
 export default async function FacilitiesPage() {
   const facilities: Facility[] = await getFacilities();
@@ -63,49 +52,25 @@ export default async function FacilitiesPage() {
                 key={facility.id}
                 style={card}
               >
-                <div style={row.header}>
-                  <div style={row.leftGroup}>
-                    <span style={memberPage.sectionTitle}>
-                      {facility.facility_name}
-                    </span>
-                  </div>
+                <div style={memberPage.itemStack}>
+                  <span style={memberPage.label}>施設名</span>
                   <Link
-                    href={`/facilities/edit/${facility.id}`}
-                    style={button.edit}
+                    href={`/facilities/${facility.id}`}
+                    style={memberPage.value}
                   >
-                    編集
+                    {facility.facility_name}
                   </Link>
                 </div>
-
-                <div style={memberPage.itemStack}>
-                  <span style={memberPage.label}>住所</span>
-                  {facility.address ? (
-                    <a
-                      href={createMapUrl(facility)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={memberPage.value}
-                    >
-                      {facility.address}
-                    </a>
-                  ) : (
-                    <span style={memberPage.value}>
-                      住所は登録されていません。
-                    </span>
-                  )}
-                </div>
-
                 <div
                   style={{
                     ...memberPage.itemStack,
                     marginTop: spacing.sm,
                   }}
                 >
-                  <span style={memberPage.label}>備考</span>
-                  <div style={memberPage.bodyText}>
-                    {facility.facility_notes ||
-                      '備考は登録されていません。'}
-                  </div>
+                  <span style={memberPage.label}>電話番号</span>
+                  <span style={memberPage.value}>
+                    {facility.phone?.trim() || '-'}
+                  </span>
                 </div>
               </div>
             ))}
@@ -115,4 +80,3 @@ export default async function FacilitiesPage() {
     </div>
   );
 }
-

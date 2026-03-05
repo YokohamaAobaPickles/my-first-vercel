@@ -1,8 +1,9 @@
 /**
  * Filename: facilityHelpers.ts
- * Version: V1.8.0
+ * Version: V1.9.0
  * Update: 2026-03-05
  * Remarks:
+ * V1.9.0 - createFacility/updateFacility が追加カラム（phone 等）を扱う旨を明示。
  * V1.8.0 - 個別取得の追加と命名整理 (updateFacility/deleteFacility 等)。
  * V1.7.0 - F-21〜F-24 施設予約 (create/update/remove/get) を実装。
  * V1.6.0 - F-13 removeFacility, F-14 getFacilities を実装。
@@ -98,12 +99,12 @@ export const getRegistrationGroupById = async (
 };
 
 /**
- * F-11: 施設新規登録ロジック
+ * F-11: 施設新規登録ロジック。
+ * phone, email, registration_date, registration_fee 等の追加カラムも指定可能。
  */
 export const createFacility = async (
   facility: Omit<Facility, 'id' | 'created_at' | 'updated_at'>
 ): Promise<Facility | null> => {
-  // バリデーション
   if (!facility.facility_name || facility.facility_name.trim() === '') {
     return null;
   }
@@ -112,7 +113,8 @@ export const createFacility = async (
 };
 
 /**
- * F-12: 施設情報更新ロジック
+ * F-12: 施設情報更新ロジック。
+ * phone, registration_date, annual_fee 等の追加カラムも部分指定可能。
  * @param id 更新対象のUUID
  * @param facility 更新項目
  */
@@ -120,7 +122,6 @@ export const updateFacility = async (
   id: string,
   facility: Partial<Omit<Facility, 'id' | 'created_at' | 'updated_at'>>
 ): Promise<Facility | null> => {
-  // 名称変更が含まれる場合、空文字チェックを行う
   if (facility.facility_name !== undefined &&
       facility.facility_name.trim() === '') {
     return null;

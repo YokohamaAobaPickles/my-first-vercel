@@ -1,8 +1,9 @@
 /**
  * Filename: facilityApi.test.ts
- * Version: V1.8.0
- * Update: 2026-03-04
+ * Version: V1.9.0
+ * Update: 2026-03-05
  * Remarks:
+ * V1.9.0 - 施設登録・更新テストに phone, registration_date 等の新項目を追加。
  * V1.8.0 - 個別取得テスト追加と命名整理。
  * V1.7.0 - F-21〜F-24 施設予約管理のテスト追加
  * V1.6.0 - F-13, F-14 施設削除・一覧取得のテスト追加
@@ -23,14 +24,15 @@ import {
   fetchAllRegistrationGroups,
   deleteRegistrationGroup,
   insertFacility,
+  updateFacility,
   deleteFacility,
   fetchAllFacilities,
+  fetchFacilityById,
   insertReservation,
   updateReservation,
   deleteReservation,
   fetchAllReservations,
   fetchRegistrationGroupById,
-  fetchFacilityById,
   fetchReservationById,
 } from '@/lib/facilityApi';
 import { supabase } from '@/lib/supabase';
@@ -58,13 +60,13 @@ describe('facilityApi: 登録団体DB操作のテスト', () => {
     const mockInput = {
       registration_club_name: 'TDDテスト団体',
       registration_club_number: 'TDD-001',
-      // 一旦 null にして外部キー制約を回避（または実在するIDを指定）
       representative_id: null,
       vice_representative_id: null,
       registration_club_notes: 'API単体テスト'
     };
 
     const result = await insertRegistrationGroup(mockInput);
+    if (result?.id) createdIds.push(result.id);
 
     expect(result).not.toBeNull();
     expect(result?.registration_club_name).toBe(mockInput.registration_club_name);
@@ -73,8 +75,6 @@ describe('facilityApi: 登録団体DB操作のテスト', () => {
 
   describe('updateRegistrationGroup', () => {
     it('既存の団体情報を指定して、名称を更新できること', async () => {
-      // F-01で作成されたテストデータのIDを取得（または固定のテストID）
-      // ここではテストの独立性を保つため、一度作成してから更新する流れが理想です
       const newGroup = await insertRegistrationGroup({
         registration_club_name: '更新前団体',
         registration_club_number: 'UPD-000',
@@ -82,6 +82,7 @@ describe('facilityApi: 登録団体DB操作のテスト', () => {
         vice_representative_id: null,
         registration_club_notes: '更新テスト'
       });
+      if (newGroup?.id) createdIds.push(newGroup.id);
 
       const updateData = { registration_club_name: '更新後団体' };
       const result = await updateRegistrationGroup(newGroup!.id, updateData);
@@ -114,6 +115,7 @@ describe('facilityApi: 登録団体DB操作のテスト', () => {
     };
 
     const created = await insertRegistrationGroup(input);
+    if (created?.id) createdIds.push(created.id);
     const fetched = await fetchRegistrationGroupById(
       created!.id
     );
@@ -151,8 +153,22 @@ describe('facilityApi: 登録団体DB操作のテスト', () => {
 });
 
 describe('F-11: 施設登録 (facilityApi)', () => {
+  const createdGroupIds: string[] = [];
+  const createdFacilityIds: string[] = [];
+
+  afterAll(async () => {
+    for (const id of createdFacilityIds) {
+      await deleteFacility(id);
+    }
+    for (const id of createdGroupIds) {
+      await deleteRegistrationGroup(id);
+    }
+    if (createdFacilityIds.length > 0 || createdGroupIds.length > 0) {
+      console.log('F-11 テスト用データを清掃しました。');
+    }
+  });
+
   it('正しい施設データが渡されたとき、DB登録に成功してデータを返す', async () => {
-    // 1. 紐付け用の団体を先に作成
     const group = await insertRegistrationGroup({
       registration_club_name: '施設紐付け用団体',
       registration_club_number: 'FAC-000',
@@ -160,27 +176,45 @@ describe('F-11: 施設登録 (facilityApi)', () => {
       vice_representative_id: null,
       registration_club_notes: 'Test'
     });
+    if (group?.id) createdGroupIds.push(group.id);
 
     const mockFacility = {
       facility_name: 'テストコートA',
       address: '東京都渋谷区...',
       map_url: 'https://maps.google.com/...',
       facility_notes: 'ハードコート2面',
-      registration_group_id: group!.id // 作成した団体のIDを指定
+      registration_group_id: group!.id,
+      phone: '03-1234-5678',
+      email: 'facility@example.com',
+      facility_url: 'https://example.com/court',
+      facility_fee_desc: '1時間2000円',
+      court_numbers: '2',
+      lottery_date_desc: '毎月1日',
+      registration_date: '2026-01-15',
+      renewal_date: '2027-01-15',
+      registration_fee: 5000,
+      annual_fee: 10000,
+      parking_capacity: 20,
     };
 
-    // 2. 施設登録実行
     const result = await insertFacility(mockFacility);
+    if (result?.id) createdFacilityIds.push(result.id);
 
     expect(result).not.toBeNull();
     expect(result?.facility_name).toBe(mockFacility.facility_name);
     expect(result?.registration_group_id).toBe(group!.id);
     expect(result?.id).toBeDefined();
+    expect(result?.phone).toBe(mockFacility.phone);
+    expect(result?.email).toBe(mockFacility.email);
+    expect(result?.registration_date).toBe(mockFacility.registration_date);
+    expect(result?.registration_fee).toBe(mockFacility.registration_fee);
+    expect(result?.parking_capacity).toBe(mockFacility.parking_capacity);
   });
 });
 
 describe('F-13 / F-14: 施設削除・一覧取得 (facilityApi)', () => {
   const createdGroupIds: string[] = [];
+  const createdFacilityIds: string[] = [];
 
   const insertGroupWithCleanup = async (input: Parameters<
     typeof insertRegistrationGroup
@@ -191,12 +225,15 @@ describe('F-13 / F-14: 施設削除・一覧取得 (facilityApi)', () => {
   };
 
   afterAll(async () => {
+    for (const id of createdFacilityIds) {
+      await deleteFacility(id);
+    }
     for (const id of createdGroupIds) {
       await deleteRegistrationGroup(id);
     }
-    if (createdGroupIds.length > 0) {
+    if (createdFacilityIds.length > 0 || createdGroupIds.length > 0) {
       console.log(
-        `${createdGroupIds.length}件の施設テスト用団体を清掃しました。`
+        '施設テスト用データを清掃しました。'
       );
     }
   });
@@ -228,8 +265,12 @@ describe('F-13 / F-14: 施設削除・一覧取得 (facilityApi)', () => {
       address: 'テスト住所',
       map_url: null,
       facility_notes: 'F-14 ID取得テスト',
-      registration_group_id: group!.id
+      registration_group_id: group!.id,
+      phone: '03-9999-8888',
+      registration_date: '2026-03-01',
+      annual_fee: 8000,
     });
+    if (created?.id) createdFacilityIds.push(created.id);
 
     const fetched = await fetchFacilityById(
       created!.id
@@ -239,6 +280,54 @@ describe('F-13 / F-14: 施設削除・一覧取得 (facilityApi)', () => {
     expect(fetched?.facility_name)
       .toBe('ID取得対象施設');
     expect(fetched?.id).toBe(created!.id);
+    expect(fetched?.phone).toBe('03-9999-8888');
+    expect(fetched?.registration_date).toBe('2026-03-01');
+    expect(fetched?.annual_fee).toBe(8000);
+  });
+
+  it('F-12: 施設の新項目を更新し取得で検証できること',
+    async () => {
+    const group = await insertGroupWithCleanup({
+      registration_club_name: '施設更新テスト用団体',
+      registration_club_number: 'F-UPD-001',
+      representative_id: null,
+      vice_representative_id: null,
+      registration_club_notes: '更新テスト'
+    });
+
+    const created = await insertFacility({
+      facility_name: '更新前施設',
+      address: null,
+      map_url: null,
+      facility_notes: null,
+      registration_group_id: group!.id,
+    });
+    if (created?.id) createdFacilityIds.push(created.id);
+
+    const updateData = {
+      phone: '03-1111-2222',
+      email: 'updated@example.com',
+      registration_date: '2026-02-01',
+      renewal_date: '2027-02-01',
+      registration_fee: 3000,
+      parking_capacity: 10,
+    };
+
+    const updated = await updateFacility(created!.id, updateData);
+    expect(updated).not.toBeNull();
+    expect(updated?.phone).toBe(updateData.phone);
+    expect(updated?.email).toBe(updateData.email);
+    expect(updated?.registration_date)
+      .toBe(updateData.registration_date);
+    expect(updated?.registration_fee)
+      .toBe(updateData.registration_fee);
+    expect(updated?.parking_capacity)
+      .toBe(updateData.parking_capacity);
+
+    const fetched = await fetchFacilityById(created!.id);
+    expect(fetched?.phone).toBe(updateData.phone);
+    expect(fetched?.registration_date)
+      .toBe(updateData.registration_date);
   });
 
   it('F-13: 指定したIDの施設情報を削除し、その後取得できないこと', async () => {

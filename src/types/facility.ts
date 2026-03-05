@@ -1,8 +1,9 @@
 /**
  * Filename: facility.ts
- * Version: V1.3.0
- * Update: 2026-03-03
- * Remarks: 
+ * Version: V1.1.0
+ * Update: 2026-03-05
+ * Remarks:
+ * V1.1.0 - Facility を最新DBスキーマに合わせてプロパティ追加。
  * V1.3.0 - FacilityReservation インターフェースを追加
  * V1.2.0 - Facility インターフェースを追加
  * V1.1.0 - representative_id を nullable に変更
@@ -28,12 +29,22 @@ export interface RegistrationGroup {
  */
 export interface Facility {
   id: string;
-  facility_name: string;      // 施設名 (必須)
-  address: string | null;     // 住所
-  map_url: string | null;     // Google Map等のURL
-  facility_notes: string | null; // 備考
-  // どの登録団体に紐づくか (外部キー想定)
-  registration_group_id: string | null; 
+  facility_name: string;
+  address: string | null;
+  map_url: string | null;
+  facility_notes: string | null;
+  registration_group_id: string | null;
+  phone: string | null;
+  email: string | null;
+  facility_url: string | null;
+  facility_fee_desc: string | null;
+  court_numbers: string | null;
+  lottery_date_desc: string | null;
+  registration_date: string | null;
+  renewal_date: string | null;
+  registration_fee: number | null;
+  annual_fee: number | null;
+  parking_capacity: number | null;
   created_at?: string;
   updated_at?: string;
 }
