@@ -1,5 +1,5 @@
 /**
- * Filename: src/app/facilities/(admin)/new/page.test.tsx
+ * Filename: src/app/facilities/(admin)/shisetsu/new/page.test.tsx
  * Version: V1.2.0
  * Update: 2026-03-05
  * Remarks: Facility 型拡張に合わせてフォーム項目・createFacility 検証を追加。
@@ -19,7 +19,7 @@ import {
   beforeEach,
 } from 'vitest';
 
-import NewFacilityPage from '@/app/facilities/(admin)/new/page';
+import NewFacilityPage from '@/app/facilities/(admin)/shisetsu/new/page';
 import { useRouter } from 'next/navigation';
 import * as facilityHelpers from '@/utils/facilityHelpers';
 

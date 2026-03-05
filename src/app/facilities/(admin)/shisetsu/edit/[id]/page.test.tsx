@@ -1,5 +1,5 @@
 /**
- * Filename: src/app/facilities/(admin)/edit/[id]/page.test.tsx
+ * Filename: src/app/facilities/(admin)/shisetsu/edit/[id]/page.test.tsx
  * Version: V1.2.0
  * Update: 2026-03-05
  * Remarks: Facility 型 V1.1.0 に合わせて全項目の初期表示・更新・遷移検証を追加。
@@ -19,7 +19,7 @@ import {
   beforeEach,
 } from 'vitest';
 
-import EditFacilityPage from '@/app/facilities/(admin)/edit/[id]/page';
+import EditFacilityPage from '@/app/facilities/(admin)/shisetsu/edit/[id]/page';
 import { useRouter, useParams } from 'next/navigation';
 import {
   getFacilityById,
