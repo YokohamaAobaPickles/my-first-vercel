@@ -234,53 +234,30 @@
 | created_at            | timestamp with time zone | YES         | now()             |
 | updated_at            | timestamp with time zone | YES         | now()             |
 
-## フォルダ構造
-1. 施設管理 (Facilities)
-- 一覧：facilities/page.tsx
-- 新規：facilities/new/page.tsx
-- 詳細：facilities/[id]/page.tsx
-- 編集：facilities/edit/[id]/page.tsx
-2. 施設予約 (Reservations)
-- 一覧：facilities/reservations/page.tsx
-- 新規：facilities/reservations/new/page.tsx
-- 詳細：facilities/reservations/[id]/page.tsx
-- 編集：facilities/reservations/edit/[id]/page.tsx
-3. 登録団体 (Groups)
-- 一覧：facilities/groups/page.tsx
-- 新規：facilities/groups/new/page.tsx
-- 詳細：facilities/groups/[id]/page.tsx
-- 編集：facilities/groups/edit/[id]/page.tsx
+## ファイル構造
+src/app/facilities/
+├── layout.tsx                # 全体共通（背景等）
+├── page.tsx                  # 【一般】施設一覧（参照のみ）
+├── [id]/page.tsx             # 【一般】施設詳細
+│
+└── (admin)/admin/            # URL: /facilities/admin/...
+    ├── layout.tsx            # 【管理者用】タブメニュー、権限チェック
+    ├── page.tsx              # 【管理】施設一覧（編集・追加ボタンあり）
+    ├── new/page.tsx          # 【管理】施設新規登録
+    ├── edit/[id]/page.tsx    # 【管理】施設編集
+    │
+    ├── groups/                 # 【管理】登録団体関連（そのまま移動）
+    │   ├── page.tsx            # 団体一覧 [F-04]
+    │   ├── new/page.tsx        # 団体新規登録 [F-01]
+    │   ├── [id]/page.tsx       # 団体詳細表示 [F-05]
+    │   └── edit/[id]/page.tsx  # 団体情報編集 [F-02,F-03]
+    │
+    └── reservations/           # 【管理】予約関連（そのまま移動）
+        ├── page.tsx            # 予約一覧 [F-04]
+        ├── new/page.tsx        # 予約新規登録 [F-01]
+        ├── [id]/page.tsx       # 予約詳細表示 [F-05]
+        └── edit/[id]/page.tsx  # 予約情報編集 [F-02,F-03]
 
->src/app/facilities/   
-├── layout.tsx                # 共通レイアウト (背景・認証)   
-├── page.tsx                  # 施設一覧 [F-14]   
-├── [id]/                     # --- 施設詳細コンテキスト ---  
-│    └── page.tsx             # 施設詳細表示  
-├── new/                      # --- 施設新規登録コンテキスト ---  
-│    └── page.tsx             # 施設新規登録 [F-11]  
-├── edit/                     # --- 施設編集コンテキスト ---  
-│    └── [id]/                # IDを動的に受け取る  
-│       └── page.tsx          # 施設編集 [F-12,F-13]  
-│  
-├── reservations/             # --- 予約情報管理 [F-21～24] ---  
-│    ├── page.tsx             # 予約一覧 [F-24]  
-│    ├── [id]/  
-│    │    └── page.tsx        # 予約詳細表示  
-│    ├── new/  
-│    │    └── page.tsx        # 予約新規登録 [F-21]  
-│    └── edit/  
-│        └── [id]/  
-│             └── page.tsx    # 予約情報編集 [F-22,F-23]  
-│  
-└── groups/                   # --- 登録団体管理 [F-01～04] ---  
-     ├── page.tsx             # 団体一覧 [F-04]  
-     ├── [id]/  
-     │    └── page.tsx        # 団体詳細表示  
-     ├── new/  
-     │    └── page.tsx        # 団体新規登録 [F-01]  
-     └── edit/  
-          └── [id]/  
-               └── page.tsx   # 団体情報編集 [F-02,F-03]  
 ## 画面とユースケース対応表
 | 画面(URL) | 対応ユースケース | 備考 |  
 | .../page.tsx | "F-04, F-14, F-24"| 一覧参照。各項目から詳細や編集へのリンク。|  
