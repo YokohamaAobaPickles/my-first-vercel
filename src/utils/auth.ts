@@ -1,10 +1,11 @@
 /**
  * Filename: src/utils/auth.ts
- * Version : V2.3.1
- * Update  : 2026-02-08
+ * Version : V2.4.0
+ * Update  : 2026-03-05
  * Remarks : 
- * 2.3.1 - 副会長をイベント担当、会計担当、監査担当、資産担当に追加
- * 2.3.0 - 複数ロール（兼務）に完全対応するため hasPermission を some 判定に刷新
+ * V2.4.0 - 施設管理権限の関数 canManageFacilities を追加
+ * V2.3.1 - 副会長をイベント担当、会計担当、監査担当、資産担当に追加
+ * V2.3.0 - 複数ロール（兼務）に完全対応するため hasPermission を some 判定に刷新
  */
 
 import { Member, MemberStatus, ROLES } from '@/types/member';
@@ -102,6 +103,15 @@ export const canManageAssets = (roles: string[] | null | undefined): boolean =>
     ROLES.PRESIDENT,
     ROLES.VICE_PRESIDENT,
     ROLES.ASSET_MANAGER
+  ]);
+
+export const canManageFacilities = (
+  roles: string[] | null | undefined
+): boolean =>
+  hasPermission(roles, [
+    ROLES.SYSTEM_ADMIN,
+    ROLES.PRESIDENT,
+    ROLES.VICE_PRESIDENT,
   ]);
 
 export const canManageRoles = (roles: string[] | null | undefined): boolean =>

@@ -1,25 +1,23 @@
 /**
  * Filename: src/app/facilities/layout.tsx
- * Version: V1.0.0
- * Update: 2026-03-04
- * Remarks: 施設管理機能の共通レイアウト。認証ガードと共通背景を定義。
+ * Version: V1.1.0
+ * Update: 2026-03-05
+ * Remarks: 
+ * V1.1.0 - 施設管理全体の基盤。認証ガードを子階層に委譲し、背景定義に専念
+ * V1.0.0 - 施設管理機能の共通レイアウト
  */
 
 'use client';
 
-import { useAuthCheck } from '@/hooks/useAuthCheck';
-import { colors, container } from '@/style/style_common';
+import { colors } from '@/style/style_common';
 
 export default function FacilitiesLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { isLoading } = useAuthCheck();
-
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
+  // 親での isLoading ガードを削除。
+  // これにより、内側のレイアウト(AdminLayoutなど)が即座に起動します。
 
   return (
     <div
@@ -30,9 +28,10 @@ export default function FacilitiesLayout({
         color: colors.text,
       }}
     >
-      <div style={container}>
-        {children}
-      </div>
+      {/* style={container} も、内側の各ページや
+          AdminLayout で定義されているため、ここでは外します。
+      */}
+      {children}
     </div>
   );
 }

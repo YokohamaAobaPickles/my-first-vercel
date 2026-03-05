@@ -1,8 +1,11 @@
 /**
  * Filename: src/utils/auth.test.ts
- * Version : V2.1.2
- * Update  : 2026-02-08
+ * Version : V2.2.0
+ * Update  : 2026-03-05
  * 修正内容:
+ * V2.2.0
+ * - 施設管理権限のテストケースを追加
+ * V2.1.1
  * - 各管理機能に「異常系（null, [], undefined）」のテストを統一配置
  * - canManageMembers のテストに 副会長(VICE_PRESIDENT) を追加
  * - 複数ロール保持（兼務）時の判定テストを各機能に追加
@@ -16,6 +19,7 @@ import {
   canManageAccounts,
   canManageAudits,
   canManageAssets,
+  canManageFacilities, // 施設管理権限の関数を追加
   canLogin,
   hasRole
 } from './auth'
@@ -136,5 +140,28 @@ describe('権限判定ロジックのリファクタリングテスト V2.1.2', 
       expect(hasRole(null, ROLES.MEMBER)).toBe(false)
       expect(hasRole(mockUser([]), ROLES.MEMBER)).toBe(false)
     })
+  })
+
+  // 7. 施設管理権限 (F群)
+  describe('施設管理権限 (canManageFacilities)', () => {
+    it('正常系：管理者・会長・副会長は true', () => {
+      const allowed = [
+        ROLES.SYSTEM_ADMIN,
+        ROLES.PRESIDENT,
+        ROLES.VICE_PRESIDENT
+      ]
+      allowed.forEach(r => expect(canManageFacilities([r])).toBe(true))
+    })
+
+    it('正常系：一般会員や他担当（お知らせ担当など）は false', () => {
+      expect(canManageFacilities([ROLES.MEMBER])).toBe(false)
+      expect(canManageFacilities([ROLES.ANNOUNCEMENT_MANAGER])).toBe(false)
+    })
+
+    it('兼務：一般会員と副会長を兼ねている場合は true', () => {
+      expect(canManageFacilities([ROLES.MEMBER, ROLES.VICE_PRESIDENT])).toBe(true)
+    })
+
+    testInvalidInputs(canManageFacilities)
   })
 })
