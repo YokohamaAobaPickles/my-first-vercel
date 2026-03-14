@@ -1,210 +1,147 @@
 /**
  * Filename: src/app/components/BottomNavigation.tsx
- * Version : V1.5.0
- * Update  : 2026-02-12
+ * Version : V1.6.0
+ * Update  : 2026-03-14
  * Remarks : 
+ * V1.6.0 - 新しいメニュー
  * V1.5.0 - ログインしていない場合はメニューを非表示にするガードを追加。
  * V1.4.2 - SVGインライン化によりインポートエラーを解消。
  * V1.4.1 - SVGインライン化。currentColorによるアクティブカラー制御。
  * V1.2.0 - SVGアイコン採用。CSSによる動的な色変更に対応。
  * V1.0.0 - 5項目メニューの実装。テストV1.1.0に対応。
  */
-
 "use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { baseStyles } from '@/types/styles/style_common';
-import { useAuthCheck } from '@/hooks/useAuthCheck';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { container, getContentStyle } from "@/app/test/style/style_common";
+import { bottomNav } from "@/app/test/style/style_bottomnav";
 
-// --- 各アイコンのコンポーネント定義 (内部のfillをcurrentColorに修正) ---
-const NewsIcon = ({ style }: { style?: React.CSSProperties }) => (
-  <svg viewBox="0 0 512 512" style={style}>
-    <g fill="currentColor" stroke="none" transform="translate(0,512) scale(0.1,-0.1)">
-      <path d="M645 4475 l-25 -24 0 -1715 0 -1714 31 -26 c17 -14 39 -26 50 -26 28
-      0 75 26 83 45 3 9 6 786 6 1726 l0 1710 -25 24 c-33 34 -87 34 -120 0z"/>
-      <path d="M970 2752 l0 -1749 -30 -60 c-48 -97 -128 -145 -237 -145 -77 -1
-      -136 26 -192 87 -76 83 -71 -44 -71 1762 0 1137 -3 1620 -11 1635 -6 11 -26
-      26 -44 34 -39 16 -69 8 -100 -26 -20 -22 -20 -38 -23 -1609 -2 -1048 1 -1613
-      8 -1666 20 -159 114 -290 257 -358 l68 -32 1930 -3 c1437 -2 1944 0 1985 8
-      174 37 313 190 340 375 6 45 10 686 10 1783 l0 1712 -1945 0 -1945 0 0 -1748z
-      m3710 -70 c0 -1844 5 -1714 -71 -1797 -23 -24 -62 -54 -87 -67 l-47 -23 -1702
-      -3 c-937 -1 -1703 1 -1703 4 0 4 13 34 30 68 16 33 34 85 40 115 6 35 10 640
-      10 1702 l0 1649 1765 0 1765 0 0 -1648z"/>
-      <path d="M1510 3885 l0 -85 1410 0 1410 0 0 85 0 85 -1410 0 -1410 0 0 -85z" />
-      <path d="M1510 3355 l0 -85 1410 0 1410 0 0 85 0 85 -1410 0 -1410 0 0 -85z" />
-      <path d="M1500 2825 l0 -85 530 0 530 0 0 85 0 85 -530 0 -530 0 0 -85z" />
-      <path d="M2920 2295 l0 -615 705 0 705 0 0 615 0 615 -705 0 -705 0 0 -615z
-      m1230 0 l0 -445 -527 2 -528 3 -3 443 -2 442 530 0 530 0 0 -445z"/>
-      <path d="M1510 2295 l0 -85 525 0 525 0 0 85 0 85 -525 0 -525 0 0 -85z" />
-      <path d="M1510 1765 l0 -85 525 0 525 0 0 85 0 85 -525 0 -525 0 0 -85z" />
-      <path d="M1510 1235 l0 -85 1410 0 1410 0 0 85 0 85 -1410 0 -1410 0 0 -85z" />
-    </g>
-  </svg>
-);
-
-const EventIcon = ({ style }: { style?: React.CSSProperties }) => (
-  <svg viewBox="0 0 5800 5800" style={style}>
-    <path
-      fill="currentColor"
-      d="M900 2300l0 3000 4000 0 0 -3000 -4000 0zm400 -1800c0,-55 45,-100 100,-100 55,0 100,45 100,100l0 200 400 0 0 -200c0,-55 45,-100 100,-100 55,0 100,45 100,100l0 200 400 0 0 -200c0,-55 45,-100 100,-100 55,0 100,45 100,100l0 200 400 0 0 -200c0,-55 45,-100 100,-100 55,0 100,45 100,100l0 200 400 0 0 -200c0,-55 45,-100 100,-100 55,0 100,45 100,100l0 200 400 0 0 -200c0,-55 45,-100 100,-100 55,0 100,45 100,100l0 200 300 0c165,0 300,135 300,300 0,1500 0,3000 0,4500l-4400 0c0,-1500 0,-3000 0,-4500 0,-165 135,-300 300,-300l300 0 0 -200zm200 400l0 127c62,35 100,101 100,173 0,110 -90,200 -200,200 -110,0 -200,-90 -200,-200 0,-72 38,-137 100,-173l0 -127 -300 0c-55,0 -100,45 -100,100l0 1100 4000 0 0 -1100c0,-55 -45,-100 -100,-100l-300 0 0 127c62,35 100,101 100,173 0,110 -90,200 -200,200 -110,0 -200,-90 -200,-200 0,-72 38,-138 100,-173l0 -127 -400 0 0 127c62,35 100,101 100,173 0,110 -90,200 -200,200 -110,0 -200,-90 -200,-200 0,-72 38,-137 100,-173l0 -127 -400 0 0 127c62,36 100,101 100,173 0,110 -90,200 -200,200 -110,0 -200,-90 -200,-200 0,-72 38,-138 100,-173l0 -127 -400 0 0 127c62,35 100,101 100,173 0,110 -90,200 -200,200 -110,0 -200,-90 -200,-200 0,-72 38,-137 100,-173l0 -127 -400 0z"
-    />
-    <path
-      fill="currentColor"
-      d="M1700 3400c0,-275 225,-500 500,-500l400 0c276,0 500,225 500,500 0,158 -75,306 -200,400 125,94 200,242 200,400 0,275 -225,500 -500,500l-400 0c-275,0 -500,-225 -500,-500l200 0c0,165 135,300 300,300l400 0c165,0 300,-135 300,-300 0,-165 -135,-300 -300,-300l-200 0 0 -200 200 0c165,0 300,-135 300,-300 0,-165 -135,-300 -300,-300l-400 0c-165,0 -300,135 -300,300l-200 0zm1800 -500l400 0 0 1800 -200 0 0 -1600 -200 0 0 -200z"
-    />
-  </svg>
-);
-
-const AccountingIcon = ({ style }: { style?: React.CSSProperties }) => (
-  <svg viewBox="0 0 512 512" style={style}>
-    <g
-      fill="currentColor"
-      stroke="none"
-      transform="translate(0,512) scale(0.1,-0.1)"
-    >
-      <path d="M267 4143 c-10 -9 -9 -1753 1 -1753 4 0 15 12 24 28 9 15 46 62 82
-      104 l66 77 0 334 0 334 93 22 c234 55 427 209 532 426 39 82 75 195 75 238 0
-      16 95 17 1420 17 1325 0 1420 -1 1420 -17 0 -43 36 -156 75 -238 105 -217 298
-      -371 533 -426 l92 -22 0 -531 0 -531 -82 -17 c-54 -11 -119 -35 -188 -69 -92
-      -46 -117 -64 -201 -148 -84 -84 -102 -109 -148 -201 -34 -69 -58 -134 -69
-      -188 l-17 -82 -102 0 c-118 0 -109 9 -90 -105 l12 -70 530 0 530 0 0 1410 0
-      1410 -2291 3 c-1260 1 -2294 -1 -2297 -5z m693 -195 c-1 -42 -48 -158 -91
-      -224 -79 -121 -219 -223 -355 -259 -32 -8 -62 -15 -66 -15 -4 0 -8 117 -8 260
-      l0 260 260 0 260 0 0 -22z m3720 -238 c0 -143 -4 -260 -8 -260 -4 0 -34 7 -66
-      15 -136 36 -276 138 -355 259 -43 66 -90 182 -91 224 l0 22 260 0 260 0 0
-      -260z m0 -1950 l0 -260 -260 0 c-298 0 -275 -10 -240 101 39 128 149 268 264
-      338 59 35 178 80 214 81 l22 0 0 -260z"/>
-      <path d="M2468 3790 c-296 -35 -570 -265 -698 -585 -37 -92 -75 -235 -85 -320
-      l-6 -60 85 -42 85 -42 6 57 c12 116 28 199 51 270 86 262 261 449 494 528 40
-      14 84 19 160 19 76 0 120 -5 160 -19 199 -67 352 -209 449 -418 123 -261 127
-      -592 11 -862 -11 -27 -19 -50 -18 -51 24 -20 142 -84 148 -80 15 9 72 158 97
-      254 34 130 43 364 19 498 -82 472 -392 808 -786 853 -47 5 -89 9 -95 9 -5 -1
-      -40 -5 -77 -9z"/>
-      <path d="M1115 2729 c-228 -29 -465 -154 -607 -321 -162 -190 -239 -397 -239
-      -643 0 -175 30 -298 110 -453 180 -345 563 -552 949 -512 107 11 222 40 229
-      56 3 9 -32 152 -39 159 -2 2 -37 -6 -78 -18 -101 -27 -294 -29 -395 -3 -426
-      109 -683 537 -579 966 22 91 93 233 154 307 100 123 249 220 406 265 112 32
-      305 32 417 0 190 -54 351 -171 453 -328 21 -32 39 -60 40 -62 2 -4 139 89 142
-      97 4 13 -73 124 -129 185 -152 167 -371 277 -609 306 -95 11 -126 11 -225 -1z"/>
-      <path d="M2565 2204 c-269 -39 -442 -121 -610 -291 -169 -171 -261 -384 -272
-      -631 -14 -299 84 -542 302 -750 180 -174 407 -264 665 -263 193 0 348 43 510
-      143 97 59 227 183 287 273 196 293 226 651 79 961 -53 112 -89 165 -169 251
-      -140 149 -311 246 -509 288 -71 15 -233 26 -283 19z m227 -188 c381 -73 648
-      -395 648 -781 0 -545 -529 -922 -1049 -749 -117 39 -205 96 -306 198 -156 156
-      -226 327 -227 546 -1 74 5 139 15 182 42 175 138 329 272 437 184 149 420 210
-      647 167z"/>
-      <path d="M2470 1500 l0 -90 45 0 45 0 0 -310 0 -311 88 3 87 3 3 398 2 397
-      -135 0 -135 0 0 -90z"/>
-      <path d="M1060 2030 l0 -90 45 0 45 0 0 -310 0 -310 85 0 85 0 0 400 0 400
-      -130 0 -130 0 0 -90z"/>
-    </g>
-  </svg>
-);
-
-const AssetIcon = ({ style }: { style?: React.CSSProperties }) => (
-  <svg
-    viewBox="0 0 256 256"
-    style={style}
-    fill="currentColor"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <g>
-      <path d="M23 210.3 l-0.1 -31.8 -2.3 5.5 c-1.7 4.3 -2.7 5.6 -4.7 5.8 -2.1 0.2 -2.7 -0.5 -4.5 -5.2 -1.8 -4.6 -1.9 -5.6 -0.7 -6 1 -0.4 1.9 0.6 3 3.4 0.9 2.2 1.9 4 2.2 4 0.3 0 1.6 -2.7 2.8 -6 1.7 -4.9 1.9 -6 0.7 -6 -2 0 -1.8 -0.8 1.1 -4.6 2.3 -3 2.5 -4.1 2.5 -13.3 0 -6.2 -0.4 -10.1 -1 -10.1 -0.6 0 -4.2 1.6 -8.1 3.6 -3.9 1.9 -7.2 3.4 -7.4 3.2 -0.1 -0.2 -0.9 -1.7 -1.8 -3.3 l-1.5 -3.1 62.4 -31.2 62.4 -31.2 62.4 31.2 62.4 31.2 -1.5 3.1 c-0.9 1.6 -1.7 3.1 -1.8 3.3 -0.2 0.2 -3.5 -1.3 -7.4 -3.2 -3.9 -2 -7.5 -3.6 -8.1 -3.6 -0.7 0 -1 15.9 -1 48 l0 48 -105 0 -105 0 0 -31.7z m61 -2.8 l0 -26.5 44 0 44 0 0 26.5 0 26.5 27 0 27 0 0 -46.3 0 -46.2 -49 -24.5 -49 -24.5 -49 24.5 -49 24.5 0 46.2 0 46.3 27 0 27 0 0 -26.5z m40 4 l0 -22.5 -16 0 -16 0 0 22.5 0 22.5 16 0 16 0 0 -22.5z m40 0 l0 -22.5 -15.9 0 -15.9 0 -0.3 3.3 c-0.2 1.7 -0.3 11.9 -0.1 22.5 l0.3 19.2 15.9 0 16 0 0 -22.5z" />
-      <path d="M7.4 174.9 c-0.7 -1.2 1.5 -3.1 2.8 -2.3 0.4 0.3 0.8 1.2 0.8 2 0 1.7 -2.6 1.9 -3.6 0.3z" />
-      <path d="M5.4 169.9 c-0.8 -1.4 1.8 -3.1 3 -1.9 0.9 0.9 0 3 -1.4 3 -0.5 0 -1.2 -0.5 -1.6 -1.1z" />
-      <path d="M3.5 165 c-0.7 -1.1 0.2 -3 1.5 -3 0.4 0 1 0.6 1.3 1.4 0.6 1.6 -1.9 3 -2.8 1.6z" />
-    </g>
-  </svg>
-);
-
-
-const UserIcon = ({ style }: { style?: React.CSSProperties }) => (
-  <svg
-    viewBox="0 0 512 512"
-    style={style}
-    fill="currentColor"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <g transform="translate(0,512) scale(0.1,-0.1)">
-      <path d="M2163 4856 c-257 -49 -487 -189 -613 -376 -49 -73 -68 -110 -96 -193
-      -42 -123 -47 -206 -30 -467 19 -288 20 -323 11 -430 -13 -154 33 -281 139
-      -385 53 -52 66 -72 90 -140 56 -162 221 -472 266 -500 22 -14 3 -204 -31 -302
-      -41 -121 -103 -162 -375 -252 -329 -108 -430 -157 -524 -251 -165 -165 -275
-      -426 -287 -680 -5 -104 -3 -120 17 -168 62 -143 287 -262 635 -336 683 -143
-      1707 -143 2390 0 348 74 573 193 635 336 20 48 22 64 17 168 -15 320 -190 651
-      -408 773 -79 44 -210 96 -394 154 -155 50 -268 100 -315 139 -59 50 -94 153
-      -106 316 l-7 86 37 45 c74 90 182 301 242 472 24 69 35 87 84 132 106 97 158
-      238 145 393 -9 107 -8 132 11 430 18 273 16 322 -20 436 -62 193 -215 368
-      -401 458 -49 24 -115 50 -145 57 -70 17 -211 15 -270 -3 -44 -14 -46 -14 -125
-      24 -44 20 -107 45 -140 54 -82 22 -335 28 -432 10z m297 -166 c107 -14 165
-      -33 242 -80 37 -22 77 -41 90 -42 13 0 56 9 97 22 123 38 246 16 370 -66 113
-      -76 209 -198 250 -321 26 -76 27 -147 6 -448 -10 -138 -13 -265 -9 -341 8
-      -153 -6 -204 -75 -273 -26 -25 -58 -53 -71 -62 -19 -12 -35 -46 -65 -135 -49
-      -148 -148 -348 -215 -434 -92 -118 -85 -95 -72 -249 14 -162 30 -232 77 -328
-      65 -133 161 -192 491 -302 307 -102 376 -138 460 -239 105 -128 173 -297 195
-      -485 12 -98 11 -107 -7 -138 -42 -72 -179 -139 -399 -194 -344 -87 -758 -129
-      -1265 -129 -507 0 -921 42 -1265 129 -220 55 -357 122 -399 194 -18 31 -19 40
-      -7 138 22 188 90 357 195 485 84 101 157 140 458 238 311 102 422 168 486 287
-      53 100 92 285 92 439 0 47 -5 57 -51 115 -96 121 -194 313 -255 503 -20 61
-      -36 94 -52 105 -58 40 -103 86 -124 129 -22 44 -23 59 -23 242 0 107 -7 291
-      -15 408 -17 254 -10 315 49 437 68 141 164 236 316 310 162 79 325 107 495 85z"/>
-    </g>
-  </svg>
-);
-
-export default function BottomNavigation() {
+export default function BottomNavigationClient() {
   const pathname = usePathname();
-  const { user, isLoading } = useAuthCheck(); // 認証状態を取得
-
-  // 1. ログイン画面、または認証確認中は表示しない
-  // 2. ユーザー情報がない（未ログイン）場合も表示しない
-  if (isLoading || !user || pathname === '/login') {
+  // ★ 追加：ログインページでは非表示
+  if (pathname === "/login") {
     return null;
   }
+  
+  const isActive = (path: string) => pathname.startsWith(path);
 
-  const navItems = [
-    { name: 'お知らせ', href: '/announcements', Icon: NewsIcon },
-    { name: 'イベント', href: '/events', Icon: EventIcon },
-    { name: '会計', href: '/accounting', Icon: AccountingIcon },
-    { name: '資産', href: '/assets', Icon: AssetIcon },
-    { name: 'マイページ', href: '/members/profile', Icon: UserIcon },
-  ];
+  const [width, setWidth] = useState(500);
 
-  const ACTIVE_COLOR = '#00D1FF';
-  const NORMAL_COLOR = '#9CA3AF';
+  useEffect(() => {
+    setWidth(window.innerWidth);
+    const handleResize = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const appliedStyle = getContentStyle(width);
 
   return (
-    <nav style={baseStyles.bottomNavContainer}>
-      {navItems.map((item) => {
-        const isActive = pathname.startsWith(item.href);
-        const currentColor = isActive ? ACTIVE_COLOR : NORMAL_COLOR;
+    <div style={container}>
+      <div style={appliedStyle}></div>
 
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            style={{
-              ...baseStyles.navItem,
-              color: currentColor,
-              ...(isActive ? baseStyles.navItemActive : {})
-            }}
-          >
-            <item.Icon
-              style={{
-                width: '24px',
-                height: '24px',
-                marginBottom: '4px',
-                color: currentColor
-              }}
-            />
-            <span style={{ fontSize: '0.65rem' }}>
-              {item.name}
-            </span>
-          </Link>
-        );
-      })}
-    </nav>
+      <div style={bottomNav.container}>
+
+        <Link
+          href="/members/profile"
+          style={isActive("/members/profile")
+            ? { ...bottomNav.item, ...bottomNav.itemActive }
+            : bottomNav.item}
+        >
+          <img
+            src="/test/icons/member.svg"
+            style={
+              isActive("/members/profile")
+                ? { ...bottomNav.icon, ...bottomNav.iconActive }
+                : bottomNav.icon
+            }
+          />
+          会員
+        </Link>
+
+        <Link
+          href="/announcements"
+          style={isActive("/announcements")
+            ? { ...bottomNav.item, ...bottomNav.itemActive }
+            : bottomNav.item}
+        >
+          <img src="/test/icons/announcement.svg"
+            style={
+              isActive("/announcements")
+                ? { ...bottomNav.icon, ...bottomNav.iconActive }
+                : bottomNav.icon
+            }
+          />
+          お知らせ
+        </Link>
+
+        <Link
+          href="/events"
+          style={isActive("/events")
+            ? { ...bottomNav.item, ...bottomNav.itemActive }
+            : bottomNav.item}
+        >
+          <img src="/test/icons/event.svg"
+            style={
+              isActive("/events")
+                ? { ...bottomNav.icon, ...bottomNav.iconActive }
+                : bottomNav.icon
+            }
+          />
+          イベント
+        </Link>
+
+        <Link
+          href="/accounting"
+          style={isActive("/accounting")
+            ? { ...bottomNav.item, ...bottomNav.itemActive }
+            : bottomNav.item}
+        >
+          <img src="/test/icons/accounting.svg"
+            style={
+              isActive("/accounting")
+                ? { ...bottomNav.icon, ...bottomNav.iconActive }
+                : bottomNav.icon
+            }
+          />
+          会計
+        </Link>
+
+        <Link
+          href="/game_support"
+          style={isActive("/game_support")
+            ? { ...bottomNav.item, ...bottomNav.itemActive }
+            : bottomNav.item}
+        >
+          <img src="/test/icons/court.svg"
+            style={
+              isActive("/game_support")
+                ? { ...bottomNav.icon, ...bottomNav.iconActive }
+                : bottomNav.icon
+            }
+          />
+          試合
+        </Link>
+
+        <Link
+          href="/facilities"
+          style={isActive("/facilities")
+            ? { ...bottomNav.item, ...bottomNav.itemActive }
+            : bottomNav.item}
+        >
+          <img src="/test/icons/asset.svg"
+            style={
+              isActive("/facilities")
+                ? { ...bottomNav.icon, ...bottomNav.iconActive }
+                : bottomNav.icon
+            }
+          />
+          設備
+        </Link>
+
+      </div>
+    </div>
   );
 }
