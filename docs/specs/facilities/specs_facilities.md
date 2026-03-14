@@ -236,31 +236,22 @@
 
 ## ファイル構造
 src/app/facilities/
-├── layout.tsx                # 全体共通（背景等）
-├── page.tsx                  # 【一般】施設一覧（参照のみ）
-├── [id]/page.tsx             # 【一般】施設詳細
+├── page.tsx                # 【一般】info/に遷移【管理】管理メニュー表示
 │
-└── (admin)/admin/            # URL: /facilities/admin/...
-    ├── layout.tsx            # 【管理者用】タブメニュー、権限チェック
-    ├── page.tsx              # 【管理】施設一覧（編集・追加ボタンあり）
-    ├── new/page.tsx          # 【管理】施設新規登録
-    ├── edit/[id]/page.tsx    # 【管理】施設編集
-    │
-    ├── groups/                 # 【管理】登録団体関連（そのまま移動）
-    │   ├── page.tsx            # 団体一覧 [F-04]
-    │   ├── new/page.tsx        # 団体新規登録 [F-01]
-    │   ├── [id]/page.tsx       # 団体詳細表示 [F-05]
-    │   └── edit/[id]/page.tsx  # 団体情報編集 [F-02,F-03]
-    │
-    └── reservations/           # 【管理】予約関連（そのまま移動）
-        ├── page.tsx            # 予約一覧 [F-04]
-        ├── new/page.tsx        # 予約新規登録 [F-01]
-        ├── [id]/page.tsx       # 予約詳細表示 [F-05]
-        └── edit/[id]/page.tsx  # 予約情報編集 [F-02,F-03]
-
-## 画面とユースケース対応表
-| 画面(URL) | 対応ユースケース | 備考 |  
-| .../page.tsx | "F-04, F-14, F-24"| 一覧参照。各項目から詳細や編集へのリンク。|  
-| .../new/page.tsx | "F-01, F-11, F-21" |新規登録フォーム。保存して一覧へ戻る。"F-01, F-11, F-21",新規登録フォーム。保存して一覧へ戻る。|  
-| .../[id]/page.tsx | 参照のみ | 編集権限がないユーザー向けの閲覧専用画面。|  
-| .../edit/[id]/page.tsx | "F-02, F-12, F-22F-03, F-13, F-23" | 情報編集（既存データの更新）削除実行（物理削除またはステータス変更）|  
+├──/info                    # 【一般/管理】
+│   ├── page.tsx            # 【一般】施設一覧
+│   ├── new/page.tsx        # 【管理】施設新規登録
+│   ├── [id]/page.tsx       # 【一般】施設詳細
+│   └── edit/page.tsx       # 【管理】施設情報編集
+│
+├── groups/                 # 【管理】登録団体関連（そのまま移動）
+│   ├── page.tsx            # 団体一覧 [F-04]
+│   ├── new/page.tsx        # 団体新規登録 [F-01]
+│   └── [id]/page.tsx       # 団体詳細表示 [F-05]
+│        └── edit/page.tsx  # 団体情報編集 [F-02,F-03]
+│
+└── reservations/           # 【管理】予約関連（そのまま移動）
+    ├── page.tsx            # 予約一覧 [F-04]
+    ├── new/page.tsx        # 予約新規登録 [F-01]
+    └── [id]/page.tsx       # 予約詳細表示 [F-05]
+         └── edit/page.tsx  # 予約情報編集 [F-02,F-03]
