@@ -1,8 +1,10 @@
 /**
- * Filename: facilityApi.ts
- * Version: V1.9.0
- * Update: 2026-03-05
+ * Filename: src/lib/facilityApi.ts
+ * Version: V1.11.0
+ * Update: 2026-03-13
  * Remarks:
+ * V1.11.0 - fetchAllReservations で facilities を結合して施設名を取得するように修正。
+ * V1.10.0 - fetchReservationById で施設情報と団体情報を結合して取得するように修正。
  * V1.9.0 - Facility 追加カラムの登録・更新に対応。
  * V1.8.0 - 個別取得API (by id) を追加。
  * V1.7.0 - F-21〜F-24 施設予約 (insert/update/delete/fetch) を実装。
@@ -282,12 +284,17 @@ export const deleteReservation = async (id: string): Promise<boolean> => {
 
 /**
  * F-24: 全ての施設予約情報を取得する
- * reservation_date の昇順で取得します。
+ * facilities テーブルと結合して施設名を取得します。
  */
 export const fetchAllReservations = async (): Promise<FacilityReservation[]> => {
   const { data, error } = await supabase
     .from('facility_reservations')
-    .select('*')
+    .select(`
+      *,
+      facilities (
+        facility_name
+      )
+    `)
     .order('reservation_date', { ascending: true });
 
   if (error) {
@@ -301,17 +308,23 @@ export const fetchAllReservations = async (): Promise<FacilityReservation[]> => 
 export const fetchReservationById = async (
   id: string
 ): Promise<FacilityReservation | null> => {
+  // facilities と registration_groups を結合して名称を取得
   const { data, error } = await supabase
     .from('facility_reservations')
-    .select('*')
+    .select(`
+      *,
+      facilities (
+        facility_name
+      ),
+      registration_groups (
+        registration_club_name
+      )
+    `)
     .eq('id', id)
     .single();
 
   if (error) {
-    console.error(
-      'Error fetching reservation by id:',
-      error
-    );
+    console.error('Error fetching reservation by id:', error);
     return null;
   }
 

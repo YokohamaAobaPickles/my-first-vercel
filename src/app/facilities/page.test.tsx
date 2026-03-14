@@ -1,97 +1,75 @@
 /**
  * Filename: src/app/facilities/page.test.tsx
- * Version: V1.1.3
- * Update: 2026-03-05
- * V1.1.3 - canManageFacilities に基づく「管理画面へ」ボタンの表示/非表示を検証するテストケースを追加
- * V1.1.2 - 表示項目を「施設名」と「電話番号」に絞ったテストに更新
- * V1.1.1 - 詳細ボタンの削除に伴い、施設名リンクのみを検証するようテストを修正
- * V1.1.0 - 一覧画面のシンプル化と詳細リンク追加のためのテスト
- * V1.0.0 - 施設一覧画面の基本的な表示と新規登録リンクのテスト
+ * Version: V1.0.0
+ * Update: 2026-03-13
+ * Remarks: V1.0.0 - 施設管理ハブページの権限別レンダリングとリダイレクトのテスト
  */
 
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-
-import FacilitiesPage from '@/app/facilities/page';
-import * as facilityHelpers from '@/utils/facilityHelpers';
-import * as authUtils from '@/utils/auth';
-import * as authHooks from '@/hooks/useAuthCheck';
+import { render, screen, waitFor } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import FacilitiesHubPage from './page'
+import { useAuthCheck } from '@/hooks/useAuthCheck'
+import { useRouter } from 'next/navigation'
+import { canManageFacilities } from '@/utils/auth'
 
 // モック定義
-vi.mock('next/navigation', () => ({
-  useRouter: vi.fn(),
-}));
+vi.mock('@/hooks/useAuthCheck')
+vi.mock('next/navigation')
+vi.mock('@/utils/auth')
 
-vi.mock('next/link', () => ({
-  default: ({ children, href }: any) => (
-    <a href={href}>{children}</a>
-  ),
-}));
+describe('FacilitiesHubPage', () => {
+  const pushMock = vi.fn()
 
-vi.mock('@/utils/facilityHelpers');
-vi.mock('@/utils/auth');
-vi.mock('@/hooks/useAuthCheck');
-
-const mockFacilities = [
-  {
-    id: 'facility-1',
-    facility_name: 'テスト施設',
-    phone: '03-1234-5678',
-  },
-];
-
-describe('FacilitiesPage (一般向け施設一覧)', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    // デフォルトでは一般ユーザー（権限なし）として振る舞う
-    vi.mocked(authHooks.useAuthCheck).mockReturnValue({
-      userRoles: ['general'],
-      isLoading: false,
-    } as any);
-    vi.mocked(authUtils.canManageFacilities).mockReturnValue(false);
-  });
+    vi.clearAllMocks()
+    ;(useRouter as any).mockReturnValue({ push: pushMock })
+  })
 
-  it('施設名と電話番号が表示されている', async () => {
-    vi.mocked(facilityHelpers.getFacilities).mockResolvedValue(mockFacilities as any);
+  it('初期ロード中（isLoading: true）は何も表示されないこと', () => {
+    ;(useAuthCheck as any).mockReturnValue({
+      user: null,
+      isLoading: true
+    })
 
-    // 本体が 'use client' になるため、通常のコンポーネントとして render
-    render(<FacilitiesPage />);
+    const { container } = render(<FacilitiesHubPage />)
+    expect(container.firstChild).toBeNull()
+  })
 
-    expect(await screen.findByText('テスト施設')).toBeInTheDocument();
-    expect(screen.getByText('03-1234-5678')).toBeInTheDocument();
-  });
+  it('管理権限がない場合、施設一覧(/facilities/info)へリダイレクトされること', 
+  async () => {
+    // 一般ユーザー（管理権限なし）の設定
+    ;(useAuthCheck as any).mockReturnValue({
+      user: { roles: ['general'] },
+      isLoading: false
+    })
+    ;(canManageFacilities as any).mockReturnValue(false)
 
-  it('施設名が詳細画面 /facilities/[id] へのリンクになっている', async () => {
-    vi.mocked(facilityHelpers.getFacilities).mockResolvedValue(mockFacilities as any);
-    render(<FacilitiesPage />);
+    render(<FacilitiesHubPage />)
 
-    const nameLink = await screen.findByRole('link', { name: 'テスト施設' });
-    expect(nameLink).toHaveAttribute('href', '/facilities/facility-1');
-  });
+    await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith('/facilities/info')
+    })
+  })
 
-  it('一般ユーザーには「管理画面へ」ボタンが表示されないこと', async () => {
-    vi.mocked(facilityHelpers.getFacilities).mockResolvedValue(mockFacilities as any);
-    render(<FacilitiesPage />);
+  it('管理権限がある場合、管理メニューが表示されること', () => {
+    // 管理者（System Admin等）の設定
+    ;(useAuthCheck as any).mockReturnValue({
+      user: { roles: ['system_admin'] },
+      isLoading: false
+    })
+    ;(canManageFacilities as any).mockReturnValue(true)
 
-    expect(screen.queryByText('管理画面へ')).toBeNull();
-    // かつて存在した「新規登録」ボタンも表示されないことを確認
-    expect(screen.queryByText('新規登録')).toBeNull();
-  });
+    render(<FacilitiesHubPage />)
 
-  it('管理権限(admin等)がある場合、「管理画面へ」ボタンが表示されること', async () => {
-    // 1. 管理者のロール設定
-    vi.mocked(authHooks.useAuthCheck).mockReturnValue({
-      userRoles: ['admin'],
-      isLoading: false,
-    } as any);
-    // 2. 権限判定を true に
-    vi.mocked(authUtils.canManageFacilities).mockReturnValue(true);
-    vi.mocked(facilityHelpers.getFacilities).mockResolvedValue(mockFacilities as any);
-
-    render(<FacilitiesPage />);
-
-    const adminBtn = await screen.findByText('管理画面へ');
-    expect(adminBtn).toBeInTheDocument();
-    expect(adminBtn.closest('a')).toHaveAttribute('href', '/facilities/admin');
-  });
-});
+    // メニュータイトルの確認
+    expect(screen.getByText('施設管理メニュー')).toBeDefined()
+    
+    // 各リンク先が正しく表示されているか確認
+    expect(screen.getByText('登録団体管理')).toBeDefined()
+    expect(screen.getByText('施設情報管理')).toBeDefined()
+    expect(screen.getByText('予約状況管理')).toBeDefined()
+    
+    // リダイレクトが呼ばれていないことを確認
+    expect(pushMock).not.toHaveBeenCalled()
+  })
+})
