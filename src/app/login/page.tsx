@@ -1,26 +1,34 @@
 /**
  * Filename: src/app/login/page.tsx
- * Version : V1.1.1
- * Update  : 2026-02-11
- * 修正内容：
- * V1.1.0
- * - 新デザイン
- * V1.0.1 - デバッグ情報追加
- * V1.0.0 - 初期デザイン
+ * Version : V1.5.3
+ * Update  : 2026-03-14
+ * Remarks : 
+ * V1.5.3 - テストケース6(未入力/認証失敗)パスのためバリデーションをJS側に集約。
+ * V1.5.2 - V1.1.1のロジック（LINE時のパスワード不要）を継承。
  */
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
-import { baseStyles } from '@/types/styles/style_common'
+import { 
+  colors, 
+  container, 
+  card, 
+  spacing, 
+  font, 
+  button, 
+  pageHeader,
+  cardInput,
+  text
+} from '@/style/style_common'
 
 export default function MemberLoginPage() {
   const router = useRouter()
-  const { user, isLoading, currentLineId, lineNickname } = useAuthCheck()
+  const { user, isLoading, currentLineId } = useAuthCheck()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -49,8 +57,9 @@ export default function MemberLoginPage() {
     e.preventDefault()
     if (isSubmitting) return
 
-    if (!email) {
-      alert('メールアドレスとパスワードを入力してください')
+    // テストケースに合わせ、JS側でバリデーション
+    if (!email || (!currentLineId && !password)) {
+      alert('メールアドレスまたはパスワードが正しくありません')
       return
     }
 
@@ -60,12 +69,12 @@ export default function MemberLoginPage() {
       const { data: member, error: fetchError } = await supabase
         .from('members')
         .select('*')
-        .eq('email', email)
+        .eq('email', email.trim())
         .maybeSingle()
 
       if (fetchError) throw fetchError
 
-      // --- LINE ログイン ---
+      // --- LINE ログイン / 連携ロジック ---
       if (currentLineId) {
         if (member) {
           const { error: updateError } = await supabase
@@ -101,139 +110,115 @@ export default function MemberLoginPage() {
   }
 
   if (isLoading) {
-    return <div style={baseStyles.containerLogin} />
+    return (
+      <div style={{ ...container, justifyContent: 'center', alignItems: 'center' }}>
+        <p style={{ color: colors.textSub }}>読み込み中...</p>
+      </div>
+    )
   }
 
   return (
-    <div
-      style={{
-        ...baseStyles.containerLogin,
-        justifyContent: 'center',
-      }}
-    >
-      {/* プレースホルダーのスタイル定義 */}
-      <style jsx>{`
-        input::placeholder {
-          color: #777 !important;
-          background: '#08191e';
-          border: '1px solid #1E5E70';
-          font-size: 0.9rem;
-          font-family: sans-serif;
-        }
-      `}</style>
-
-      <div
-        style={{
-          width: '100%',
-          maxWidth: '400px',
-          ...baseStyles.cardLogin
-        }}
-      >
-        <h1
-          style={{
-            textAlign: 'center',
-            ...baseStyles.headerTitle
-          }}
-        >
-          {currentLineId ? 'LINE会員確認' : 'ログイン'}
-        </h1>
-
-        <form
-          onSubmit={handleAction}
-          style={{ display: 'flex', flexDirection: 'column' }}
-        >
-          <p
-            style={{
-              fontSize: '0.85rem',
-              marginBottom: '15px',
-              color: '#ccc',
-              textAlign: 'center'
-            }}
-          >
-            {currentLineId
-              ? '登録状況を確認します。メールアドレスを入力してください。'
-              : 'メールアドレスとパスワードを入力してください。'}
+    <div style={{
+      ...container,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: spacing.md,
+    }}>
+      <div style={{ maxWidth: 400, width: '100%', marginBottom: 100 }}>
+        
+        <div style={{ 
+          ...pageHeader.container, 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          gap: 4, 
+          marginBottom: spacing.lg 
+        }}>
+          <h1 style={{ ...pageHeader.title, fontSize: 24 }}>
+            {currentLineId ? 'LINE会員確認' : 'ログイン'}
+          </h1>
+          <p style={{ color: colors.textSub, fontSize: font.size.sm }}>
+            Yokohama Aoba Pickles Member System<br />
           </p>
+        </div>
 
-          <input
-            type="email"
-            placeholder="メールアドレスを入力"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={baseStyles.inputBoxLogin}
-          />
+        <div style={card}>
+          <form onSubmit={handleAction} noValidate>
+            <p style={{
+              fontSize: '0.85rem',
+              marginBottom: spacing.md,
+              color: colors.textSub,
+              textAlign: 'center'
+            }}>
+              {currentLineId
+                ? '登録状況を確認します。メールアドレスを入力してください。'
+                : 'メールアドレスとパスワードを入力してください。'}
+            </p>
 
-          {!currentLineId && (
-            <input
-              type="password"
-              placeholder="パスワードを入力"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={baseStyles.inputBoxLogin}
-            />
-          )}
+            <div style={cardInput.wrapper}>
+              <label style={cardInput.label}>メールアドレス</label>
+              <input
+                type="email"
+                placeholder="メールアドレスを入力"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={{ ...cardInput.inputWrapper, width: '100%', boxSizing: 'border-box' }}
+              />
+            </div>
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            style={{
-              ...baseStyles.loginButton,
-              backgroundColor: isSubmitting ? '#444' : '#08A5EF',
-            }}
-          >
-            {isSubmitting ?
-              '処理中...'
-              : currentLineId ?
-                '連携する'
-                : 'ログイン'}
-          </button>
+            {!currentLineId && (
+              <div style={cardInput.wrapper}>
+                <label style={cardInput.label}>パスワード</label>
+                <input
+                  type="password"
+                  placeholder="パスワードを入力"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  style={{ ...cardInput.inputWrapper, width: '100%', boxSizing: 'border-box' }}
+                />
+              </div>
+            )}
 
-          {!currentLineId && (
-            <div style={{ textAlign: 'center', marginTop: '10px' }}>
-              <Link href="/members/new" style={baseStyles.link}>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              style={{
+                ...button.base,
+                backgroundColor: isSubmitting ? '#444' : '#08A5EF',
+                color: colors.text,
+                width: '100%',
+                marginTop: spacing.sm,
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {isSubmitting ? '処理中...' : currentLineId ? '連携する' : 'ログイン'}
+            </button>
+          </form>
+        </div>
+
+        {!currentLineId && (
+          <div style={{ marginTop: spacing.lg, textAlign: 'center', fontSize: font.size.sm }}>
+            <p style={{ marginBottom: spacing.sm }}>
+              <Link href="/members/new" style={{ ...text.link, color: colors.status.info }}>
                 新規会員登録はこちら
               </Link>
-              <div style={{ marginTop: '8px' }}>
-                <Link
-                  href="/members/password-reset"
-                  style={baseStyles.link}
-                >
-                  パスワード忘却時のリセットはこちら
-                </Link>
-              </div>
-            </div>
-          )}
-        </form>
+            </p>
+            <p>
+              <Link href="/members/password-reset" style={text.linkSubtle}>
+                パスワード忘却時のリセットはこちら
+              </Link>
+            </p>
+          </div>
+        )}
 
-        <footer style={baseStyles.copyright}>
+        <footer style={{ 
+          marginTop: 32, // spacing.xl の代わり
+          textAlign: 'center', 
+          fontSize: '0.7rem', 
+          color: colors.textSub,
+          opacity: 0.6
+        }}>
           YAPMS V1.0.1 Copyright 2026 Yokohama Aoba Pickles
         </footer>
-
-        {/* --- デバッグ情報 --- }
-        <div style={{
-          marginTop: '40px',
-          padding: '15px',
-          backgroundColor: '#111',
-          border: '1px dashed #555',
-          borderRadius: '8px',
-          color: '#0f0',
-          fontFamily: 'monospace'
-        }}>
-          <p style={{ borderBottom: '1px solid #444', paddingBottom: '4px', marginBottom: '8px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-            Debug Info (Development Only)
-          </p>
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '0.7rem', textAlign: 'left', lineHeight: '1.6' }}>
-            <li><strong>isLoading:</strong> {isLoading ? 'true' : 'false'}</li>
-            <li><strong>isLineUA:</strong> {typeof window !== 'undefined' && navigator.userAgent.toLowerCase().includes('line') ? 'YES' : 'NO'}</li>
-            <li><strong>currentLineId:</strong> {currentLineId || 'null'}</li>
-            <li><strong>lineNickname:</strong> {lineNickname || 'null'}</li>
-            <li><strong>userExists:</strong> {user ? `YES (ID: ${user.id})` : 'NO'}</li>
-            <li><strong>Session ID:</strong> {typeof window !== 'undefined' ? (sessionStorage.getItem('auth_member_id') || 'null') : 'n/a'}</li>
-            <li><strong>Logout Flag:</strong> {typeof window !== 'undefined' ? (localStorage.getItem('logout') || sessionStorage.getItem('logout') || 'none') : 'n/a'}</li>
-          </ul>
-        </div>
-        {*/}
-
       </div>
     </div>
   )
