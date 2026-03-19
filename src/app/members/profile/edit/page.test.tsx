@@ -1,12 +1,14 @@
 /**
  * Filename: src/app/members/profile/edit/page.test.tsx
- * Version : V2.5.0
- * Update  : 2026-02-01
+ * Version : V2.7.1
+ * Update  : 2026-03-20
  * Remarks : 
- * V2.6.0 - 追加：ゲストの紹介者変更（表示・照合・更新）の検証。
- * V2.5.0 - 追加：メールアドレス、パスワード変更（一致確認・現在パスワード照合）の検証。
- * V2.4.0 - 網羅：全入力項目、読取専用項目、公開フラグの検証を統合。
- * V2.3.1 - 統合：DUPRレート入力の検証を追加。
+ * V2.7.1 - validateIconFile のインポート不足およびモック設定の修正
+ * V2.7.0 - 追加：画像アップロード（プレビュー、バリデーション、API連携）の検証
+ * V2.6.0 - 追加：ゲストの紹介者変更（表示・照合・更新）の検証
+ * V2.5.0 - 追加：メールアドレス、パスワード変更（一致確認・現在パスワード照合）の検証
+ * V2.4.0 - 網羅：全入力項目、読取専用項目、公開フラグの検証を統合
+ * V2.3.1 - 統合：DUPRレート入力の検証を追加
  */
 
 import {
@@ -24,13 +26,16 @@ import {
 } from 'vitest'
 import '@testing-library/jest-dom'
 import { Member } from '@/types/member'
-import EditProfilePage from './page'
+import EditProfilePage from '@/app/members/profile/edit/page'
 import { useAuthCheck } from '@/hooks/useAuthCheck'
 import {
   updateMemberProfile,
   updateMemberPassword,
-  fetchMemberByNicknameAndMemberNumber
+  fetchMemberByNicknameAndMemberNumber,
+  uploadProfileIcon
 } from '@/lib/memberApi'
+
+import { validateIconFile } from '@/utils/memberHelpers'
 
 // --- モック設定 ---
 vi.mock('@/hooks/useAuthCheck')
@@ -38,7 +43,18 @@ vi.mock('@/lib/memberApi', () => ({
   updateMemberProfile: vi.fn(),
   updateMemberPassword: vi.fn(),
   fetchMemberByNicknameAndMemberNumber: vi.fn(),
+  uploadProfileIcon: vi.fn(),
 }))
+vi.mock('@/utils/memberHelpers', async () => {
+  const actual = await vi.importActual('@/utils/memberHelpers') as any
+  return {
+    ...actual,
+    validateIconFile: vi.fn(), // バリデーション結果を操作できるようにモック化
+  }
+})
+
+// URL.createObjectURL のモック
+global.URL.createObjectURL = vi.fn(() => 'blob:http://localhost:3000/mock-url')
 
 const mockPush = vi.fn()
 const mockBack = vi.fn()
@@ -48,6 +64,15 @@ vi.mock('next/navigation', () => ({
     back: mockBack,
   }),
 }))
+
+// テスト用定数
+const MOCK_USER = {
+  id: 'u123',
+  nickname: 'テスト太郎',
+  email: 'test@example.com',
+  member_kind: 'general',
+  profile_icon_url: 'https://example.com/old.png'
+}
 
 describe('EditProfilePage - 総合検証 V2.4.0', () => {
   const TEST_USER: Partial<Member> = {
@@ -75,10 +100,10 @@ describe('EditProfilePage - 総合検証 V2.4.0', () => {
     vi.clearAllMocks()
     vi.spyOn(window, 'alert').mockImplementation(() => { })
 
-    ; (useAuthCheck as any).mockReturnValue({
-      isLoading: false,
-      user: TEST_USER,
-    })
+      ; (useAuthCheck as any).mockReturnValue({
+        isLoading: false,
+        user: TEST_USER,
+      })
     vi.mocked(updateMemberProfile).mockResolvedValue({
       success: true,
       data: null,
@@ -120,7 +145,7 @@ describe('EditProfilePage - 総合検証 V2.4.0', () => {
       expect(screen.getByLabelText(/DUPR ID/)).toHaveValue('WKRV2Q')
       expect(screen.getByLabelText(/DUPR Doubles/)).toHaveValue(3.5)
       expect(screen.getByLabelText(/DUPR Singles/)).toHaveValue(3.2)
-      
+
       // 公開設定チェックボックスの初期値
       const checkbox = screen.getByLabelText(/プロフィールを他会員に公開する/)
       expect(checkbox).toBeChecked()
@@ -144,7 +169,7 @@ describe('EditProfilePage - 総合検証 V2.4.0', () => {
       fireEvent.change(screen.getByLabelText(/DUPR ID/), { target: { value: 'NEW_DUPR' } })
       fireEvent.change(screen.getByLabelText(/DUPR Doubles/), { target: { value: '4.567' } })
       fireEvent.change(screen.getByLabelText(/DUPR Singles/), { target: { value: '4.123' } })
-      
+
       // 公開設定を反転
       const checkbox = screen.getByLabelText(/プロフィールを他会員に公開する/)
       fireEvent.click(checkbox)
@@ -437,4 +462,91 @@ describe('EditProfilePage - 総合検証 V2.4.0', () => {
       })
     })
   })
+
+  describe('EditProfilePage - 画像アップロード機能検証', () => {
+    beforeEach(() => {
+      vi.clearAllMocks()
+        ; (useAuthCheck as any).mockReturnValue({
+          isLoading: false,
+          user: MOCK_USER,
+        })
+        // デフォルトでバリデーション成功とする
+        ; (validateIconFile as any).mockReturnValue({ isValid: true })
+        ; (uploadProfileIcon as any).mockResolvedValue({
+          success: true,
+          data: 'https://example.com/new-icon.png'
+        })
+        ; (updateMemberProfile as any).mockResolvedValue({ success: true })
+    })
+
+    it('【正常系】画像を選択するとプレビューが表示されること', async () => {
+      render(<EditProfilePage />)
+
+      const file = new File(['dummy'], 'test.png', { type: 'image/png' })
+      const input = screen.getByLabelText(/プロフィール画像/i) // hidden input を想定
+
+      fireEvent.change(input, { target: { files: [file] } })
+
+      await waitFor(() => {
+        const img = screen.getByAltText('プレビュー') as HTMLImageElement
+        expect(img.src).toBe('blob:http://localhost:3000/mock-url')
+      })
+    })
+
+    it('【異常系】バリデーション失敗時はアラートを表示し中断すること', async () => {
+      ; (validateIconFile as any).mockReturnValue({
+        isValid: false,
+        error: 'サイズが大きすぎます'
+      })
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => { })
+
+      render(<EditProfilePage />)
+      const file = new File(['dummy'], 'large.png', { type: 'image/png' })
+      const input = screen.getByLabelText(/プロフィール画像/i)
+
+      fireEvent.change(input, { target: { files: [file] } })
+
+      expect(alertSpy).toHaveBeenCalledWith('サイズが大きすぎます')
+      expect(URL.createObjectURL).not.toHaveBeenCalled()
+      alertSpy.mockRestore()
+    })
+
+    it('【正常系】保存時に画像アップロード後にプロフィール更新が行われること', async () => {
+      render(<EditProfilePage />)
+
+      // 画像選択
+      const file = new File(['dummy'], 'new.png', { type: 'image/png' })
+      fireEvent.change(screen.getByLabelText(/プロフィール画像/i), {
+        target: { files: [file] }
+      })
+
+      // 保存ボタンクリック
+      fireEvent.click(screen.getByRole('button', { name: '変更を保存' }))
+
+      await waitFor(() => {
+        // 1. 画像アップロードが呼ばれたか
+        expect(uploadProfileIcon).toHaveBeenCalledWith(MOCK_USER.id, file)
+
+        // 2. アップロード後のURLでプロフィール更新が呼ばれたか
+        expect(updateMemberProfile).toHaveBeenCalledWith(
+          MOCK_USER.id,
+          expect.objectContaining({
+            profile_icon_url: 'https://example.com/new-icon.png'
+          })
+        )
+      })
+    })
+
+    it('画像を選択していない場合はアップロードAPIを呼ばずに更新すること', async () => {
+      render(<EditProfilePage />)
+
+      fireEvent.click(screen.getByRole('button', { name: '変更を保存' }))
+
+      await waitFor(() => {
+        expect(uploadProfileIcon).not.toHaveBeenCalled()
+        expect(updateMemberProfile).toHaveBeenCalled()
+      })
+    })
+  })
+
 })

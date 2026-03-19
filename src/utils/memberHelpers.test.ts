@@ -1,17 +1,19 @@
 /**
  * Filename: src/utils/memberHelpers.test.ts
- * Version : V5.0.0
- * Update  : 2026-01-27
- * 内容：
- * - 過去(V3.1.0)のテストケースを全て統合
- * - ベースデータ＋スプレッド演算子による Factory パターンを採用
- * - MemberInput 型に完全準拠し as any を排除
+ * Version : V5.1.1
+ * Update  : 2026-03-19
+ * Remarks : 
+ * V5.1.1 - Vitestの仕様に合わせアサーションメッセージの記述法を修正
+ * V5.1.0 - 画像バリデーションおよびファイル名生成のテストを追加
+ * V5.0.0 - 過去(V3.1.0)のテストケースを全て統合
  */
 import { describe, it, expect } from 'vitest'
 import {
   validateRegistration,
   isNicknameDuplicate,
-  calculateEnrollmentDays
+  calculateEnrollmentDays,
+  validateIconFile,
+  generateIconFileName
 } from './memberHelpers'
 import { MemberInput } from '@/types/member'
 
@@ -202,4 +204,39 @@ describe('memberHelpers 総合検証 V5.0.0', () => {
     })
   })
 
+  describe('validateIconFile', () => {
+    it('【正常系】適切なサイズと形式の画像はパスすること', () => {
+      const file = new File([''], 'test.png', { type: 'image/png' });
+      // 2MB制限と仮定
+      const result = validateIconFile(file, 2 * 1024 * 1024);
+      expect(result.isValid).toBe(true);
+    });
+
+    it('【異常系】サイズが大きすぎる場合はエラーを返すこと', () => {
+      const bigFile = { size: 5 * 1024 * 1024, type: 'image/png', name: 'big.png' } as File;
+      const result = validateIconFile(bigFile, 2 * 1024 * 1024);
+      expect(result.isValid).toBe(false);
+      expect(result.error).toContain('2MB');
+    });
+
+    it('【異常系】画像以外の形式はエラーを返すこと', () => {
+      const docFile = new File([''], 'test.pdf', { type: 'application/pdf' });
+      const result = validateIconFile(docFile);
+      expect(result.isValid).toBe(false);
+      expect(result.error).toContain('画像ファイル');
+    });
+  });
+
+  describe('generateIconFileName', () => {
+    it('会員IDと拡張子が正しく結合されること', () => {
+      const memberId = 'M001';
+      const fileName = 'my_photo.jpg';
+      const result = generateIconFileName(memberId, fileName);
+
+      // 第2引数にメッセージを記述
+      expect(result, 'ファイル名に会員IDが含まれていること').toContain('M001');
+      // .toEndWith がエラーになる場合は .toMatch(/\.jpg$/) もしくは .toContain('.jpg') を使用
+      expect(result, '拡張子が正しく維持されていること').toMatch(/\.jpg$/);
+    });
+  });
 })

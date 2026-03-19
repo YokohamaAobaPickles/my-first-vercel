@@ -1,11 +1,14 @@
 /**
  * Filename: src/lib/memberApi.test.ts
- * Version : V3.7.0
- * Update  : 2026-02-01
- * Remarks : 
- * V3.7.0 - 追加：updateMemberPassword のテスト（正常系・異常系）。
- * V3.2.1 - 修正：deleteMember のテストケース追加とモック定義の改善。
- * V3.1.0 - 修正：新ステータス名称 (new_req) に合わせて期待値を修正。
+ * Version : V3.9.2
+ * Update  : 2026-03-19
+ * Remarks :
+ * V3.9.2 - mockUpload の引数検証を実装（contentType）に合わせて修正
+ * V3.9.1 - Supabase Storage のモック定義を追加し TypeError を解消
+ * V3.9.0 - 追加：uploadProfileIcon のテストケースを追加
+ * V3.7.0 - 追加：updateMemberPassword のテスト（正常系・異常系）
+ * V3.2.1 - 修正：deleteMember のテストケース追加とモック定義の改善
+ * V3.1.0 - 修正：新ステータス名称 (new_req) に合わせて期待値を修正
  */
 
 import {
@@ -30,13 +33,17 @@ import {
   saveResetToken,
   fetchMemberByResetToken,
   updatePasswordByResetToken,
+  uploadProfileIcon
 } from './memberApi'
 import { supabase } from '@/lib/supabase'
 import { Member, MemberInput } from '@/types/member'
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
-    from: vi.fn()
+    from: vi.fn(),
+    storage: {
+      from: vi.fn() // Storage用のfromを追加
+    }
   }
 }))
 
@@ -413,4 +420,59 @@ describe('memberApi - 会員DB操作・連携の総合検証 V3.2.1', () => {
       )
     })
   })
+
+  describe('uploadProfileIcon (プロフィール画像アップロード)', () => {
+    const mockFile = new File(['dummy content'], 'test-avatar.png', {
+      type: 'image/png',
+    });
+    const memberId = 'member-uuid-123';
+
+    it('【正常系】画像がアップロードされ、公開URLが取得できること', async () => {
+      const mockPublicUrl = 'https://example.com/storage/v1/object/public/avatars/member-uuid-123_123456789.png';
+      const mockUpload = vi.fn().mockResolvedValue({ data: { path: 'path/to/file' }, error: null });
+      const mockGetPublicUrl = vi.fn().mockReturnValue({ data: { publicUrl: mockPublicUrl } });
+
+      const storageChain: any = {
+        upload: mockUpload,
+        getPublicUrl: mockGetPublicUrl,
+      };
+
+      const mockFrom = supabase.storage.from as any;
+      mockFrom.mockReturnValue(storageChain);
+
+      const result = await uploadProfileIcon(memberId, mockFile);
+
+      // 検証
+      expect(result.success).toBe(true);
+      expect(result.data).toBe(mockPublicUrl);
+      expect(mockFrom).toHaveBeenCalledWith('avatars');
+
+      // 引数の検証を修正
+      expect(mockUpload).toHaveBeenCalledWith(
+        expect.stringContaining(memberId), // 第1引数: ファイル名
+        mockFile,                         // 第2引数: ファイル本体
+        {                                 // 第3引数: オプション
+          upsert: true,
+          contentType: 'image/png'        // 実装に合わせて追加
+        }
+      );
+    });
+
+    it('【異常系】アップロードに失敗した場合、エラーを返すこと', async () => {
+      const mockError = { message: 'Upload failed' };
+      const storageChain: any = {
+        upload: vi.fn().mockResolvedValue({ data: null, error: mockError }),
+      };
+
+      const mockFrom = supabase.storage.from as any;
+      mockFrom.mockReturnValue(storageChain);
+
+      const result = await uploadProfileIcon(memberId, mockFile);
+
+      // 検証
+      expect(result.success).toBe(false);
+      expect(result.error?.message).toBe('Upload failed');
+    });
+  });
+
 })

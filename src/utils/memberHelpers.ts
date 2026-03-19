@@ -1,10 +1,11 @@
 /**
  * Filename: src/utils/memberHelpers.ts
- * Version : V2.1.1
- * Update  : 2026-02-01
- * * 内容：
- * - 会員関連のビジネスロジック・バリデーション・加工関数。
- * - V2.1.0 変更点:
+ * Version : V2.2.0
+ * Update  : 2026-03-19
+ * Remarks : 
+ * V2.2.0 - validateIconFile, generateIconFileName を追加。
+ * V2.1.1 - 会員関連のビジネスロジック・バリデーション・加工関数。
+ * V2.1.0 変更点:
  * 1. Supabase (DB) への直接アクセスを memberApi.ts へ完全移管し、依存を排除。
  * 2. 引数の型を RegistrationData から MemberInput へ変更。
  * 3. メールアドレス形式チェック等のバリデーション強化。
@@ -133,4 +134,42 @@ export const hasOfficerRole = (member: { roles?: string[] | null }): boolean => 
 
   // ROLES.MEMBER（役職なし）以外が含まれていれば officer 扱い
   return member.roles.some((r) => r !== ROLES.MEMBER);
+};
+
+/**
+ * プロフィール画像のバリデーション
+ * @param file 検証対象のファイル
+ * @param maxSize 最大許容サイズ（バイト）
+ * @returns { isValid: boolean, error?: string }
+ */
+export const validateIconFile = (
+  file: File, 
+  maxSize: number = 2 * 1024 * 1024 // デフォルト2MB
+): { isValid: boolean; error?: string } => {
+  // 形式チェック
+  if (!file.type.startsWith('image/')) {
+    return { isValid: false, error: '画像ファイルを選択してください。' };
+  }
+  
+  // サイズチェック
+  if (file.size > maxSize) {
+    const mb = maxSize / (1024 * 1024);
+    return { isValid: false, error: `ファイルサイズは${mb}MB以下にしてください。` };
+  }
+
+  return { isValid: true };
+};
+
+/**
+ * 保存用のユニークなファイル名を生成する
+ * @param memberId 会員ID
+ * @param originalName 元のファイル名
+ */
+export const generateIconFileName = (
+  memberId: string, 
+  originalName: string
+): string => {
+  const ext = originalName.split('.').pop() || 'png';
+  const timestamp = Date.now();
+  return `${memberId}_${timestamp}.${ext}`;
 };
