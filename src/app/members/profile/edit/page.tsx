@@ -21,8 +21,14 @@ import {
   updateMemberPassword,
   fetchMemberByNicknameAndMemberNumber,
   uploadProfileIcon,
+  updateMemberStatus,
 } from '@/lib/memberApi'
-import { validateIconFile } from '@/utils/memberHelpers'
+import {
+  validateIconFile,
+  getStatusActionConfig
+} from '@/utils/memberHelpers'
+import { MemberStatus } from '@/types/member'
+
 import { useRouter } from 'next/navigation'
 import {
   colors,
@@ -179,7 +185,7 @@ export default function ProfileEditPage() {
         if (!upRes.success || !upRes.data) {
           alert(
             upRes.error?.message ||
-              'プロフィール画像のアップロードに失敗しました。',
+            'プロフィール画像のアップロードに失敗しました。',
           )
           return
         }
@@ -218,11 +224,33 @@ export default function ProfileEditPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value, type } = e.target as HTMLInputElement
-    const val = type === 'checkbox' 
-      ? (e.target as HTMLInputElement).checked 
+    const val = type === 'checkbox'
+      ? (e.target as HTMLInputElement).checked
       : value
     setFormData((prev: any) => ({ ...prev, [name]: val }))
   }
+
+  // ステータス変更処理
+  const handleStatusChange = async (nextStatus: MemberStatus) => {
+    if (!confirm(`ステータスを変更しますか？`)) return;
+
+    setIsSubmitting(true);
+    try {
+      const res = await updateMemberStatus(user.id, nextStatus);
+      if (res.success) {
+        alert('申請を受け付けました');
+        // ローカルの状態を更新して表示に反映
+        setFormData((prev: any) => ({ ...prev, status: nextStatus }));
+      } else {
+        alert(`エラー: ${res.error?.message}`);
+      }
+    } catch (error) {
+      alert('通信エラーが発生しました');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
 
   const formatMemberNumber = (num: string | number | null | undefined) => {
     return num ? String(num).padStart(4, '0') : '----'
@@ -830,6 +858,51 @@ export default function ProfileEditPage() {
                   />
                 </div>
               </div>
+
+              {/* 3. 各種申請（保存ボタンの上に追加） */}
+              <section style={{ marginBottom: spacing.lg }}>
+                <h2 style={memberPage.sectionTitle}>各種申請</h2>
+                <div style={memberPage.actionButtons.container}>
+                  {(() => {
+                    const config = getStatusActionConfig(formData.status);
+                    return (
+                      <>
+                        {/* 休会ボタン */}
+                        <button
+                          type="button"
+                          disabled={isSubmitting || config.suspend.disabled}
+                          onClick={() => handleStatusChange(config.suspend.nextStatus as MemberStatus)}
+                          style={{
+                            ...button.base,
+                            ...memberPage.actionButtons[config.suspend.variant],
+                            flex: 1,
+                            opacity: config.suspend.disabled ? 0.5 : 1,
+                            cursor: config.suspend.disabled ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          {config.suspend.label}
+                        </button>
+
+                        {/* 退会ボタン */}
+                        <button
+                          type="button"
+                          disabled={isSubmitting || config.withdraw.disabled}
+                          onClick={() => handleStatusChange(config.withdraw.nextStatus as MemberStatus)}
+                          style={{
+                            ...button.base,
+                            ...memberPage.actionButtons[config.withdraw.variant],
+                            flex: 1,
+                            opacity: config.withdraw.disabled ? 0.5 : 1,
+                            cursor: config.withdraw.disabled ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          {config.withdraw.label}
+                        </button>
+                      </>
+                    );
+                  })()}
+                </div>
+              </section>
             </div>
           </section>
 

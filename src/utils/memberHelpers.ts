@@ -1,17 +1,18 @@
 /**
  * Filename: src/utils/memberHelpers.ts
- * Version : V2.2.0
+ * Version : V2.3.0
  * Update  : 2026-03-19
  * Remarks : 
- * V2.2.0 - validateIconFile, generateIconFileName を追加。
- * V2.1.1 - 会員関連のビジネスロジック・バリデーション・加工関数。
+ * V2.3.0 - 休会・退会申請ボタン表示状態を判定する関数を追加
+ * V2.2.0 - validateIconFile, generateIconFileName を追加
+ * V2.1.1 - 会員関連のビジネスロジック・バリデーション・加工関数
  * V2.1.0 変更点:
- * 1. Supabase (DB) への直接アクセスを memberApi.ts へ完全移管し、依存を排除。
- * 2. 引数の型を RegistrationData から MemberInput へ変更。
- * 3. メールアドレス形式チェック等のバリデーション強化。
+ * 1. Supabase (DB) への直接アクセスを memberApi.ts へ完全移管し、依存を排除
+ * 2. 引数の型を RegistrationData から MemberInput へ変更
+ * 3. メールアドレス形式チェック等のバリデーション強化
  */
 
-import { MemberInput, ROLES } from '@/types/member';
+import { MemberStatus, MemberInput, ROLES } from '@/types/member';
 
 /**
  * 会員登録・編集時のバリデーション
@@ -172,4 +173,29 @@ export const generateIconFileName = (
   const ext = originalName.split('.').pop() || 'png';
   const timestamp = Date.now();
   return `${memberId}_${timestamp}.${ext}`;
+};
+
+/**
+ * 休会・退会申請ボタンの表示状態と活性状態を判定する
+ * @param status 現在の会員ステータス
+ * @returns 状態オブジェクト
+ */
+export const getStatusActionConfig = (status: MemberStatus) => {
+  const isWithdrawRequested = status === 'withdraw_req';
+  const isSuspendRequested = status === 'suspend_req';
+
+  return {
+    suspend: {
+      label: isSuspendRequested ? '休会申請取消' : '休会申請',
+      disabled: isWithdrawRequested || (status !== 'active' && status !== 'suspend_req'),
+      nextStatus: isSuspendRequested ? 'active' : 'suspend_req',
+      variant: isSuspendRequested ? 'requested' : 'outline',
+    },
+    withdraw: {
+      label: isWithdrawRequested ? '退会申請取消' : '退会申請',
+      disabled: !['active', 'suspend_req', 'suspended', 'withdraw_req'].includes(status),
+      nextStatus: isWithdrawRequested ? 'active' : 'withdraw_req',
+      variant: isWithdrawRequested ? 'requested' : 'danger',
+    }
+  } as const;
 };

@@ -95,6 +95,34 @@ export const memberPage = {
     gap: '4px',
     fontSize: font.size.xs,
     color: colors.textSub,
-  }
+  },
 
+  // 追加：申請アクション用ボタンのスタイル
+  actionButtons: {
+    container: {
+      display: 'flex',
+      gap: spacing.md,
+      padding: spacing.md,
+      backgroundColor: colors.inputBackground,
+      borderRadius: '8px',
+    },
+    // 枠線あり（休会申請など）
+    outline: {
+      backgroundColor: 'transparent',
+      border: `1px solid ${colors.border}`,
+      color: colors.text,
+    },
+    // 危険・警告（退会申請など）
+    danger: {
+      backgroundColor: colors.status.danger,
+      color: '#fff',
+      border: 'none',
+    },
+    // 申請済み・取消状態（二次ボタン）
+    requested: {
+      backgroundColor: colors.textSub,
+      color: '#fff',
+      border: 'none',
+    }
+  }
 } as const;
