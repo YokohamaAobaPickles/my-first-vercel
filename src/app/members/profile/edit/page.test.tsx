@@ -1,8 +1,10 @@
 /**
  * Filename: src/app/members/profile/edit/page.test.tsx
- * Version : V2.7.1
+ * Version : V2.7.2
  * Update  : 2026-03-20
  * Remarks : 
+ * V2.7.2 - updateMemberStatus の型解決(vi.mocked)とボタン取得の正規表現化により、
+ * 休会申請テストのタイムアウトを解消
  * V2.7.1 - validateIconFile のインポート不足およびモック設定の修正
  * V2.7.0 - 追加：画像アップロード（プレビュー、バリデーション、API連携）の検証
  * V2.6.0 - 追加：ゲストの紹介者変更（表示・照合・更新）の検証
@@ -32,7 +34,8 @@ import {
   updateMemberProfile,
   updateMemberPassword,
   fetchMemberByNicknameAndMemberNumber,
-  uploadProfileIcon
+  uploadProfileIcon,
+  updateMemberStatus
 } from '@/lib/memberApi'
 
 import { validateIconFile } from '@/utils/memberHelpers'
@@ -40,10 +43,11 @@ import { validateIconFile } from '@/utils/memberHelpers'
 // --- モック設定 ---
 vi.mock('@/hooks/useAuthCheck')
 vi.mock('@/lib/memberApi', () => ({
-  updateMemberProfile: vi.fn(),
-  updateMemberPassword: vi.fn(),
+  updateMemberProfile: vi.fn(() => Promise.resolve({ success: true })),
+  updateMemberPassword: vi.fn(() => Promise.resolve({ success: true })),
   fetchMemberByNicknameAndMemberNumber: vi.fn(),
-  uploadProfileIcon: vi.fn(),
+  uploadProfileIcon: vi.fn(() => Promise.resolve({ success: true, data: 'https://example.com/new-icon.png' })),
+  updateMemberStatus: vi.fn(() => Promise.resolve({ success: true })), // 追加
 }))
 vi.mock('@/utils/memberHelpers', async () => {
   const actual = await vi.importActual('@/utils/memberHelpers') as any
@@ -73,6 +77,8 @@ const MOCK_USER = {
   member_kind: 'general',
   profile_icon_url: 'https://example.com/old.png'
 }
+
+window.confirm = vi.fn();
 
 describe('EditProfilePage - 総合検証 V2.4.0', () => {
   const TEST_USER: Partial<Member> = {
@@ -549,4 +555,91 @@ describe('EditProfilePage - 総合検証 V2.4.0', () => {
     })
   })
 
+  describe('会員ステータス申請機能', () => {
+    // 共通のモック戻り値ベース
+    const mockAuthBase = {
+      isLoading: false,
+      userRoles: ['member'],
+      currentLineId: 'line_123',
+      lineNickname: 'Taro LINE',
+      user: MOCK_USER,
+    };
+
+    it('【休会申請】ボタンをクリックすると、suspend_req への更新が呼ばれること', async () => {
+      // 1. 初期状態を active に設定
+      vi.mocked(useAuthCheck).mockReturnValue({
+        ...mockAuthBase,
+        user: { ...MOCK_USER, status: 'active' }
+      });
+
+      render(<EditProfilePage />);
+
+      // 2. ボタンを正規表現で取得（「休会を申請する」等の表記揺れに対応）
+      const suspendBtn = screen.getByRole('button', { name: /休会申請/ });
+      expect(suspendBtn).toBeInTheDocument();
+
+      // 3. confirm を true に設定
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+      // 4. クリック実行
+      fireEvent.click(suspendBtn);
+
+      // 5. 非同期で API 呼び出しを検証
+      await waitFor(() => {
+        // vi.mocked を使って型安全に検証
+        expect(vi.mocked(updateMemberStatus)).toHaveBeenCalledWith(
+          MOCK_USER.id,
+          'suspend_req'
+        );
+      }, { timeout: 2000 });
+
+      confirmSpy.mockRestore();
+    });
+
+    it('ステータスが suspend_req のとき、ボタンが「休会申請取消」になり、クリックで active に戻ること', async () => {
+      vi.mocked(useAuthCheck).mockReturnValue({
+        ...mockAuthBase,
+        user: { ...MOCK_USER, status: 'suspend_req' }
+      })
+
+      render(<EditProfilePage />)
+      const cancelBtn = screen.getByRole('button', { name: '休会申請取消' })
+
+      vi.spyOn(window, 'confirm').mockReturnValue(true)
+      fireEvent.click(cancelBtn)
+
+      await waitFor(() => {
+        // 修正: updateMemberProfile ではなく updateMemberStatus を検証
+        expect(updateMemberStatus).toHaveBeenCalledWith(MOCK_USER.id, 'active')
+      })
+    })
+
+    it('退会申請中は、休会申請ボタンが操作不能（disabled）であること', async () => {
+      vi.mocked(useAuthCheck).mockReturnValue({
+        ...mockAuthBase,
+        user: { ...MOCK_USER, status: 'withdraw_req' }
+      });
+
+      render(<EditProfilePage />);
+
+      const suspendBtn = screen.getByRole('button', { name: /休会申請/ });
+      expect(suspendBtn).toBeDisabled();
+    });
+
+    it('ステータスが suspended（休会中）でも退会申請が可能であること', async () => {
+      vi.mocked(useAuthCheck).mockReturnValue({
+        ...mockAuthBase,
+        user: { ...MOCK_USER, status: 'suspended' }
+      })
+
+      render(<EditProfilePage />)
+      const withdrawBtn = screen.getByRole('button', { name: '退会申請' })
+      fireEvent.click(withdrawBtn)
+
+      await waitFor(() => {
+        // 修正: updateMemberProfile ではなく updateMemberStatus を検証
+        expect(updateMemberStatus).toHaveBeenCalledWith(MOCK_USER.id, 'withdraw_req')
+      })
+    })
+  });
 })
